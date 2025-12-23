@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from litestar import Litestar, Response, get, websocket_listener
+from litestar import Litestar, Response, get, post, websocket_listener
 from litestar.channels.backends.memory import MemoryChannelsBackend
 from litestar.channels.plugin import ChannelsPlugin
 from litestar.enums import MediaType
@@ -11,7 +11,7 @@ from litestar_asyncapi import AsyncAPIPlugin
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-__all__ = ("EchoPayload", "echo", "playground")
+__all__ = ("EchoPayload", "PublishPayload", "echo", "playground", "publish_message")
 
 
 @dataclass
@@ -19,9 +19,30 @@ class EchoPayload:
     message: str
 
 
+@dataclass
+class PublishPayload:
+    message: str
+
+
 @websocket_listener("/ws/echo", signature_namespace={"EchoPayload": EchoPayload})
 async def echo(socket: "WebSocket", data: EchoPayload) -> EchoPayload:
     return data
+
+
+@post("/publish/{channel:str}")
+async def publish_message(channel: str, data: PublishPayload, channels: ChannelsPlugin) -> dict[str, str]:
+    """Publish a message to a channel.
+
+    Args:
+        channel: The channel name to publish to.
+        data: The payload containing the message.
+        channels: The ChannelsPlugin instance for publishing.
+
+    Returns:
+        Status dict with 'published' status and channel name.
+    """
+    await channels.publish({"message": data.message}, channel)  # type: ignore[misc]
+    return {"status": "published", "channel": channel}
 
 
 @get("/", sync_to_thread=False)
@@ -36,82 +57,147 @@ def playground() -> Response:
         <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
         <style>
           body { padding: 2rem; }
-          pre { height: 240px; overflow: auto; background: #0b1021; color: #e2e8f0; padding: 1rem; }
-          textarea { min-height: 120px; }
+          pre { height: 200px; overflow: auto; background: #0b1021; color: #e2e8f0; padding: 1rem; }
+          .section { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px; }
         </style>
       </head>
       <body>
         <main class="container">
           <h1>ChannelsPlugin Playground</h1>
           <p>
-            This example shows ChannelsPlugin discovery and a simple echo WebSocket at <code>/ws/echo</code>.
-            The AsyncAPI plugin documents the ChannelsPlugin channels and the WebSocket route.
+            This example demonstrates ChannelsPlugin pub/sub with channels <code>news</code> and <code>alerts</code>.
+            Subscribe via WebSocket, then publish messages via HTTP POST.
           </p>
           <p>
             <a href="/asyncapi/" target="_blank" rel="noreferrer">AsyncAPI UI</a> ·
             <a href="/asyncapi/asyncapi.json" target="_blank" rel="noreferrer">AsyncAPI JSON</a> ·
             <a href="/asyncapi/asyncapi.yaml" target="_blank" rel="noreferrer">AsyncAPI YAML</a>
           </p>
-          <p>
-            If you enable <code>create_ws_route_handlers=True</code> on ChannelsPlugin, those generated WebSocket
-            routes are discovered via the normal WebSocket extractor instead of the ChannelsPlugin fallback.
-          </p>
 
-          <div class="grid">
-            <button id="connect">Connect</button>
-            <button id="disconnect" class="secondary">Disconnect</button>
+          <div class="section">
+            <h2>Subscribe to Channel</h2>
+            <p>Connect to a channel WebSocket to receive published messages.</p>
+            <div class="grid">
+              <select id="channel">
+                <option value="news">news</option>
+                <option value="alerts">alerts</option>
+              </select>
+              <button id="subscribe">Subscribe</button>
+              <button id="unsubscribe" class="secondary">Unsubscribe</button>
+            </div>
+            <h3>Received Messages</h3>
+            <pre id="subscribe-log"></pre>
           </div>
 
-          <label for="payload">Payload (JSON)</label>
-          <textarea id="payload">{ "message": "hello" }</textarea>
-          <button id="send">Send</button>
+          <div class="section">
+            <h2>Publish to Channel</h2>
+            <p>Send a message to all subscribers of a channel via HTTP POST.</p>
+            <div class="grid">
+              <select id="publish-channel">
+                <option value="news">news</option>
+                <option value="alerts">alerts</option>
+              </select>
+              <input type="text" id="publish-message" placeholder="Message to publish" value="Hello from the playground!" />
+            </div>
+            <button id="publish">Publish</button>
+            <h3>Publish Log</h3>
+            <pre id="publish-log"></pre>
+          </div>
 
-          <h2>Log</h2>
-          <pre id="log"></pre>
+          <div class="section">
+            <h2>Echo WebSocket</h2>
+            <p>Simple echo at <code>/ws/echo</code> (separate from channels).</p>
+            <div class="grid">
+              <button id="echo-connect">Connect</button>
+              <button id="echo-disconnect" class="secondary">Disconnect</button>
+            </div>
+            <input type="text" id="echo-message" placeholder="Message to echo" value="hello" style="margin-top: 0.5rem;" />
+            <button id="echo-send">Send</button>
+            <h3>Echo Log</h3>
+            <pre id="echo-log"></pre>
+          </div>
         </main>
 
         <script>
-          const logEl = document.getElementById("log");
-          const payloadEl = document.getElementById("payload");
-          let ws;
+          // Subscribe functionality
+          let channelWs;
+          const subscribeLog = document.getElementById("subscribe-log");
 
-          function log(message) {
-            logEl.textContent += message + "\n";
-            logEl.scrollTop = logEl.scrollHeight;
+          function logSubscribe(msg) {
+            subscribeLog.textContent += msg + "\\n";
+            subscribeLog.scrollTop = subscribeLog.scrollHeight;
           }
 
-          function wsUrl() {
+          document.getElementById("subscribe").addEventListener("click", () => {
+            if (channelWs && channelWs.readyState <= 1) return;
+            const channel = document.getElementById("channel").value;
             const scheme = location.protocol === "https:" ? "wss" : "ws";
-            return `${scheme}://${location.host}/ws/echo`;
+            channelWs = new WebSocket(`${scheme}://${location.host}/${channel}`);
+            channelWs.onopen = () => logSubscribe(`subscribed to ${channel}`);
+            channelWs.onmessage = (e) => logSubscribe(`[${channel}] ${e.data}`);
+            channelWs.onclose = () => logSubscribe(`unsubscribed from ${channel}`);
+            channelWs.onerror = () => logSubscribe("error");
+          });
+
+          document.getElementById("unsubscribe").addEventListener("click", () => {
+            if (channelWs) channelWs.close();
+          });
+
+          // Publish functionality
+          const publishLog = document.getElementById("publish-log");
+
+          function logPublish(msg) {
+            publishLog.textContent += msg + "\\n";
+            publishLog.scrollTop = publishLog.scrollHeight;
           }
 
-          document.getElementById("connect").addEventListener("click", () => {
-            if (ws && ws.readyState <= 1) return;
-            ws = new WebSocket(wsUrl());
-            ws.onopen = () => log("connected");
-            ws.onmessage = (event) => log(`received: ${event.data}`);
-            ws.onclose = () => log("disconnected");
-            ws.onerror = () => log("error");
-          });
-
-          document.getElementById("disconnect").addEventListener("click", () => {
-            if (ws) ws.close();
-          });
-
-          document.getElementById("send").addEventListener("click", () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-              log("not connected");
-              return;
-            }
-            const raw = payloadEl.value.trim();
+          document.getElementById("publish").addEventListener("click", async () => {
+            const channel = document.getElementById("publish-channel").value;
+            const message = document.getElementById("publish-message").value;
             try {
-              JSON.parse(raw);
+              const res = await fetch(`/publish/${channel}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+              });
+              const data = await res.json();
+              logPublish(`published to ${data.channel}: ${message}`);
             } catch (err) {
-              log("invalid JSON");
+              logPublish(`error: ${err.message}`);
+            }
+          });
+
+          // Echo functionality
+          let echoWs;
+          const echoLog = document.getElementById("echo-log");
+
+          function logEcho(msg) {
+            echoLog.textContent += msg + "\\n";
+            echoLog.scrollTop = echoLog.scrollHeight;
+          }
+
+          document.getElementById("echo-connect").addEventListener("click", () => {
+            if (echoWs && echoWs.readyState <= 1) return;
+            const scheme = location.protocol === "https:" ? "wss" : "ws";
+            echoWs = new WebSocket(`${scheme}://${location.host}/ws/echo`);
+            echoWs.onopen = () => logEcho("connected to echo");
+            echoWs.onmessage = (e) => logEcho(`echo: ${e.data}`);
+            echoWs.onclose = () => logEcho("disconnected");
+            echoWs.onerror = () => logEcho("error");
+          });
+
+          document.getElementById("echo-disconnect").addEventListener("click", () => {
+            if (echoWs) echoWs.close();
+          });
+
+          document.getElementById("echo-send").addEventListener("click", () => {
+            if (!echoWs || echoWs.readyState !== WebSocket.OPEN) {
+              logEcho("not connected");
               return;
             }
-            ws.send(raw);
-            log(`sent: ${raw}`);
+            const message = document.getElementById("echo-message").value;
+            echoWs.send(JSON.stringify({ message }));
+            logEcho(`sent: ${message}`);
           });
         </script>
       </body>
@@ -121,6 +207,6 @@ def playground() -> Response:
 
 
 backend = MemoryChannelsBackend()
-channels_plugin = ChannelsPlugin(backend, channels=["news", "alerts"], create_ws_route_handlers=False)
+channels_plugin = ChannelsPlugin(backend, channels=["news", "alerts"], create_ws_route_handlers=True)
 
-app = Litestar(route_handlers=[playground, echo], plugins=[AsyncAPIPlugin(), channels_plugin])
+app = Litestar(route_handlers=[playground, echo, publish_message], plugins=[AsyncAPIPlugin(), channels_plugin])

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from litestar_asyncapi._asyncapi.utils.docstrings import get_handler_docstring
+from litestar_asyncapi.asyncapi.utils.docstrings import get_handler_docstring
 
 pytestmark = pytest.mark.anyio
 

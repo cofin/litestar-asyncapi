@@ -8,9 +8,14 @@ if TYPE_CHECKING:
 
 
 def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
-    from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
+    from litestar_asyncapi.plugins import (
+        AsyncAPIPlaygroundRenderPlugin,
+        AsyncAPIUIRenderPlugin,
+        JsonRenderPlugin,
+        YamlRenderPlugin,
+    )
 
-    return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin()]
+    return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin(), AsyncAPIPlaygroundRenderPlugin()]
 
 
 @dataclass

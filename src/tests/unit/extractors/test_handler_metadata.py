@@ -5,8 +5,8 @@ import pytest
 from litestar import Litestar, websocket_listener
 from litestar.handlers.websocket_handlers.stream import websocket_stream
 
-from litestar_asyncapi._asyncapi.extractors import extract_websocket_channels
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import OperationAction
 
 if TYPE_CHECKING:

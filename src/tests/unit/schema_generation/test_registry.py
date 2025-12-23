@@ -1,7 +1,7 @@
 import pytest
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._asyncapi.datastructures import SchemaRegistry
+from litestar_asyncapi.asyncapi.datastructures import SchemaRegistry
 from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
 pytestmark = pytest.mark.anyio

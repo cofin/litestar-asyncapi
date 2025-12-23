@@ -1,7 +1,7 @@
 import pytest
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
 pytestmark = pytest.mark.anyio
@@ -10,7 +10,7 @@ pytestmark = pytest.mark.anyio
 def test_msgspec_schema_is_componentized_and_required_fields_detected() -> None:
     msgspec = pytest.importorskip("msgspec")
 
-    class Event(msgspec.Struct):  # type: ignore[name-defined]
+    class Event(msgspec.Struct):  # type: ignore[misc,name-defined]
         id: int
         kind: str
         note: str = "default"

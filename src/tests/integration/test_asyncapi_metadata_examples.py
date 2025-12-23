@@ -6,7 +6,7 @@ from litestar import Litestar, websocket_listener
 from litestar.handlers.websocket_handlers.stream import websocket_stream
 
 from litestar_asyncapi import AsyncAPIConfig
-from litestar_asyncapi._asyncapi.generator import AsyncAPIGenerator
+from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 from litestar_asyncapi.spec import OperationAction, Reference
 
 if TYPE_CHECKING:

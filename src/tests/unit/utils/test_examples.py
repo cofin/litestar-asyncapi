@@ -5,7 +5,7 @@ import pytest
 from litestar.typing import FieldDefinition
 
 from litestar_asyncapi import AsyncAPIConfig
-from litestar_asyncapi._asyncapi.utils.examples import generate_example
+from litestar_asyncapi.asyncapi.utils.examples import generate_example
 
 pytestmark = pytest.mark.anyio
 

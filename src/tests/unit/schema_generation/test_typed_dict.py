@@ -2,7 +2,7 @@ import pytest
 from litestar.typing import FieldDefinition
 from typing_extensions import NotRequired, TypedDict
 
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
 pytestmark = pytest.mark.anyio

@@ -2,7 +2,7 @@ import pytest
 from litestar.params import Parameter
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import Schema, SchemaType
 
 pytestmark = pytest.mark.anyio

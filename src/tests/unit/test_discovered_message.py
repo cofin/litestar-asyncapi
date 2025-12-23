@@ -1,6 +1,6 @@
 import pytest
 
-from litestar_asyncapi._asyncapi.datastructures import DiscoveredMessage
+from litestar_asyncapi.asyncapi.datastructures import DiscoveredMessage
 
 pytestmark = pytest.mark.anyio
 

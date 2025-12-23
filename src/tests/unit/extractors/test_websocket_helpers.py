@@ -2,7 +2,7 @@ import pytest
 from litestar.types.builtin_types import NoneType
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._asyncapi.extractors import websocket as websocket_extractor
+from litestar_asyncapi.asyncapi.extractors import websocket as websocket_extractor
 from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
 pytestmark = pytest.mark.anyio
