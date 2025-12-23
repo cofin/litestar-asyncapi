@@ -36,7 +36,7 @@ async def handler(socket: "WebSocket") -> None:
 
 
 @get("/", sync_to_thread=False)
-def playground() -> Response:
+def playground() -> Response[str]:
     html = """
     <!DOCTYPE html>
     <html lang="en">

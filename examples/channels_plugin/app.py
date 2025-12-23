@@ -41,12 +41,12 @@ async def publish_message(channel: str, data: PublishPayload, channels: Channels
     Returns:
         Status dict with 'published' status and channel name.
     """
-    await channels.publish({"message": data.message}, channel)  # type: ignore[misc]
+    await channels.publish({"message": data.message}, channel)  # type: ignore[func-returns-value]
     return {"status": "published", "channel": channel}
 
 
 @get("/", sync_to_thread=False)
-def playground() -> Response:
+def playground() -> Response[str]:
     html = """
     <!DOCTYPE html>
     <html lang="en">

@@ -90,7 +90,7 @@ async def error_demo(socket: "WebSocket", data: ErrorPayload) -> ErrorResponse:
 
 
 @get("/", sync_to_thread=False)
-def playground() -> Response:
+def playground() -> Response[str]:
     """Serve the error handling playground HTML.
 
     Returns:
