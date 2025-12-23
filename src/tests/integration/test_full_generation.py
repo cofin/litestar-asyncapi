@@ -1,6 +1,6 @@
 import pytest
 
-from litestar_asyncapi._asyncapi.generator import AsyncAPIGenerator
+from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
 pytestmark = pytest.mark.anyio
 

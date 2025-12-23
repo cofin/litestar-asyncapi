@@ -24,7 +24,7 @@ async def chat_listener(socket: "WebSocket", data: ChatMessage) -> ChatMessage:
 
 
 @get("/", sync_to_thread=False)
-def playground() -> Response:
+def playground() -> Response[str]:
     html = """
     <!DOCTYPE html>
     <html lang="en">

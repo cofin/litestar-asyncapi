@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from litestar_asyncapi._asyncapi.generator import AsyncAPIGenerator
+from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 from litestar_asyncapi.spec import AsyncAPI, OperationAction, Reference
 
 if TYPE_CHECKING:

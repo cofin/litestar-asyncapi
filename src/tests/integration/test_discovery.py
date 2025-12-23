@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from litestar_asyncapi._asyncapi.extractors import extract_websocket_channels
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import OperationAction
 
 if TYPE_CHECKING:
@@ -43,7 +43,11 @@ def test_websocket_extraction_across_handler_variants() -> None:
     by_address = {c.address: c for c in channels}
     assert set(by_address) == {"/plain", "/listen/{room}", "/stream"}
 
-    assert by_address["/plain"].operations == []
+    # Raw websockets now generate placeholder operations for both directions
+    assert {op.action for op in by_address["/plain"].operations} == {
+        OperationAction.RECEIVE,
+        OperationAction.SEND,
+    }
     assert {op.action for op in by_address["/listen/{room}"].operations} == {
         OperationAction.RECEIVE,
         OperationAction.SEND,

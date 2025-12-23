@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from html import escape
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs
@@ -6,16 +7,44 @@ from urllib.parse import parse_qs
 from litestar import Litestar, Response, get, websocket
 from litestar.enums import MediaType
 
-from litestar_asyncapi import AsyncAPIPlugin
+from litestar_asyncapi import AsyncAPIPlugin, asyncapi_message, asyncapi_operation
+from litestar_asyncapi.spec import OperationAction
 
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-__all__ = ("htmx_socket", "playground")
+__all__ = ("HtmlFragment", "HtmxMessage", "htmx_socket", "playground")
 
 
+@dataclass
+class HtmxMessage:
+    """Message payload from HTMX form submission."""
+
+    message: str
+
+
+@dataclass
+class HtmlFragment:
+    """HTML fragment response for HTMX swap."""
+
+    html: str
+
+
+@asyncapi_operation(
+    action=OperationAction.SEND,
+    operation_id="htmx_chat",
+    summary="HTMX WebSocket chat endpoint",
+    description="Receives text messages and responds with HTML fragments for HTMX swap.",
+)
+@asyncapi_message(action="receive", payload=HtmxMessage, name="HtmxMessage", summary="Client message")
+@asyncapi_message(action="send", payload=HtmlFragment, name="HtmlFragment", summary="HTML fragment response")
 @websocket("/ws/htmx")
 async def htmx_socket(socket: "WebSocket") -> None:
+    """Handle HTMX WebSocket messages.
+
+    Receives form data or JSON from HTMX and returns HTML fragments for OOB swap.
+    """
+    await socket.accept()
     while True:
         raw = await socket.receive_text()
         message = _extract_message(raw)
@@ -43,7 +72,7 @@ def _extract_message(raw: str) -> str:
 
 
 @get("/", sync_to_thread=False)
-def playground() -> Response:
+def playground() -> Response[str]:
     html = """
     <!DOCTYPE html>
     <html lang="en">

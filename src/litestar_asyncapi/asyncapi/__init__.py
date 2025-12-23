@@ -1,0 +1,1 @@
+"""AsyncAPI schema generation internals."""

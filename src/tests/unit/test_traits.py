@@ -5,7 +5,7 @@ import pytest
 from litestar import Litestar, websocket
 
 from litestar_asyncapi import AsyncAPIConfig, asyncapi_message, asyncapi_operation
-from litestar_asyncapi._asyncapi.generator import AsyncAPIGenerator
+from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 from litestar_asyncapi.spec import Message, MessageTrait, OperationAction, OperationTrait, Reference
 
 pytestmark = pytest.mark.anyio

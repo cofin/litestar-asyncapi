@@ -64,7 +64,7 @@ try:
 
     PYDANTIC_INSTALLED = True  # pyright: ignore[reportConstantRedefinition]
 except ImportError:
-    BaseModel = BaseModelStub  # type: ignore[assignment]
+    BaseModel = BaseModelStub  # type: ignore[misc,assignment]
     PYDANTIC_INSTALLED = False  # pyright: ignore[reportConstantRedefinition]
 
 
@@ -78,5 +78,5 @@ try:
     Struct = msgspec.Struct
     MSGSPEC_INSTALLED = True  # pyright: ignore[reportConstantRedefinition]
 except ImportError:
-    Struct = StructStub  # type: ignore[assignment]
+    Struct = StructStub  # type: ignore[misc,assignment]
     MSGSPEC_INSTALLED = False  # pyright: ignore[reportConstantRedefinition]

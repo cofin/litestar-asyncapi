@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from litestar import Litestar, Response, get, websocket
 from litestar.enums import MediaType
+from litestar.exceptions import WebSocketDisconnect
 
 from litestar_asyncapi import AsyncAPIPlugin, asyncapi_message, asyncapi_operation
 from litestar_asyncapi.spec import OperationAction
@@ -22,11 +23,20 @@ class Incoming:
 @asyncapi_message(action="receive", payload=Incoming, name="InboundPayload", summary="Inbound payload")
 @websocket("/ws/overrides")
 async def handler(socket: "WebSocket") -> None:
-    return None
+    """Handle incoming WebSocket messages with decorator overrides."""
+    await socket.accept()
+    try:
+        while True:
+            data = await socket.receive_json()
+            incoming = Incoming(**data)
+            response = {"received": incoming.value, "status": "processed"}
+            await socket.send_json(response)
+    except WebSocketDisconnect:
+        pass
 
 
 @get("/", sync_to_thread=False)
-def playground() -> Response:
+def playground() -> Response[str]:
     html = """
     <!DOCTYPE html>
     <html lang="en">

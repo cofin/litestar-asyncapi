@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-    environment: release
+    environment: pypi
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

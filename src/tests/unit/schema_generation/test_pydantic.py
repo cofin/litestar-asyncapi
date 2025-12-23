@@ -1,7 +1,7 @@
 import pytest
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
 pytestmark = pytest.mark.anyio
@@ -10,7 +10,7 @@ pytestmark = pytest.mark.anyio
 def test_pydantic_schema_is_componentized() -> None:
     pydantic = pytest.importorskip("pydantic")
 
-    class Model(pydantic.BaseModel):  # type: ignore[name-defined]
+    class Model(pydantic.BaseModel):  # type: ignore[misc,name-defined]
         id: int
         name: str
 

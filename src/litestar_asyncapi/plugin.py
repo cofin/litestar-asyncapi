@@ -85,7 +85,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
         if self.config.use_cache and self._cached_asyncapi is not None:
             return self._cached_asyncapi
 
-        from litestar_asyncapi._asyncapi.generator import AsyncAPIGenerator
+        from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
         document = AsyncAPIGenerator(app=app, config=self.config).build_asyncapi()
         if self.config.use_cache:

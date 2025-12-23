@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from litestar_asyncapi._asyncapi.datastructures import DiscoverySource
-from litestar_asyncapi._asyncapi.extractors import extract_websocket_channels
-from litestar_asyncapi._asyncapi.schema_generation import AsyncAPISchemaGenerator
+from litestar_asyncapi.asyncapi.datastructures import DiscoverySource
+from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
+from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
 if TYPE_CHECKING:
     from litestar import WebSocket
