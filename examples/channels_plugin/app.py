@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from litestar import Litestar, Response, get, post, websocket_listener
 from litestar.channels.backends.memory import MemoryChannelsBackend
@@ -25,7 +25,7 @@ class PublishPayload:
 
 
 @websocket_listener("/ws/echo", signature_namespace={"EchoPayload": EchoPayload})
-async def echo(socket: "WebSocket", data: EchoPayload) -> EchoPayload:
+async def echo(socket: "WebSocket[Any, Any, Any]", data: EchoPayload) -> EchoPayload:
     return data
 
 
@@ -41,7 +41,7 @@ async def publish_message(channel: str, data: PublishPayload, channels: Channels
     Returns:
         Status dict with 'published' status and channel name.
     """
-    await channels.publish({"message": data.message}, channel)  # type: ignore[func-returns-value]
+    channels.publish({"message": data.message}, channel)
     return {"status": "published", "channel": channel}
 
 
