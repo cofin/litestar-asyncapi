@@ -100,9 +100,11 @@ def _infer_operations_from_handler(
         _apply_docstring_descriptions(route_handler, operations, config=config)
         return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
 
-    operations = []
+    operations = _infer_raw_websocket_operations(route_handler)
     _apply_docstring_descriptions(route_handler, operations, config=config)
-    return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
+    return _apply_decorator_overrides(
+        route_handler, operations, schema_generator=schema_generator, replace_placeholders=True
+    )
 
 
 def _apply_decorator_overrides(
@@ -110,12 +112,17 @@ def _apply_decorator_overrides(
     operations: list[DiscoveredOperation],
     *,
     schema_generator: "AsyncAPISchemaGenerator",
+    replace_placeholders: bool = False,
 ) -> list[DiscoveredOperation]:
     from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
 
     raw_metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)  # type: ignore[attr-defined]
     if not isinstance(raw_metadata, AsyncAPIMetadata) or not raw_metadata.operations:
         return operations
+
+    # If we have explicit decorators and should replace placeholders, start fresh
+    if replace_placeholders:
+        operations = []
 
     by_action = {op.action: op for op in operations}
 
@@ -237,6 +244,43 @@ def _infer_stream_operations(
     ]
     _apply_handler_metadata(route_handler, operations, include_action_suffix=False)
     return operations
+
+
+def _infer_raw_websocket_operations(route_handler: Any) -> list[DiscoveredOperation]:
+    """Create minimal placeholder operations for raw @websocket handlers.
+
+    Raw websocket handlers don't have typed data parameters, so we create
+    placeholder operations that indicate bidirectional communication is possible.
+
+    Args:
+        route_handler: The websocket route handler.
+
+    Returns:
+        A list containing receive and send operations with generic schemas.
+    """
+    handler_name = getattr(route_handler, "handler_name", "websocket")
+    return [
+        DiscoveredOperation(
+            action=OperationAction.RECEIVE,
+            operation_id=f"{handler_name}_receive",
+            summary="Receive message",
+            message=DiscoveredMessage(
+                name="RawMessage",
+                summary="Raw WebSocket message",
+                description="This endpoint uses raw WebSocket handling. Message format depends on implementation.",
+            ),
+        ),
+        DiscoveredOperation(
+            action=OperationAction.SEND,
+            operation_id=f"{handler_name}_send",
+            summary="Send message",
+            message=DiscoveredMessage(
+                name="RawResponse",
+                summary="Raw WebSocket response",
+                description="This endpoint uses raw WebSocket handling. Response format depends on implementation.",
+            ),
+        ),
+    ]
 
 
 def _apply_handler_metadata(
