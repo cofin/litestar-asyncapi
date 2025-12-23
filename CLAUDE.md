@@ -18,6 +18,7 @@ This project uses an **intelligent agent system** that:
 ### Pattern Library
 
 Reusable patterns in `specs/guides/patterns/`:
+
 - Consult before implementing similar features
 - Add new patterns during review phase
 
@@ -155,6 +156,7 @@ specs/
 ### Quality Gates
 
 All code must pass:
+
 - [ ] `make test` passes
 - [ ] `make lint` passes
 - [ ] 90%+ coverage for modified modules
@@ -270,7 +272,7 @@ def test_feature(app: "Litestar", asyncapi_config: "AsyncAPIConfig") -> None:
 
 ## Resources
 
-- **Litestar Docs**: https://docs.litestar.dev/
-- **AsyncAPI Spec**: https://www.asyncapi.com/docs/reference/specification
+- **Litestar Docs**: <https://docs.litestar.dev/>
+- **AsyncAPI Spec**: <https://www.asyncapi.com/docs/reference/specification>
 - **Pattern Library**: `specs/guides/patterns/`
 - **Architecture Guide**: `specs/guides/architecture.md`
