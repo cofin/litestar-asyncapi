@@ -129,14 +129,19 @@ def playground() -> Response[str]:
           }
 
           document.getElementById("subscribe").addEventListener("click", () => {
-            if (channelWs && channelWs.readyState <= 1) return;
+            if (channelWs && channelWs.readyState <= 1) {
+              logSubscribe("already connected or connecting");
+              return;
+            }
             const channel = document.getElementById("channel").value;
             const scheme = location.protocol === "https:" ? "wss" : "ws";
-            channelWs = new WebSocket(`${scheme}://${location.host}/${channel}`);
+            const url = `${scheme}://${location.host}/${channel}`;
+            logSubscribe(`connecting to ${url}...`);
+            channelWs = new WebSocket(url);
             channelWs.onopen = () => logSubscribe(`subscribed to ${channel}`);
             channelWs.onmessage = (e) => logSubscribe(`[${channel}] ${e.data}`);
-            channelWs.onclose = () => logSubscribe(`unsubscribed from ${channel}`);
-            channelWs.onerror = () => logSubscribe("error");
+            channelWs.onclose = (e) => logSubscribe(`unsubscribed from ${channel} (code: ${e.code})`);
+            channelWs.onerror = (e) => logSubscribe(`error: ${e.type}`);
           });
 
           document.getElementById("unsubscribe").addEventListener("click", () => {
