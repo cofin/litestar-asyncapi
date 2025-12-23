@@ -31,7 +31,7 @@ class PydanticSchemaPlugin:
 
         # Pydantic v2
         if hasattr(model, "model_fields"):
-            for name, f in model.model_fields.items():  # type: ignore[attr-defined]
+            for name, f in model.model_fields.items():
                 ann = getattr(f, "annotation", Any)
                 child_field = FieldDefinition.from_annotation(ann, name=name)
                 schema.properties[name] = generator.generate_schema(child_field)
@@ -45,7 +45,7 @@ class PydanticSchemaPlugin:
 
         # Pydantic v1
         elif hasattr(model, "__fields__"):
-            for name, f in model.__fields__.items():  # type: ignore[attr-defined]
+            for name, f in model.__fields__.items():
                 ann = getattr(f, "outer_type_", Any)
                 child_field = FieldDefinition.from_annotation(ann, name=name)
                 schema.properties[name] = generator.generate_schema(child_field)

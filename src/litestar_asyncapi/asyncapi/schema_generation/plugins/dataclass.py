@@ -36,7 +36,7 @@ class DataclassSchemaPlugin:
             child_field = FieldDefinition.from_annotation(field_type, name=f.name)
             schema.properties[f.name] = generator.generate_schema(child_field)
 
-            has_default = not (f.default is MISSING and f.default_factory is MISSING)  # type: ignore[comparison-overlap]
+            has_default = not (f.default is MISSING and f.default_factory is MISSING)
             if not has_default:
                 required.append(f.name)
 

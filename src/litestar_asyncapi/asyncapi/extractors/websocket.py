@@ -116,7 +116,7 @@ def _apply_decorator_overrides(
 ) -> list[DiscoveredOperation]:
     from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
 
-    raw_metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)  # type: ignore[attr-defined]
+    raw_metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
     if not isinstance(raw_metadata, AsyncAPIMetadata) or not raw_metadata.operations:
         return operations
 
@@ -336,8 +336,8 @@ def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
     if isinstance(value, str):
         stripped = value.strip()
         return stripped or None
-    if hasattr(route_handler, "opt") and isinstance(route_handler.opt, dict):  # type: ignore[attr-defined]
-        opt_value = route_handler.opt.get(name)  # type: ignore[attr-defined]
+    if hasattr(route_handler, "opt") and isinstance(route_handler.opt, dict):
+        opt_value = route_handler.opt.get(name)
         if isinstance(opt_value, str):
             stripped = opt_value.strip()
             return stripped or None

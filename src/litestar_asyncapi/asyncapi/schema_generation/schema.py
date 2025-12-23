@@ -142,7 +142,7 @@ class AsyncAPISchemaGenerator:
             return apply_field_constraints(self._schema_for_annotation(annotation), field_definition)
 
         if is_class_and_subclass(annotation, Enum):
-            values = [e.value for e in annotation]  # type: ignore[operator]
+            values = [e.value for e in annotation]
             schema_types = sorted({_schema_type_for_enum_value(v) for v in values}, key=lambda t: t.value)
             schema = Schema(type=schema_types[0] if len(schema_types) == 1 else schema_types)
             schema.enum = values
