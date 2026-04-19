@@ -117,6 +117,7 @@ def _infer_operations_from_handler(
         return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
 
     operations = _infer_raw_websocket_operations(route_handler)
+    _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
     _apply_docstring_descriptions(route_handler, operations, config=config)
     return _apply_decorator_overrides(
         route_handler, operations, schema_generator=schema_generator, replace_placeholders=True
@@ -358,6 +359,7 @@ def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
             stripped = opt_value.strip()
             return stripped or None
     return None
+
 
 
 def _is_none_return_type(field_definition: FieldDefinition) -> bool:

@@ -86,6 +86,7 @@ def _ensure_unique_operation_id(
     default_operation_id: str,
     used_ids: set[str],
     used_keys: set[str],
+    config: "AsyncAPIConfig",
 ) -> tuple[str, str]:
     base_id = operation_id or default_operation_id
     candidate = base_id
@@ -93,8 +94,22 @@ def _ensure_unique_operation_id(
 
     while True:
         key = _sanitize_operation_id(candidate) or _sanitize_operation_id(default_operation_id)
-        if key and candidate not in used_ids and key not in used_keys:
+        # Use case-insensitive check for IDs to satisfy rigid enterprise tooling
+        candidate_fold = candidate.casefold()
+        key_fold = key.casefold()
+
+        is_id_used = any(id_.casefold() == candidate_fold for id_ in used_ids)
+        is_key_used = any(k.casefold() == key_fold for k in used_keys)
+
+        if not (is_id_used or is_key_used):
             return candidate, key
+
+        if config.strict_uniqueness:
+            raise ImproperlyConfiguredException(
+                f"Duplicate operationId found: {candidate!r} (key: {key!r}). "
+                "Disable 'strict_uniqueness' to allow automatic suffixing."
+            )
+
         suffix += 1
         candidate = f"{base_id}_{suffix}"
 
@@ -145,6 +160,7 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
                 default_operation_id=default_operation_id,
                 used_ids=used_operation_ids,
                 used_keys=used_operation_keys,
+                config=config,
             )
             used_operation_ids.add(operation_id)
             used_operation_keys.add(operation_key)
