@@ -371,6 +371,15 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
               const channels = {channels_json};
               const enableValidation = {validation_enabled};
 
+              function escapeHtml(unsafe) {{
+                return unsafe
+                  .replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/'/g, "&#039;");
+              }}
+
               // DOM elements
               const channelSelect = document.getElementById("channel-select");
               const channelInfo = document.getElementById("channel-info");
@@ -397,12 +406,12 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
                 const path = channelSelect.value;
                 if (path && channels[path]) {{
                   const ch = channels[path];
-                  let info = `<strong>Path:</strong> ${{path}}`;
+                  let info = `<strong>Path:</strong> ${{escapeHtml(path)}}`;
                   if (ch.description) {{
-                    info += `<br><strong>Description:</strong> ${{ch.description}}`;
+                    info += `<br><strong>Description:</strong> ${{escapeHtml(ch.description)}}`;
                   }}
                   if (ch.messages) {{
-                    info += `<br><strong>Messages:</strong> ${{Object.keys(ch.messages).join(", ")}}`;
+                    info += `<br><strong>Messages:</strong> ${{escapeHtml(Object.keys(ch.messages).join(", "))}}`;
                   }}
                   channelInfo.innerHTML = info;
                   channelInfo.style.display = "block";
@@ -431,7 +440,7 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
                   if (filter === "all" || filter === entry.type || (filter === "sent" && entry.type === "sent") || (filter === "received" && entry.type === "received")) {{
                     const line = document.createElement("div");
                     line.className = entry.type;
-                    line.innerHTML = `<span class="timestamp">${{entry.time}}</span>${{entry.message}}`;
+                    line.innerHTML = `<span class="timestamp">${{escapeHtml(entry.time)}}</span>${{escapeHtml(entry.message)}}`;
                     logEl.appendChild(line);
                   }}
                 }});
