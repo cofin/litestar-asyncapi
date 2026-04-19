@@ -17,8 +17,7 @@ __all__ = (
 )
 
 
-def is_union(annotation: Any) -> bool:
-    return get_origin(annotation) in {Union, UnionType}
+from litestar.utils.predicates import is_union
 
 
 def is_literal(annotation: Any) -> bool:

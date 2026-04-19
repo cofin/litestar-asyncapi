@@ -15,7 +15,8 @@ from uuid import UUID
 
 from litestar.types.builtin_types import NoneType
 from litestar.typing import FieldDefinition
-from litestar.utils.predicates import is_class_and_subclass
+from litestar.utils.predicates import is_class_and_subclass, is_optional_union
+from litestar.utils.typing import make_non_optional_union
 
 from litestar_asyncapi.asyncapi.datastructures import SchemaRegistry
 from litestar_asyncapi.asyncapi.schema_generation.plugins.attrs import AttrsSchemaPlugin
@@ -26,7 +27,6 @@ from litestar_asyncapi.asyncapi.schema_generation.plugins.typed_dict import Type
 from litestar_asyncapi.asyncapi.schema_generation.utils import (
     apply_field_constraints,
     create_literal_schema,
-    split_optional_union,
 )
 from litestar_asyncapi.spec import Reference, Schema, SchemaFormat, SchemaType
 
@@ -129,7 +129,14 @@ class AsyncAPISchemaGenerator:
 
         # Union / Optional
         if origin in {Union, UnionType}:
-            union_args, is_optional = split_optional_union(annotation)
+            is_optional = is_optional_union(annotation)
+            non_optional_annotation = make_non_optional_union(annotation)
+            
+            if get_origin(non_optional_annotation) in {Union, UnionType}:
+                union_args = get_args(non_optional_annotation)
+            else:
+                union_args = (non_optional_annotation,)
+
             schemas = [self.generate_schema(FieldDefinition.from_annotation(a)) for a in union_args]
             if is_optional:
                 schemas.append(Schema(type=SchemaType.NULL))
