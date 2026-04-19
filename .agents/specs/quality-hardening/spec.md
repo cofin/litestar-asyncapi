@@ -21,22 +21,23 @@ The plugin is functional but duplicates many patterns from Litestar's OpenAPI im
 ### Phase 1: Canonical Audit & Technical Gap Analysis
 
 #### Task 1.1: Audit WebSocket Discovery Alignment
-- **Location:** `src/litestar_asyncapi/asyncapi/extractors/websocket.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/extractors/websocket.py` [dd2ecf7]
 - **Logic Change:**
+
     - Mirror Litestar's `PathItemFactory.create_path_item`.
     - Check if `WebsocketRouteHandler` has `include_in_schema` in `opt` (since it's missing from the class definition).
     - If missing from `opt`, default to `True` (mirroring Litestar's `resolve_include_in_schema`).
     - Audit `_path_parameters_to_parameters`: Ensure it uses `PathParameterDefinition` correctly (mirroring `litestar._openapi.parameters.create_parameters_for_handler`).
 
 #### Task 1.2: Audit Operation ID Uniqueness & Config
-- **Location:** `src/litestar_asyncapi/asyncapi/generator.py`, `src/litestar_asyncapi/config.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/generator.py`, `src/litestar_asyncapi/config.py` [8b5722f]
 - **Logic Change:**
     - Update `_ensure_unique_operation_id` to use `casefold()` for collision detection.
     - Update `AsyncAPIConfig` to add `strict_uniqueness: bool = False`.
     - If `strict_uniqueness` is True, raise `ImproperlyConfiguredException` on collision instead of suffixing.
 
 #### Task 1.3: Audit Schema Redundancy & Tuple Mapping
-- **Location:** `src/litestar_asyncapi/asyncapi/schema_generation/schema.py`, `utils.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/schema_generation/schema.py`, `utils.py`
 - **Logic Change:**
     - Identify local predicates to replace with `litestar.utils.predicates.is_class_and_subclass`, `is_optional_union`, etc.
     - Plan `prefixItems` implementation for fixed-length tuples (AsyncAPI 3.0 specific).

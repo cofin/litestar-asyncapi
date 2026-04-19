@@ -26,6 +26,7 @@ class Schema(BaseSchemaObject):
 
     # array
     items: "Schema | Reference | None" = None
+    prefix_items: "list[Schema | Reference] | None" = field(default=None, metadata={"alias": "prefixItems"})
     min_items: int | None = None
     max_items: int | None = None
     unique_items: bool | None = None

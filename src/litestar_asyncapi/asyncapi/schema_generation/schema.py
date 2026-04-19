@@ -104,11 +104,10 @@ class AsyncAPISchemaGenerator:
                 items = self.generate_schema(FieldDefinition.from_annotation(args[0]))
                 return apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition)
 
-            items_schemas = [self.generate_schema(FieldDefinition.from_annotation(arg)) for arg in args]
-            items = items_schemas[0] if len(items_schemas) == 1 else Schema(one_of=items_schemas)
+            prefix_items = [self.generate_schema(FieldDefinition.from_annotation(arg)) for arg in args]
             schema = Schema(
                 type=SchemaType.ARRAY,
-                items=items,
+                prefix_items=prefix_items,
                 min_items=len(args),
                 max_items=len(args),
             )
