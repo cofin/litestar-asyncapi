@@ -51,6 +51,9 @@ def extract_websocket_channels(
         if not isinstance(route, WebSocketRoute):
             continue
 
+        if not _should_include_handler(route.route_handler):
+            continue
+
         parameters = _path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
         operations = _infer_operations_from_handler(
             route.route_handler,
@@ -67,6 +70,19 @@ def extract_websocket_channels(
         )
 
     return channels
+
+
+def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
+    """Determine if a websocket route handler should be included in the AsyncAPI schema.
+
+    Checks the 'include_in_schema' option in the handler's 'opt' dictionary, defaulting to True
+    if not explicitly set (mirroring Litestar's HTTP handler behavior).
+    """
+    if hasattr(handler, "opt") and isinstance(handler.opt, dict):
+        include_in_schema = handler.opt.get("include_in_schema")
+        if isinstance(include_in_schema, bool):
+            return include_in_schema
+    return True
 
 
 def _path_parameters_to_parameters(
