@@ -56,9 +56,7 @@ def extract_channels_plugin_channels(
 
     discovered: list[DiscoveredChannel] = []
     if plugin._arbitrary_channels_allowed:
-        channel_name_param = Parameter(
-            schema=schema_generator.generate_schema(FieldDefinition.from_annotation(str)), location="path"
-        )
+        channel_name_param = Parameter(description="The name of the arbitrary channel.")
         discovered.append(
             DiscoveredChannel(
                 address=f"{root_path}{{channel_name}}",

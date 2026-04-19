@@ -90,8 +90,10 @@ def _path_parameters_to_parameters(
 ) -> dict[str, Parameter]:
     parameters: dict[str, Parameter] = {}
     for name, param in path_parameters.items():
-        schema = schema_generator.generate_schema(FieldDefinition.from_annotation(param.type))
-        parameters[name] = Parameter(schema=schema, location="path")
+        # AsyncAPI 3.0 parameters are simplified and always treated as strings.
+        # We include the original type in the description for clarity.
+        type_name = param.type.__name__ if hasattr(param.type, "__name__") else str(param.type)
+        parameters[name] = Parameter(description=f"Path parameter: {name} (type: {type_name})")
     return parameters
 
 
