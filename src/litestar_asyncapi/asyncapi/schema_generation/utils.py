@@ -1,6 +1,5 @@
 from enum import Enum
-from types import UnionType
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any, Literal, get_args, get_origin
 
 from litestar.params import KwargDefinition
 from litestar.types import Empty

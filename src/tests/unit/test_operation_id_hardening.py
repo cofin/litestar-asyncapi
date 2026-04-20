@@ -1,7 +1,6 @@
 import pytest
 from litestar import Litestar, websocket
 from litestar.exceptions import ImproperlyConfiguredException
-from litestar.status_codes import HTTP_200_OK
 
 from litestar_asyncapi import AsyncAPIConfig
 from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
@@ -20,16 +19,16 @@ def test_operation_id_case_insensitive_collision() -> None:
     print(f"HANDLER 1 OPT: {handler1.opt}")
     config = AsyncAPIConfig()
     generator = AsyncAPIGenerator(app, config)
-    
+
     schema = generator.build_asyncapi()
-    
+
     op_ids = [op.operation_id for op in schema.operations.values()]
     print(f"OP IDS: {op_ids}")
-    
+
     # Should have 4 unique IDs, not a collision on 'myop_receive'
     assert len(op_ids) == 4
     # All should be unique case-insensitively
-    assert len({id.casefold() for id in op_ids}) == 4
+    assert len({oid.casefold() for oid in op_ids}) == 4
 
 
 def test_strict_uniqueness_raises_exception() -> None:
@@ -45,6 +44,6 @@ def test_strict_uniqueness_raises_exception() -> None:
     # Assuming we will add strict_uniqueness to AsyncAPIConfig
     config = AsyncAPIConfig(strict_uniqueness=True)
     generator = AsyncAPIGenerator(app, config)
-    
+
     with pytest.raises(ImproperlyConfiguredException, match="Duplicate operationId found"):
         generator.build_asyncapi()

@@ -97,62 +97,23 @@ class AsyncAPISchemaGenerator:
             return apply_field_constraints(create_literal_schema(annotation), field_definition)
 
         if origin is tuple:
-            args = get_args(annotation)
-            if not args:
-                return apply_field_constraints(Schema(type=SchemaType.ARRAY), field_definition)
-            if len(args) == 2 and args[1] is Ellipsis:
-                items = self.generate_schema(FieldDefinition.from_annotation(args[0]))
-                return apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition)
-
-            prefix_items = [self.generate_schema(FieldDefinition.from_annotation(arg)) for arg in args]
-            schema = Schema(
-                type=SchemaType.ARRAY,
-                prefix_items=prefix_items,
-                min_items=len(args),
-                max_items=len(args),
-            )
-            return apply_field_constraints(schema, field_definition)
+            return self._generate_tuple_schema(field_definition)
 
         if origin in {list, set, AbcSequence}:
-            args = get_args(annotation)
-            items = self.generate_schema(FieldDefinition.from_annotation(args[0])) if args else Schema()
-            return apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition)
+            return self._generate_list_schema(field_definition)
 
         if origin in {dict, AbcMapping, AbcMutableMapping}:
-            args = get_args(annotation)
-            value_type = args[1] if len(args) == 2 else Any
-            additional = self.generate_schema(FieldDefinition.from_annotation(value_type))
-            return apply_field_constraints(
-                Schema(type=SchemaType.OBJECT, additional_properties=additional),
-                field_definition,
-            )
+            return self._generate_mapping_schema(field_definition)
 
         # Union / Optional
         if origin in {Union, UnionType}:
-            is_optional = is_optional_union(annotation)
-            non_optional_annotation = make_non_optional_union(annotation)
-            
-            if get_origin(non_optional_annotation) in {Union, UnionType}:
-                union_args = get_args(non_optional_annotation)
-            else:
-                union_args = (non_optional_annotation,)
-
-            schemas = [self.generate_schema(FieldDefinition.from_annotation(a)) for a in union_args]
-            if is_optional:
-                schemas.append(Schema(type=SchemaType.NULL))
-            if len(schemas) == 1:
-                return apply_field_constraints(schemas[0], field_definition)
-            return apply_field_constraints(Schema(one_of=schemas), field_definition)
+            return self._generate_union_schema(field_definition)
 
         if annotation in TYPE_MAP:
             return apply_field_constraints(self._schema_for_annotation(annotation), field_definition)
 
         if is_class_and_subclass(annotation, Enum):
-            values = [e.value for e in annotation]
-            schema_types = sorted({_schema_type_for_enum_value(v) for v in values}, key=lambda t: t.value)
-            schema = Schema(type=schema_types[0] if len(schema_types) == 1 else schema_types)
-            schema.enum = values
-            return apply_field_constraints(schema, field_definition)
+            return self._generate_enum_schema(annotation, field_definition)
 
         for plugin in self.plugins:
             if plugin.supports(field_definition):
@@ -167,6 +128,65 @@ class AsyncAPISchemaGenerator:
                 return cast("Reference", apply_field_constraints(reference, field_definition))
 
         return apply_field_constraints(Schema(), field_definition)
+
+    def _generate_tuple_schema(self, field_definition: FieldDefinition) -> Schema:
+        args = get_args(field_definition.annotation)
+        if not args:
+            return cast(Schema, apply_field_constraints(Schema(type=SchemaType.ARRAY), field_definition))
+        if len(args) == 2 and args[1] is Ellipsis:
+            items = self.generate_schema(FieldDefinition.from_annotation(args[0]))
+            return cast(Schema, apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
+
+        prefix_items = [self.generate_schema(FieldDefinition.from_annotation(arg)) for arg in args]
+        schema = Schema(
+            type=SchemaType.ARRAY,
+            prefix_items=prefix_items,
+            min_items=len(args),
+            max_items=len(args),
+        )
+        return cast(Schema, apply_field_constraints(schema, field_definition))
+
+    def _generate_list_schema(self, field_definition: FieldDefinition) -> Schema:
+        args = get_args(field_definition.annotation)
+        items = self.generate_schema(FieldDefinition.from_annotation(args[0])) if args else Schema()
+        return cast(Schema, apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
+
+    def _generate_mapping_schema(self, field_definition: FieldDefinition) -> Schema:
+        args = get_args(field_definition.annotation)
+        value_type = args[1] if len(args) == 2 else Any
+        additional = self.generate_schema(FieldDefinition.from_annotation(value_type))
+        return cast(
+            Schema,
+            apply_field_constraints(
+                Schema(type=SchemaType.OBJECT, additional_properties=additional),
+                field_definition,
+            ),
+        )
+
+    def _generate_union_schema(self, field_definition: FieldDefinition) -> Schema | Reference:
+        annotation = field_definition.annotation
+        is_optional = is_optional_union(annotation)
+        non_optional_annotation = make_non_optional_union(annotation)
+
+        if get_origin(non_optional_annotation) in {Union, UnionType}:
+            union_args = get_args(non_optional_annotation)
+        else:
+            union_args = (non_optional_annotation,)
+
+        schemas = [self.generate_schema(FieldDefinition.from_annotation(a)) for a in union_args]
+        if is_optional:
+            schemas.append(Schema(type=SchemaType.NULL))
+        if len(schemas) == 1:
+            return apply_field_constraints(schemas[0], field_definition)
+        return apply_field_constraints(Schema(one_of=schemas), field_definition)
+
+    @staticmethod
+    def _generate_enum_schema(annotation: Any, field_definition: FieldDefinition) -> Schema:
+        values = [e.value for e in annotation]
+        schema_types = sorted({_schema_type_for_enum_value(v) for v in values}, key=lambda t: t.value)
+        schema = Schema(type=schema_types[0] if len(schema_types) == 1 else schema_types)
+        schema.enum = values
+        return apply_field_constraints(schema, field_definition)
 
 
 def _schema_type_for_enum_value(value: Any) -> SchemaType:

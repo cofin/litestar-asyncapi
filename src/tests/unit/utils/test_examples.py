@@ -41,7 +41,7 @@ def test_generate_example_for_primitives_and_containers() -> None:
     assert generate_example(FieldDefinition.from_annotation(int), config=config) == 0
     assert generate_example(FieldDefinition.from_annotation(str), config=config) == "string"
     assert generate_example(FieldDefinition.from_annotation(bool), config=config) is False
-    assert generate_example(FieldDefinition.from_annotation(float), config=config) == 0.0
+    assert generate_example(FieldDefinition.from_annotation(float), config=config) == pytest.approx(0.0)
     assert generate_example(FieldDefinition.from_annotation(bytes), config=config) == "bytes"
     assert generate_example(FieldDefinition.from_annotation(list[int]), config=config) == [0]
     assert generate_example(FieldDefinition.from_annotation(dict[str, int]), config=config) == {"key": 0}

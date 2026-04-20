@@ -1,4 +1,6 @@
-from typing import Any, Literal
+from dataclasses import replace
+from typing import Any, Literal, cast
+
 from litestar.params import KwargDefinition
 from litestar.typing import FieldDefinition
 
@@ -7,7 +9,7 @@ from litestar_asyncapi.asyncapi.schema_generation.utils import (
     apply_field_constraints,
     create_literal_schema,
 )
-from litestar_asyncapi.spec import Schema, SchemaType
+from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
 
 def test_schema_type_for_value() -> None:
@@ -22,24 +24,23 @@ def test_schema_type_for_value() -> None:
 
 def test_create_literal_schema() -> None:
     schema = create_literal_schema(Literal["a", 1])
+    assert isinstance(schema.type, list)
     assert set(schema.type) == {SchemaType.STRING, SchemaType.INTEGER}
+    assert schema.enum is not None
     assert set(schema.enum) == {"a", 1}
 
 
 def test_apply_field_constraints_comprehensive() -> None:
-    from dataclasses import replace
-    from litestar.params import KwargDefinition
-    
     schema = Schema()
     field = FieldDefinition.from_annotation(Any)
-    
+
     kwarg = KwargDefinition(
         title="Title",
         description="Desc",
         default="def",
         enum=["a", "b"],
         const=True,
-        examples=["ex"],
+        examples=["ex"],  # type: ignore[arg-type]
         gt=0,
         le=10,
         lt=11,
@@ -51,8 +52,8 @@ def test_apply_field_constraints_comprehensive() -> None:
         pattern=".*",
     )
     field = replace(field, kwarg_definition=kwarg)
-    
-    updated = apply_field_constraints(schema, field)
+
+    updated = cast("Schema", apply_field_constraints(schema, field))
     assert updated.title == "Title"
     assert updated.description == "Desc"
     assert updated.const == "def"
@@ -69,26 +70,19 @@ def test_apply_field_constraints_comprehensive() -> None:
 
 
 def test_apply_field_constraints_list_types() -> None:
-    from dataclasses import replace
-    from litestar.params import KwargDefinition
-    
     schema = Schema(type=[SchemaType.STRING, SchemaType.INTEGER])
     field = replace(FieldDefinition.from_annotation(Any), kwarg_definition=KwargDefinition(min_length=5, ge=1))
-    
-    updated = apply_field_constraints(schema, field)
+
+    updated = cast("Schema", apply_field_constraints(schema, field))
     assert updated.min_length == 5
     assert updated.minimum == 1
 
 
 def test_apply_field_constraints_reference() -> None:
-    from litestar_asyncapi.spec import Reference
-    from dataclasses import replace
-    from litestar.params import KwargDefinition
-    
     ref = Reference(ref="#/components/schemas/User")
     field = replace(FieldDefinition.from_annotation(Any), kwarg_definition=KwargDefinition(title="Title"))
-    
-    updated = apply_field_constraints(ref, field)
+
+    updated = cast("Schema", apply_field_constraints(ref, field))
     assert isinstance(updated, Schema)
     assert updated.all_of is not None
     assert updated.all_of[0] == ref

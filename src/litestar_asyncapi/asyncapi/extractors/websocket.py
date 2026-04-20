@@ -77,6 +77,9 @@ def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
 
     Checks the 'include_in_schema' option in the handler's 'opt' dictionary, defaulting to True
     if not explicitly set (mirroring Litestar's HTTP handler behavior).
+
+    Returns:
+        True if the handler should be included in the schema, False otherwise.
     """
     if hasattr(handler, "opt") and isinstance(handler.opt, dict):
         include_in_schema = handler.opt.get("include_in_schema")
@@ -361,7 +364,6 @@ def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
             stripped = opt_value.strip()
             return stripped or None
     return None
-
 
 
 def _is_none_return_type(field_definition: FieldDefinition) -> bool:

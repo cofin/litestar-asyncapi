@@ -46,56 +46,57 @@ The plugin is functional but duplicates many patterns from Litestar's OpenAPI im
 ### Phase 2: Implementation of Gaps & Alignment
 
 #### Task 2.1: Implement High-Fidelity Tuple Mapping
-- **Location:** `src/litestar_asyncapi/asyncapi/schema_generation/schema.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/schema_generation/schema.py` [21c5eaa]
 - **Change:**
     - In `generate_schema` for `origin is tuple`:
     - If fixed-length (not `...`), use `prefixItems` instead of `items` with `one_of`.
     - Set `minItems` and `maxItems` based on tuple length.
 
 #### Task 2.2: Implement Parameter Schema Filtering
-- **Location:** `src/litestar_asyncapi/asyncapi/extractors/websocket.py` (or shared util)
+- [x] **Location:** `src/litestar_asyncapi/spec/channel.py` [2d64a52]
 - **Change:**
-    - Implement `_filter_parameter_schema_v3(schema: Schema) -> Schema`.
-    - Recursively strip disallowed fields for AsyncAPI 3.0 Parameters.
+    - Refactored `Parameter` to align with AsyncAPI 3.0.0 (removed `schema`, added `enum`, `default`, `examples`).
+    - Updated extractors to populate `description` with type info instead of a full schema.
 
 #### Task 2.3: Integrate Litestar Internal Utilities
-- **Location:** `src/litestar_asyncapi/asyncapi/schema_generation/schema.py`, `utils.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/schema_generation/schema.py`, `utils.py` [5d75f0b]
 - **Change:**
     - Replace `split_optional_union` with `litestar.utils.typing.make_non_optional_union` and `is_optional_union`.
     - Replace local type-mapping logic with `litestar.utils.helpers.get_name` for component keys.
 
 #### Task 2.4: Fix Discovery Gaps (Include In Schema)
-- **Location:** `src/litestar_asyncapi/asyncapi/extractors/websocket.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/extractors/websocket.py` [dd2ecf7]
 - **Change:**
     - Implement `_should_include_handler(handler: WebsocketRouteHandler) -> bool`.
     - Look for `include_in_schema` in `handler.opt`.
 
 #### Task 2.5: Implement Strict Operation ID Mode
-- **Location:** `src/litestar_asyncapi/asyncapi/generator.py`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/generator.py` [8b5722f]
 - **Change:**
     - Enforce Config's `strict_uniqueness`.
 
 #### Task 2.6: Secure UI Renderers
-- **Location:** `src/litestar_asyncapi/plugins.py` (or individual render plugins)
+- [x] **Location:** `src/litestar_asyncapi/plugins.py` [f559872]
 - **Change:**
     - Ensure all dynamic values (title, description) passed to HTML templates are escaped using `html.escape`.
+    - Implemented `escapeHtml` helper in playground JS and used it for channel info and message history.
 
 ### Phase 3: Verification & Coverage
 
 #### Task 3.1: Reach 90%+ Test Coverage
-- **Location:** `src/litestar_asyncapi/asyncapi/`
+- [x] **Location:** `src/litestar_asyncapi/asyncapi/` [c526a35]
 - **Action:**
     - Add tests for `tag.py` and `correlation_id.py` specifically.
     - Add tests for new `prefixItems` and `strict_uniqueness` logic.
 
 #### Task 3.2: Integration Test for Nested Routers
-- **Location:** `tests/integration/test_discovery.py`
+- [x] **Location:** `tests/integration/test_discovery.py` [6509bab]
 - **Action:**
     - Create a test case with nested Routers and verify WebSocket discovery.
 
 #### Task 3.3: Manual Verification Protocol
-- **Action:**
-    - Execute the manual verification protocol defined in `workflow.md`.
+- [x] **Action:**
+    - Execute the manual verification protocol defined in `workflow.md`. [b4e8809]
 
 ## Acceptance Criteria
 - [ ] 100% AsyncAPI 3.0.0 meta-schema validation for generated documents.

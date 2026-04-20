@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, get_args, get_origin
 from litestar.params import KwargDefinition
 from litestar.types import Empty
 from litestar.typing import FieldDefinition
-
 from litestar.utils.predicates import is_optional_union, is_union
 from litestar.utils.typing import make_non_optional_union
 

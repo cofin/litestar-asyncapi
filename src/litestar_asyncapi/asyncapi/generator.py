@@ -105,10 +105,8 @@ def _ensure_unique_operation_id(
             return candidate, key
 
         if config.strict_uniqueness:
-            raise ImproperlyConfiguredException(
-                f"Duplicate operationId found: {candidate!r} (key: {key!r}). "
-                "Disable 'strict_uniqueness' to allow automatic suffixing."
-            )
+            msg = f"Duplicate operationId found: {candidate!r} (key: {key!r}). Disable 'strict_uniqueness' to allow automatic suffixing."
+            raise ImproperlyConfiguredException(msg)
 
         suffix += 1
         candidate = f"{base_id}_{suffix}"

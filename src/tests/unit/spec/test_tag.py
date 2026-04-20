@@ -1,4 +1,4 @@
-from litestar_asyncapi.spec import Tag, ExternalDocumentation
+from litestar_asyncapi.spec import ExternalDocumentation, Tag
 
 
 def test_tag_to_schema() -> None:

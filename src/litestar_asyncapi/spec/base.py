@@ -30,14 +30,6 @@ def _normalize_key(key: str) -> str:
 
 
 def _normalize_value(value: Any) -> Any:
-    """Normalize values recursively for schema serialization.
-
-    Args:
-        value: Any value to serialize.
-
-    Returns:
-        A JSON/YAML serializable value (nested spec objects converted to dictionaries).
-    """
     if isinstance(value, BaseSchemaObject):
         return value.to_schema()
     if is_dataclass(value) and not isinstance(value, type):

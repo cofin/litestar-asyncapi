@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from litestar_asyncapi.spec.external_docs import ExternalDocumentation
     from litestar_asyncapi.spec.message import Message
     from litestar_asyncapi.spec.reference import Reference
-    from litestar_asyncapi.spec.schema import Schema
     from litestar_asyncapi.spec.tag import Tag
 
 __all__ = ("Channel", "Parameter")

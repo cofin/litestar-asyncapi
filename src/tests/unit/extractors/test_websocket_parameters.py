@@ -4,7 +4,6 @@ import pytest
 
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
-from litestar_asyncapi.spec import Schema, SchemaFormat, SchemaType
 
 if TYPE_CHECKING:
     from litestar import WebSocket
@@ -31,4 +30,3 @@ def test_path_parameters_are_converted_to_asyncapi_parameters() -> None:
 
     when_param = channel.parameters["when"]
     assert "date" in when_param.description.lower()
-

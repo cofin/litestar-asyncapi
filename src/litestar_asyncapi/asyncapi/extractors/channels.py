@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, cast
 
 from litestar.channels.plugin import ChannelsPlugin
-from litestar.typing import FieldDefinition
 
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
