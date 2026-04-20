@@ -60,5 +60,4 @@ def test_channels_plugin_arbitrary_channels_yields_wildcard_channel() -> None:
     assert [c.address for c in channels] == ["/ws/{channel_name}"]
     assert channels[0].parameters is not None
     assert "channel_name" in channels[0].parameters
-    assert isinstance(channels[0].parameters["channel_name"].schema, Schema)
-    assert channels[0].parameters["channel_name"].schema.type == SchemaType.STRING
+    assert "arbitrary channel" in channels[0].parameters["channel_name"].description

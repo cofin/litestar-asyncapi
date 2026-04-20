@@ -6,7 +6,8 @@ from litestar.params import KwargDefinition
 from litestar.types import Empty
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi.asyncapi.schema_generation.utils import is_union, split_optional_union
+from litestar.utils.predicates import is_optional_union, is_union
+from litestar.utils.typing import make_non_optional_union
 
 if TYPE_CHECKING:
     from litestar_asyncapi import AsyncAPIConfig
@@ -157,11 +158,13 @@ def _default_factory_for_model(annotation: Any) -> Any | None:
 
 
 def _basic_example_for_annotation(annotation: Any) -> Any | None:
+    if is_optional_union(annotation):
+        non_none = make_non_optional_union(annotation)
+        return _basic_example_for_annotation(non_none)
+
     if is_union(annotation):
-        non_none, _ = split_optional_union(annotation)
-        if non_none:
-            return _basic_example_for_annotation(non_none[0])
-        return None
+        union_args = get_args(annotation)
+        return _basic_example_for_annotation(union_args[0])
 
     origin = get_origin(annotation)
     if origin in {list, tuple, set}:

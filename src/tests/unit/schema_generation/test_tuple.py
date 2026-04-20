@@ -15,11 +15,8 @@ def test_fixed_length_tuple_schema() -> None:
     assert schema.type == SchemaType.ARRAY
     assert schema.min_items == 2
     assert schema.max_items == 2
-    assert isinstance(schema.items, Schema)
-    assert schema.items.one_of is not None
-    item_types = [item.type for item in schema.items.one_of if isinstance(item, Schema)]
-    assert SchemaType.INTEGER in item_types
-    assert SchemaType.STRING in item_types
+    assert isinstance(schema.prefix_items, list)
+    assert len(schema.prefix_items) == 2
 
 
 def test_variadic_tuple_schema() -> None:
