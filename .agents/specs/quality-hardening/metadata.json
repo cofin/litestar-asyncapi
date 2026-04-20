@@ -1,8 +1,0 @@
-{
-  "flow_id": "quality-hardening",
-  "type": "task",
-  "status": "new",
-  "created_at": "2026-04-19T10:05:00Z",
-  "updated_at": "2026-04-19T10:05:00Z",
-  "description": "Audit and harden the AsyncAPI implementation for correctness, spec alignment, and test coverage."
-}
