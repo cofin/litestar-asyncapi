@@ -44,7 +44,7 @@ class AsyncAPIGenerator:
         _populate_operations(document, discovered, config=self.config)
 
         schemas = schema_generator.schema_registry.generate_components_schemas()
-        component_schemas: "dict[str, Schema | Reference]" = dict(schemas)
+        component_schemas: dict[str, Schema | Reference] = dict(schemas)
         document.components = Components(
             schemas=component_schemas,
             operation_traits=self.config.to_operation_traits(),
@@ -86,6 +86,7 @@ def _ensure_unique_operation_id(
     default_operation_id: str,
     used_ids: set[str],
     used_keys: set[str],
+    config: "AsyncAPIConfig",
 ) -> tuple[str, str]:
     base_id = operation_id or default_operation_id
     candidate = base_id
@@ -93,8 +94,20 @@ def _ensure_unique_operation_id(
 
     while True:
         key = _sanitize_operation_id(candidate) or _sanitize_operation_id(default_operation_id)
-        if key and candidate not in used_ids and key not in used_keys:
+        # Use case-insensitive check for IDs to satisfy rigid enterprise tooling
+        candidate_fold = candidate.casefold()
+        key_fold = key.casefold()
+
+        is_id_used = any(id_.casefold() == candidate_fold for id_ in used_ids)
+        is_key_used = any(k.casefold() == key_fold for k in used_keys)
+
+        if not (is_id_used or is_key_used):
             return candidate, key
+
+        if config.strict_uniqueness:
+            msg = f"Duplicate operationId found: {candidate!r} (key: {key!r}). Disable 'strict_uniqueness' to allow automatic suffixing."
+            raise ImproperlyConfiguredException(msg)
+
         suffix += 1
         candidate = f"{base_id}_{suffix}"
 
@@ -110,7 +123,9 @@ def _ensure_unique_message_key(message_key: str, used_keys: set[str]) -> str:
 
 
 def _discover_channels(
-    app: "Litestar", config: "AsyncAPIConfig", schema_generator: AsyncAPISchemaGenerator
+    app: "Litestar",
+    config: "AsyncAPIConfig",
+    schema_generator: AsyncAPISchemaGenerator,
 ) -> list[Any]:
     discovered: list[Any] = []
     if config.include_websocket_routes:
@@ -145,6 +160,7 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
                 default_operation_id=default_operation_id,
                 used_ids=used_operation_ids,
                 used_keys=used_operation_keys,
+                config=config,
             )
             used_operation_ids.add(operation_id)
             used_operation_keys.add(operation_key)
@@ -165,8 +181,8 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
                 channel.messages[message_key] = message
                 messages = [
                     Reference(
-                        ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}"
-                    )
+                        ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}",
+                    ),
                 ]
 
             operation_trait_refs = (

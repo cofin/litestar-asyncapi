@@ -1,6 +1,5 @@
 from enum import Enum
-from types import UnionType
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any, Literal, get_args, get_origin
 
 from litestar.params import KwargDefinition
 from litestar.types import Empty
@@ -13,12 +12,10 @@ __all__ = (
     "create_literal_schema",
     "is_literal",
     "is_union",
-    "split_optional_union",
 )
 
 
-def is_union(annotation: Any) -> bool:
-    return get_origin(annotation) in {Union, UnionType}
+from litestar.utils.predicates import is_union
 
 
 def is_literal(annotation: Any) -> bool:
@@ -71,24 +68,20 @@ def create_literal_schema(annotation: Any, *, include_null: bool = False) -> Sch
     return schema
 
 
-def split_optional_union(annotation: Any) -> tuple[list[Any], bool]:
-    """Return (non_none_args, is_optional)."""
-    args = list(get_args(annotation))
-    none_type = type(None)
-    is_optional = any(a is none_type for a in args)
-    non_none = [a for a in args if a is not none_type]
-    return non_none, is_optional
-
-
 def _schema_allows_type(schema: Schema, allowed: set[SchemaType]) -> bool:
     if schema.type is None:
-        return False
+        return True
     if isinstance(schema.type, list):
         return any(t in allowed for t in schema.type)
     return schema.type in allowed
 
 
 def _apply_constraints_to_schema(schema: Schema, kwarg_definition: KwargDefinition) -> None:
+    if kwarg_definition.title is not None:
+        schema.title = kwarg_definition.title
+    if kwarg_definition.description is not None:
+        schema.description = kwarg_definition.description
+
     if _schema_allows_type(schema, {SchemaType.STRING}):
         if kwarg_definition.min_length is not None:
             schema.min_length = kwarg_definition.min_length
@@ -131,6 +124,8 @@ def _has_supported_constraints(kwarg_definition: KwargDefinition) -> bool:
         any(
             attr is not None
             for attr in (
+                kwarg_definition.title,
+                kwarg_definition.description,
                 kwarg_definition.gt,
                 kwarg_definition.ge,
                 kwarg_definition.lt,

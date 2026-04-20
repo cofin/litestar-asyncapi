@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from litestar_asyncapi.spec.external_docs import ExternalDocumentation
     from litestar_asyncapi.spec.message import Message
     from litestar_asyncapi.spec.reference import Reference
-    from litestar_asyncapi.spec.schema import Schema
     from litestar_asyncapi.spec.tag import Tag
 
 __all__ = ("Channel", "Parameter")
@@ -15,11 +14,14 @@ __all__ = ("Channel", "Parameter")
 
 @dataclass(slots=True)
 class Parameter(BaseSchemaObject):
-    """A channel parameter extracted from an address template."""
+    """AsyncAPI 3.0 Parameter object."""
 
     description: str | None = None
-    schema: "Schema | Reference | None" = None
+    enum: list[str] | None = None
+    default: str | None = None
+    examples: list[str] | None = None
     location: str | None = None
+
     extensions: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -28,23 +30,8 @@ class Parameter(BaseSchemaObject):
 
     def to_schema(self) -> dict[str, Any]:
         schema = BaseSchemaObject.to_schema(self)
-        if isinstance(schema.get("schema"), dict):
-            schema["schema"] = _filter_parameter_schema(schema["schema"])
         schema.update(self.extensions)
         return schema
-
-
-def _filter_parameter_schema(schema: dict[str, Any]) -> dict[str, Any]:
-    allowed = {
-        "$ref",
-        "type",
-        "format",
-        "enum",
-        "default",
-        "examples",
-        "description",
-    }
-    return {key: value for key, value in schema.items() if key in allowed}
 
 
 @dataclass(slots=True)

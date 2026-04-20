@@ -16,5 +16,5 @@ def test_operation_serialization() -> None:
     schema = operation.to_schema()
     assert schema["action"] == "send"
     assert schema["channel"]["$ref"] == "#/channels/chat"
-    assert "operationId" not in schema
+    assert schema["operationId"] == "sendChat"
     assert schema["messages"][0]["name"] == "Chat"

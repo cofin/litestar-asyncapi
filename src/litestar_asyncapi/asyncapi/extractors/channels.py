@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, cast
 
 from litestar.channels.plugin import ChannelsPlugin
-from litestar.typing import FieldDefinition
 
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
@@ -21,7 +20,9 @@ __all__ = ("extract_channels_plugin_channels",)
 
 
 def extract_channels_plugin_channels(
-    app: "Litestar", *, schema_generator: "AsyncAPISchemaGenerator"
+    app: "Litestar",
+    *,
+    schema_generator: "AsyncAPISchemaGenerator",
 ) -> list[DiscoveredChannel]:
     """Extract channels from Litestar's ChannelsPlugin (best-effort).
 
@@ -56,16 +57,14 @@ def extract_channels_plugin_channels(
 
     discovered: list[DiscoveredChannel] = []
     if plugin._arbitrary_channels_allowed:
-        channel_name_param = Parameter(
-            schema=schema_generator.generate_schema(FieldDefinition.from_annotation(str)), location="path"
-        )
+        channel_name_param = Parameter(description="The name of the arbitrary channel.")
         discovered.append(
             DiscoveredChannel(
                 address=f"{root_path}{{channel_name}}",
                 source=DiscoverySource.CHANNELS_PLUGIN,
                 parameters={"channel_name": channel_name_param},
                 operations=[send_operation],
-            )
+            ),
         )
         return discovered
 

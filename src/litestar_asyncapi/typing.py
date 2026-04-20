@@ -4,7 +4,6 @@ This module is the supported import location for typing shims and `*_INSTALLED` 
 Implementation details live in `litestar_asyncapi._typing`.
 """
 
-# ruff: noqa: A005
 from litestar_asyncapi._typing import (
     ATTRS_INSTALLED,
     MSGSPEC_INSTALLED,

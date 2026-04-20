@@ -41,6 +41,9 @@ class AsyncAPIConfig:
     random_seed: int | None = None
     """Optional random seed for deterministic example generation."""
 
+    strict_uniqueness: bool = False
+    """Whether to raise an exception on operationId collision instead of suffixing."""
+
     include_websocket_routes: bool = True
     """Whether to include websocket routes discovered from the application."""
 

@@ -9,7 +9,7 @@ def test_components_serialization() -> None:
     components = Components(
         schemas={"Foo": Schema(type=SchemaType.OBJECT)},
         security_schemes={
-            "ApiKeyAuth": SecurityScheme(type=SecuritySchemeType.API_KEY, name="X-API-Key", in_="header")
+            "ApiKeyAuth": SecurityScheme(type=SecuritySchemeType.API_KEY, name="X-API-Key", in_="header"),
         },
     )
 

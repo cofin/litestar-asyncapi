@@ -25,7 +25,10 @@ class TypedDictSchemaPlugin:
 
     @staticmethod
     def populate_component_schema(
-        *, schema: Schema, field_definition: FieldDefinition, generator: "AsyncAPISchemaGenerator"
+        *,
+        schema: Schema,
+        field_definition: FieldDefinition,
+        generator: "AsyncAPISchemaGenerator",
     ) -> None:
         td = field_definition.annotation
         annotations: dict[str, Any] = getattr(td, "__annotations__", {})
@@ -49,9 +52,7 @@ class TypedDictSchemaPlugin:
             origin = typing_get_origin(ann)
             if origin in {getattr(typing, "NotRequired", NotRequired), NotRequired}:
                 inferred_optional.add(name)
-            elif origin in {getattr(typing, "Required", Required), Required}:
-                inferred_required.add(name)
-            elif total:
+            elif origin in {getattr(typing, "Required", Required), Required} or total:
                 inferred_required.add(name)
             else:
                 inferred_optional.add(name)
@@ -78,10 +79,14 @@ class TypedDictSchemaPlugin:
 
     @staticmethod
     def create_inline_schema(
-        *, field_definition: FieldDefinition, generator: "AsyncAPISchemaGenerator"
+        *,
+        field_definition: FieldDefinition,
+        generator: "AsyncAPISchemaGenerator",
     ) -> Schema | Reference:
         component_schema = Schema()
         TypedDictSchemaPlugin.populate_component_schema(
-            schema=component_schema, field_definition=field_definition, generator=generator
+            schema=component_schema,
+            field_definition=field_definition,
+            generator=generator,
         )
         return component_schema

@@ -53,7 +53,7 @@ class Operation(BaseSchemaObject):
 
     @property
     def _exclude_fields(self) -> set[str]:
-        return {"extensions", "operation_id"}
+        return {"extensions"}
 
     def to_schema(self) -> dict[str, Any]:
         schema = BaseSchemaObject.to_schema(self)
