@@ -132,10 +132,10 @@ class AsyncAPISchemaGenerator:
     def _generate_tuple_schema(self, field_definition: FieldDefinition) -> Schema:
         args = get_args(field_definition.annotation)
         if not args:
-            return cast(Schema, apply_field_constraints(Schema(type=SchemaType.ARRAY), field_definition))
+            return cast("Schema", apply_field_constraints(Schema(type=SchemaType.ARRAY), field_definition))
         if len(args) == 2 and args[1] is Ellipsis:
             items = self.generate_schema(FieldDefinition.from_annotation(args[0]))
-            return cast(Schema, apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
+            return cast("Schema", apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
 
         prefix_items = [self.generate_schema(FieldDefinition.from_annotation(arg)) for arg in args]
         schema = Schema(
@@ -144,19 +144,19 @@ class AsyncAPISchemaGenerator:
             min_items=len(args),
             max_items=len(args),
         )
-        return cast(Schema, apply_field_constraints(schema, field_definition))
+        return cast("Schema", apply_field_constraints(schema, field_definition))
 
     def _generate_list_schema(self, field_definition: FieldDefinition) -> Schema:
         args = get_args(field_definition.annotation)
         items = self.generate_schema(FieldDefinition.from_annotation(args[0])) if args else Schema()
-        return cast(Schema, apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
+        return cast("Schema", apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
 
     def _generate_mapping_schema(self, field_definition: FieldDefinition) -> Schema:
         args = get_args(field_definition.annotation)
         value_type = args[1] if len(args) == 2 else Any
         additional = self.generate_schema(FieldDefinition.from_annotation(value_type))
         return cast(
-            Schema,
+            "Schema",
             apply_field_constraints(
                 Schema(type=SchemaType.OBJECT, additional_properties=additional),
                 field_definition,
