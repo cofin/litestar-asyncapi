@@ -71,3 +71,19 @@ def test_websocket_routes_discovered_from_nested_router() -> None:
 
     channels = extract_websocket_channels(app, schema_generator=gen)
     assert {c.address for c in channels} == {"/api/nested"}
+
+
+def test_websocket_routes_discovered_from_deeply_nested_router() -> None:
+    from litestar import Litestar, Router, websocket
+
+    @websocket("/deep")
+    async def deep(socket: "WebSocket") -> None:
+        return None
+
+    inner = Router(path="/inner", route_handlers=[deep])
+    outer = Router(path="/outer", route_handlers=[inner])
+    app = Litestar(route_handlers=[outer])
+    gen = AsyncAPISchemaGenerator()
+
+    channels = extract_websocket_channels(app, schema_generator=gen)
+    assert {c.address for c in channels} == {"/outer/inner/deep"}
