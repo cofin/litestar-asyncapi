@@ -22,7 +22,7 @@ def test_config_to_servers_accepts_server_objects_and_dicts() -> None:
         servers={
             "local": Server(host="localhost:8000", protocol="ws"),
             "prod": {"host": "example.com", "protocol": "wss"},
-        }
+        },
     )
     servers = config.to_servers()
     assert set(servers) == {"local", "prod"}

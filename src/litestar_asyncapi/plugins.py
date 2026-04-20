@@ -62,7 +62,7 @@ class AsyncAPIRenderPlugin(ABC):
         """Render the output."""
         raise NotImplementedError
 
-    def receive_router(self, router: "Router") -> None:  # noqa: PLR6301
+    def receive_router(self, router: "Router") -> None:
         """Receive the router used to serve docs routes."""
         return
 
@@ -103,7 +103,7 @@ class YamlRenderPlugin(AsyncAPIRenderPlugin):
     ) -> None:
         super().__init__(path=path, media_type=media_type, **kwargs)
 
-    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:  # noqa: PLR6301
+    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
         builtins = msgspec.to_builtins(
             asyncapi_schema,
             enc_hook=get_serializer(request.route_handler.resolve_type_encoders()),

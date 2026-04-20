@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "litestar[standard]",
+#     "litestar-asyncapi",
+# ]
+# [tool.uv.sources]
+# litestar-asyncapi = { path = "../../.." }
+# ///
 """Error handling example demonstrating WebSocket error scenarios.
 
 This example shows how WebSocket handlers can gracefully handle various

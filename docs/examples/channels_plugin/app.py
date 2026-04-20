@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "litestar[standard]",
+#     "litestar-asyncapi",
+# ]
+# [tool.uv.sources]
+# litestar-asyncapi = { path = "../../.." }
+# ///
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 

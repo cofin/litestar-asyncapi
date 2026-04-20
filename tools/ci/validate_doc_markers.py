@@ -1,4 +1,4 @@
-"Validator for ``# start-example`` / ``# end-example`` marker blocks.
+"""Validator for ``# start-example`` / ``# end-example`` marker blocks.
 
 Walks ``docs/examples/`` and, for every Python file containing at least one
 marker pair, extracts the block between the markers, dedents it (so a block
@@ -13,7 +13,7 @@ Usage::
 
 Exits ``0`` when every marker block is syntactically valid standalone Python,
 ``1`` otherwise. Prints a per-file summary in either case.
-"
+"""
 
 import sys
 import textwrap
@@ -65,7 +65,7 @@ def validate_file(path: Path) -> list[str]:
     for start_line, _end_line, block in blocks:
         snippet = textwrap.dedent(block)
         try:
-            compile(snippet, f"<{path}:{start_line}>")
+            compile(snippet, f"<{path}:{start_line}>", "exec")
         except SyntaxError as exc:
             errors.append(f"{path}:{start_line}: snippet does not compile: {exc}")
     return errors
@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     files = walk(root)
     if not files:
         sys.stdout.write(f"validate_doc_markers: no marker blocks found under {root}\n")
-        return 0 # Not an error if no markers yet
+        return 0  # Not an error if no markers yet
 
     all_errors: list[str] = []
     for path in files:

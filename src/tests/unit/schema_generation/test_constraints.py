@@ -11,7 +11,8 @@ pytestmark = pytest.mark.anyio
 def test_string_constraints_are_applied() -> None:
     gen = AsyncAPISchemaGenerator()
     field = FieldDefinition.from_annotation(
-        str, kwarg_definition=Parameter(min_length=2, max_length=5, pattern="^[a-z]+$")
+        str,
+        kwarg_definition=Parameter(min_length=2, max_length=5, pattern="^[a-z]+$"),
     )
     schema = gen.generate_schema(field)
 

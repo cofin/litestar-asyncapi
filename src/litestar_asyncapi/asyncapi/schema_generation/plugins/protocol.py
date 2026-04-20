@@ -15,13 +15,20 @@ class AsyncAPISchemaPluginProtocol(Protocol):
         ...
 
     def populate_component_schema(
-        self, *, schema: "Schema", field_definition: "FieldDefinition", generator: "AsyncAPISchemaGenerator"
+        self,
+        *,
+        schema: "Schema",
+        field_definition: "FieldDefinition",
+        generator: "AsyncAPISchemaGenerator",
     ) -> None:
         """Populate the provided component schema in-place."""
         ...
 
     def create_inline_schema(
-        self, *, field_definition: "FieldDefinition", generator: "AsyncAPISchemaGenerator"
+        self,
+        *,
+        field_definition: "FieldDefinition",
+        generator: "AsyncAPISchemaGenerator",
     ) -> "Schema | Reference":
         """Create an inline schema for a field definition (no component registration)."""
         ...

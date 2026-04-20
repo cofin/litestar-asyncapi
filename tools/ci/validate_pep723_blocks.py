@@ -16,8 +16,6 @@ The script exits non-zero on any failure so it can be wired into CI and the
 ``validate-pep723`` Makefile target.
 """
 
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
@@ -30,7 +28,14 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
 ROOT = Path(__file__).resolve().parents[2]
 
 # This will be populated in Phase 3
-EXAMPLES: tuple[Path, ...] = ()
+EXAMPLES: tuple[Path, ...] = (
+    ROOT / "docs/examples/channels_plugin/app.py",
+    ROOT / "docs/examples/decorator_overrides/app.py",
+    ROOT / "docs/examples/error_handling/app.py",
+    ROOT / "docs/examples/htmx_websocket/app.py",
+    ROOT / "docs/examples/websocket_listener/app.py",
+    ROOT / "docs/examples/websocket_stream/app.py",
+)
 
 _BLOCK_RE = re.compile(
     r"(?ms)^# /// script\s*\n(?P<body>(?:^#(?: .*|)\n)+?)^# ///\s*$",

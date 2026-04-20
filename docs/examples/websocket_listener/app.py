@@ -1,38 +1,35 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "litestar[standard]",
+#     "litestar-asyncapi",
+# ]
+# [tool.uv.sources]
+# litestar-asyncapi = { path = "../../.." }
+# ///
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from litestar import Litestar, Response, get, websocket
+from litestar import Litestar, Response, get, websocket_listener
 from litestar.enums import MediaType
-from litestar.exceptions import WebSocketDisconnect
 
-from litestar_asyncapi import AsyncAPIPlugin, asyncapi_message, asyncapi_operation
-from litestar_asyncapi.spec import OperationAction
+from litestar_asyncapi import AsyncAPIPlugin
 
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-__all__ = ("Incoming", "handler", "playground")
+__all__ = ("ChatMessage", "chat_listener", "playground")
 
 
 @dataclass
-class Incoming:
-    value: int
+class ChatMessage:
+    room: str
+    text: str
 
 
-@asyncapi_operation(action=OperationAction.RECEIVE, operation_id="incoming_receive", summary="Inbound messages")
-@asyncapi_message(action="receive", payload=Incoming, name="InboundPayload", summary="Inbound payload")
-@websocket("/ws/overrides")
-async def handler(socket: "WebSocket") -> None:
-    """Handle incoming WebSocket messages with decorator overrides."""
-    await socket.accept()
-    try:
-        while True:
-            data = await socket.receive_json()
-            incoming = Incoming(**data)
-            response = {"received": incoming.value, "status": "processed"}
-            await socket.send_json(response)
-    except WebSocketDisconnect:
-        pass
+@websocket_listener("/ws/chat", signature_namespace={"ChatMessage": ChatMessage})
+async def chat_listener(socket: "WebSocket", data: ChatMessage) -> ChatMessage:
+    return ChatMessage(room=data.room, text=f"echo: {data.text}")
 
 
 @get("/", sync_to_thread=False)
@@ -43,7 +40,7 @@ def playground() -> Response[str]:
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>AsyncAPI Decorator Overrides</title>
+        <title>AsyncAPI WebSocket Listener</title>
         <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
         <style>
           body { padding: 2rem; }
@@ -53,8 +50,8 @@ def playground() -> Response[str]:
       </head>
       <body>
         <main class="container">
-          <h1>Decorator Overrides Playground</h1>
-          <p>Connect to <code>/ws/overrides</code> and send JSON payloads.</p>
+          <h1>WebSocket Listener Playground</h1>
+          <p>Connect to <code>/ws/chat</code> and send JSON payloads.</p>
           <p>
             <a href="/asyncapi/" target="_blank" rel="noreferrer">AsyncAPI UI</a> ·
             <a href="/asyncapi/asyncapi.json" target="_blank" rel="noreferrer">AsyncAPI JSON</a> ·
@@ -67,7 +64,7 @@ def playground() -> Response[str]:
           </div>
 
           <label for="payload">Payload (JSON)</label>
-          <textarea id="payload">{ "value": 123 }</textarea>
+          <textarea id="payload">{ "room": "general", "text": "hello" }</textarea>
           <button id="send">Send</button>
 
           <h2>Log</h2>
@@ -86,7 +83,7 @@ def playground() -> Response[str]:
 
           function wsUrl() {
             const scheme = location.protocol === "https:" ? "wss" : "ws";
-            return `${scheme}://${location.host}/ws/overrides`;
+            return `${scheme}://${location.host}/ws/chat`;
           }
 
           document.getElementById("connect").addEventListener("click", () => {
@@ -124,4 +121,4 @@ def playground() -> Response[str]:
     return Response(html.strip(), media_type=MediaType.HTML)
 
 
-app = Litestar(route_handlers=[playground, handler], plugins=[AsyncAPIPlugin()])
+app = Litestar(route_handlers=[playground, chat_listener], plugins=[AsyncAPIPlugin()])

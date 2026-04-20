@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "litestar[standard]",
+#     "litestar-asyncapi",
+# ]
+# [tool.uv.sources]
+# litestar-asyncapi = { path = "../../.." }
+# ///
 import json
 from dataclasses import dataclass
 from html import escape

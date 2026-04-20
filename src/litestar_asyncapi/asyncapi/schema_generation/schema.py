@@ -73,7 +73,7 @@ class AsyncAPISchemaGenerator:
 
     def __init__(self, *, plugins: "Sequence[AsyncAPISchemaPluginProtocol] | None" = None) -> None:
         self.schema_registry = SchemaRegistry()
-        self.plugins: "list[AsyncAPISchemaPluginProtocol]" = list(
+        self.plugins: list[AsyncAPISchemaPluginProtocol] = list(
             plugins
             if plugins is not None
             else (
@@ -82,7 +82,7 @@ class AsyncAPISchemaGenerator:
                 DataclassSchemaPlugin(),
                 MsgspecSchemaPlugin(),
                 TypedDictSchemaPlugin(),
-            )
+            ),
         )
 
     @staticmethod
@@ -120,7 +120,9 @@ class AsyncAPISchemaGenerator:
                 # Always componentize supported "model" types.
                 component_schema = self.schema_registry.get_schema_for_field_definition(field_definition)
                 plugin.populate_component_schema(
-                    schema=component_schema, field_definition=field_definition, generator=self
+                    schema=component_schema,
+                    field_definition=field_definition,
+                    generator=self,
                 )
                 reference = self.schema_registry.get_reference_for_field_definition(field_definition)
                 if reference is None:
@@ -186,7 +188,7 @@ class AsyncAPISchemaGenerator:
         schema_types = sorted({_schema_type_for_enum_value(v) for v in values}, key=lambda t: t.value)
         schema = Schema(type=schema_types[0] if len(schema_types) == 1 else schema_types)
         schema.enum = values
-        return apply_field_constraints(schema, field_definition)
+        return cast("Schema", apply_field_constraints(schema, field_definition))
 
 
 def _schema_type_for_enum_value(value: Any) -> SchemaType:

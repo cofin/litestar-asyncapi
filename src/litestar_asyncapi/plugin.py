@@ -56,7 +56,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
         from litestar_asyncapi.config import AsyncAPIConfig
 
         self._config = config or AsyncAPIConfig()
-        self._cached_asyncapi: "AsyncAPI | None" = None
+        self._cached_asyncapi: AsyncAPI | None = None
         self._cached_schema: dict[str, Any] | None = None
 
     @property
@@ -125,7 +125,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
             return_dto=None,
         )
 
-        plugins: list["AsyncAPIRenderPlugin"] = list(self.config.render_plugins)
+        plugins: list[AsyncAPIRenderPlugin] = list(self.config.render_plugins)
 
         def create_handler(plugin: "AsyncAPIRenderPlugin") -> "HTTPRouteHandler":
             paths = list(plugin.paths)
@@ -145,7 +145,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
             not_found_handler_paths.append("/")
 
         router.register(
-            get(not_found_handler_paths, media_type=MediaType.HTML, sync_to_thread=False)(_handle_docs_path_not_found)
+            get(not_found_handler_paths, media_type=MediaType.HTML, sync_to_thread=False)(_handle_docs_path_not_found),
         )
 
         for render_plugin in plugins:

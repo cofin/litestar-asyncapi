@@ -20,7 +20,9 @@ __all__ = ("extract_channels_plugin_channels",)
 
 
 def extract_channels_plugin_channels(
-    app: "Litestar", *, schema_generator: "AsyncAPISchemaGenerator"
+    app: "Litestar",
+    *,
+    schema_generator: "AsyncAPISchemaGenerator",
 ) -> list[DiscoveredChannel]:
     """Extract channels from Litestar's ChannelsPlugin (best-effort).
 
@@ -62,7 +64,7 @@ def extract_channels_plugin_channels(
                 source=DiscoverySource.CHANNELS_PLUGIN,
                 parameters={"channel_name": channel_name_param},
                 operations=[send_operation],
-            )
+            ),
         )
         return discovered
 

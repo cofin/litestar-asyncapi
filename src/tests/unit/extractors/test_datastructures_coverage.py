@@ -63,10 +63,12 @@ def test_schema_registry_reference_collision() -> None:
     from litestar.params import KwargDefinition
 
     field1 = replace(
-        FieldDefinition.from_annotation(MyType), kwarg_definition=KwargDefinition(schema_component_key="same")
+        FieldDefinition.from_annotation(MyType),
+        kwarg_definition=KwargDefinition(schema_component_key="same"),
     )
     field2 = replace(
-        FieldDefinition.from_annotation(OtherType), kwarg_definition=KwargDefinition(schema_component_key="same")
+        FieldDefinition.from_annotation(OtherType),
+        kwarg_definition=KwargDefinition(schema_component_key="same"),
     )
 
     registry.get_schema_for_field_definition(field1)

@@ -103,6 +103,38 @@ docs-clean:                                       ## Clean documentation artifac
 	@echo "${OK} Docs artifacts cleaned"
 
 # =============================================================================
+# Validation Targets
+# =============================================================================
+
+.PHONY: validate-examples
+validate-examples:                                  ## Validate docs/examples marker blocks
+	@echo "${INFO} Validating doc example markers..."
+	@uv run python tools/ci/validate_doc_markers.py
+	@echo "${OK} Doc example markers valid"
+
+.PHONY: validate-pep723
+validate-pep723:                                    ## Validate PEP 723 blocks in runnable examples
+	@echo "${INFO} Validating PEP 723 script blocks..."
+	@uv run python tools/ci/validate_pep723_blocks.py
+	@echo "${OK} PEP 723 blocks valid"
+
+# =============================================================================
+# Release
+# =============================================================================
+
+.PHONY: release
+release:                                            ## Bump version for a release (bump=major|minor|patch|pre)
+	@if [ -z "$(bump)" ]; then \
+		echo "${ERROR} Usage: make release bump=major|minor|patch|pre"; \
+		exit 1; \
+	fi
+	@echo "${INFO} Preparing release bump ($(bump))..."
+	@$(MAKE) clean
+	@uv run bump-my-version bump $(bump)
+	@$(MAKE) build
+	@echo "${OK} Release version bumped successfully"
+
+# =============================================================================
 # Cleaning and Maintenance
 # =============================================================================
 
@@ -147,7 +179,7 @@ coverage:                                          ## Run tests with coverage re
 .PHONY: mypy
 mypy:                                              ## Run mypy
 	@echo "${INFO} Running mypy..."
-	@uv run dmypy run
+	@uv run mypy src
 	@echo "${OK} Mypy checks passed"
 
 .PHONY: mypy-nocache

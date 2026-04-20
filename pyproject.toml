@@ -28,7 +28,7 @@ license = { text = "MIT" }
 name = "litestar-asyncapi"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.0"
+version = "0.4.1"
 
 [project.urls]
 Changelog = "https://github.com/litestar-org/litestar-asyncapi/releases/"
@@ -190,11 +190,6 @@ first_value = "1"
 filename = "pyproject.toml"
 replace = 'version = "{new_version}"'
 search = 'version = "{current_version}"'
-
-[[tool.bumpversion.files]]
-filename = "src/litestar_asyncapi/__metadata__.py"
-replace = '__version__ = "{new_version}"'
-search = '__version__ = "{current_version}"'
 
 # Ruff configuration
 [tool.ruff]

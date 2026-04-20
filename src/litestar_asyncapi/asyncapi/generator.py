@@ -44,7 +44,7 @@ class AsyncAPIGenerator:
         _populate_operations(document, discovered, config=self.config)
 
         schemas = schema_generator.schema_registry.generate_components_schemas()
-        component_schemas: "dict[str, Schema | Reference]" = dict(schemas)
+        component_schemas: dict[str, Schema | Reference] = dict(schemas)
         document.components = Components(
             schemas=component_schemas,
             operation_traits=self.config.to_operation_traits(),
@@ -123,7 +123,9 @@ def _ensure_unique_message_key(message_key: str, used_keys: set[str]) -> str:
 
 
 def _discover_channels(
-    app: "Litestar", config: "AsyncAPIConfig", schema_generator: AsyncAPISchemaGenerator
+    app: "Litestar",
+    config: "AsyncAPIConfig",
+    schema_generator: AsyncAPISchemaGenerator,
 ) -> list[Any]:
     discovered: list[Any] = []
     if config.include_websocket_routes:
@@ -179,8 +181,8 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
                 channel.messages[message_key] = message
                 messages = [
                     Reference(
-                        ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}"
-                    )
+                        ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}",
+                    ),
                 ]
 
             operation_trait_refs = (

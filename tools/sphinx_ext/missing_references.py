@@ -1,21 +1,16 @@
 """Sphinx extension for handling missing references."""
 
 # ruff: noqa: PLR0911
-from __future__ import annotations
-
 import ast
 import importlib
 import inspect
+from collections.abc import Generator
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
-    from docutils.nodes import Element, Node
-    from sphinx.addnodes import pending_xref
-    from sphinx.application import Sphinx
-    from sphinx.environment import BuildEnvironment
+from docutils.nodes import Element, Node
+from sphinx.addnodes import pending_xref
+from sphinx.application import Sphinx
+from sphinx.environment import BuildEnvironment
 
 
 def _get_module_ast(source_file: str) -> ast.AST | ast.Module:
@@ -169,7 +164,7 @@ def on_warn_missing_reference(app: Sphinx, domain: str, node: Node) -> bool | No
                         "params.",
                         "router.",
                         "response.",
-                    )
+                    ),
                 )
             )
             or target

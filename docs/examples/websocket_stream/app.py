@@ -1,26 +1,40 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "litestar[standard]",
+#     "litestar-asyncapi",
+# ]
+# [tool.uv.sources]
+# litestar-asyncapi = { path = "../../.." }
+# ///
+import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from litestar import Litestar, Response, get, websocket_listener
+from litestar import Litestar, Response, get
 from litestar.enums import MediaType
+from litestar.handlers.websocket_handlers.stream import websocket_stream
 
 from litestar_asyncapi import AsyncAPIPlugin
 
 if TYPE_CHECKING:
-    from litestar import WebSocket
+    from collections.abc import AsyncGenerator
 
-__all__ = ("ChatMessage", "chat_listener", "playground")
+__all__ = ("StreamItem", "playground", "stream_items")
 
 
 @dataclass
-class ChatMessage:
-    room: str
-    text: str
+class StreamItem:
+    value: int
 
 
-@websocket_listener("/ws/chat", signature_namespace={"ChatMessage": ChatMessage})
-async def chat_listener(socket: "WebSocket", data: ChatMessage) -> ChatMessage:
-    return ChatMessage(room=data.room, text=f"echo: {data.text}")
+@websocket_stream("/ws/stream", signature_namespace={"StreamItem": StreamItem})
+async def stream_items() -> "AsyncGenerator[StreamItem, None]":
+    i = 0
+    while True:
+        yield StreamItem(value=i)
+        i += 1
+        await asyncio.sleep(1)
 
 
 @get("/", sync_to_thread=False)
@@ -31,18 +45,20 @@ def playground() -> Response[str]:
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>AsyncAPI WebSocket Listener</title>
+        <title>AsyncAPI WebSocket Stream</title>
         <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
         <style>
           body { padding: 2rem; }
           pre { height: 240px; overflow: auto; background: #0b1021; color: #e2e8f0; padding: 1rem; }
-          textarea { min-height: 120px; }
         </style>
       </head>
       <body>
         <main class="container">
-          <h1>WebSocket Listener Playground</h1>
-          <p>Connect to <code>/ws/chat</code> and send JSON payloads.</p>
+          <h1>WebSocket Stream Playground</h1>
+          <p>
+            Connect to <code>/ws/stream</code> and watch the stream. This is a server-driven stream, so the client
+            does not send data. For client-to-server messages, use the listener example.
+          </p>
           <p>
             <a href="/asyncapi/" target="_blank" rel="noreferrer">AsyncAPI UI</a> ·
             <a href="/asyncapi/asyncapi.json" target="_blank" rel="noreferrer">AsyncAPI JSON</a> ·
@@ -52,11 +68,8 @@ def playground() -> Response[str]:
           <div class="grid">
             <button id="connect">Connect</button>
             <button id="disconnect" class="secondary">Disconnect</button>
+            <button id="clear" class="secondary">Clear Log</button>
           </div>
-
-          <label for="payload">Payload (JSON)</label>
-          <textarea id="payload">{ "room": "general", "text": "hello" }</textarea>
-          <button id="send">Send</button>
 
           <h2>Log</h2>
           <pre id="log"></pre>
@@ -64,7 +77,6 @@ def playground() -> Response[str]:
 
         <script>
           const logEl = document.getElementById("log");
-          const payloadEl = document.getElementById("payload");
           let ws;
 
           function log(message) {
@@ -74,7 +86,7 @@ def playground() -> Response[str]:
 
           function wsUrl() {
             const scheme = location.protocol === "https:" ? "wss" : "ws";
-            return `${scheme}://${location.host}/ws/chat`;
+            return `${scheme}://${location.host}/ws/stream`;
           }
 
           document.getElementById("connect").addEventListener("click", () => {
@@ -90,20 +102,8 @@ def playground() -> Response[str]:
             if (ws) ws.close();
           });
 
-          document.getElementById("send").addEventListener("click", () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-              log("not connected");
-              return;
-            }
-            const raw = payloadEl.value.trim();
-            try {
-              JSON.parse(raw);
-            } catch (err) {
-              log("invalid JSON");
-              return;
-            }
-            ws.send(raw);
-            log(`sent: ${raw}`);
+          document.getElementById("clear").addEventListener("click", () => {
+            logEl.textContent = "";
           });
         </script>
       </body>
@@ -112,4 +112,4 @@ def playground() -> Response[str]:
     return Response(html.strip(), media_type=MediaType.HTML)
 
 
-app = Litestar(route_handlers=[playground, chat_listener], plugins=[AsyncAPIPlugin()])
+app = Litestar(route_handlers=[playground, stream_items], plugins=[AsyncAPIPlugin()])

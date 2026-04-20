@@ -16,14 +16,12 @@ def test_operation_id_case_insensitive_collision() -> None:
         pass
 
     app = Litestar(route_handlers=[handler1, handler2])
-    print(f"HANDLER 1 OPT: {handler1.opt}")
     config = AsyncAPIConfig()
     generator = AsyncAPIGenerator(app, config)
 
     schema = generator.build_asyncapi()
 
     op_ids = [op.operation_id for op in schema.operations.values()]
-    print(f"OP IDS: {op_ids}")
 
     # Should have 4 unique IDs, not a collision on 'myop_receive'
     assert len(op_ids) == 4

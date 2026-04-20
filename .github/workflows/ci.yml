@@ -38,6 +38,12 @@ jobs:
       - name: Execute Pre-Commit
         run: uv run pre-commit run --show-diff-on-failure --color=always --all-files
 
+      - name: Validate doc examples
+        run: make validate-examples
+
+      - name: Validate PEP 723 script blocks
+        run: make validate-pep723
+
   mypy:
     runs-on: ubuntu-latest
     steps:

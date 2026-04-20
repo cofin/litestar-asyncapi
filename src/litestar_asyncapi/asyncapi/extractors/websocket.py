@@ -66,7 +66,7 @@ def extract_websocket_channels(
                 source=DiscoverySource.WEBSOCKET,
                 parameters=parameters or None,
                 operations=operations,
-            )
+            ),
         )
 
     return channels
@@ -89,7 +89,9 @@ def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
 
 
 def _path_parameters_to_parameters(
-    path_parameters: "dict[str, PathParameterDefinition]", *, schema_generator: "AsyncAPISchemaGenerator"
+    path_parameters: "dict[str, PathParameterDefinition]",
+    *,
+    schema_generator: "AsyncAPISchemaGenerator",
 ) -> dict[str, Parameter]:
     parameters: dict[str, Parameter] = {}
     for name, param in path_parameters.items():
@@ -125,7 +127,10 @@ def _infer_operations_from_handler(
     _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
     _apply_docstring_descriptions(route_handler, operations, config=config)
     return _apply_decorator_overrides(
-        route_handler, operations, schema_generator=schema_generator, replace_placeholders=True
+        route_handler,
+        operations,
+        schema_generator=schema_generator,
+        replace_placeholders=True,
     )
 
 
@@ -221,7 +226,7 @@ def _infer_listener_operations(
                 content_type=_infer_content_type(receive_payload),
                 examples=[receive_example] if receive_example is not None else None,
             ),
-        )
+        ),
     )
 
     if not _is_none_return_type(return_field):
@@ -236,7 +241,7 @@ def _infer_listener_operations(
                     content_type=_infer_content_type(send_payload),
                     examples=[send_example] if send_example is not None else None,
                 ),
-            )
+            ),
         )
 
     _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
@@ -262,7 +267,7 @@ def _infer_stream_operations(
                 content_type=_infer_content_type(payload),
                 examples=[example] if example is not None else None,
             ),
-        )
+        ),
     ]
     _apply_handler_metadata(route_handler, operations, include_action_suffix=False)
     return operations
@@ -306,7 +311,10 @@ def _infer_raw_websocket_operations(route_handler: Any) -> list[DiscoveredOperat
 
 
 def _apply_handler_metadata(
-    route_handler: Any, operations: list[DiscoveredOperation], *, include_action_suffix: bool
+    route_handler: Any,
+    operations: list[DiscoveredOperation],
+    *,
+    include_action_suffix: bool,
 ) -> None:
     summary = _get_handler_string_attribute(route_handler, "summary")
     description = _get_handler_string_attribute(route_handler, "description")
@@ -328,7 +336,10 @@ def _apply_handler_metadata(
 
 
 def _apply_docstring_descriptions(
-    route_handler: Any, operations: list[DiscoveredOperation], *, config: "AsyncAPIConfig"
+    route_handler: Any,
+    operations: list[DiscoveredOperation],
+    *,
+    config: "AsyncAPIConfig",
 ) -> None:
     if not config.use_handler_docstrings or not operations:
         return
