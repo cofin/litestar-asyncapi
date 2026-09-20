@@ -14,7 +14,7 @@ def test_docs_routes_exist_and_have_expected_media_types() -> None:
         json_response = client.get("/asyncapi/asyncapi.json")
         assert json_response.status_code == 200
         assert json_response.headers["content-type"].startswith("application/vnd.asyncapi+json")
-        assert json_response.json()["asyncapi"] == "3.0.0"
+        assert json_response.json()["asyncapi"] == "3.1.0"
 
         yaml_response = client.get("/asyncapi/asyncapi.yaml")
         assert yaml_response.status_code == 200

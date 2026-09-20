@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from litestar_asyncapi.spec.base import BaseSchemaObject
 
@@ -11,3 +12,4 @@ class ExternalDocumentation(BaseSchemaObject):
 
     url: str
     description: str | None = None
+    extensions: dict[str, Any] = field(default_factory=dict)

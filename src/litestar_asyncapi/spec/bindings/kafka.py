@@ -10,7 +10,8 @@ __all__ = ("KafkaChannelBinding", "KafkaMessageBinding", "KafkaServerBinding")
 class KafkaServerBinding(Binding):
     """Kafka server binding (minimal placeholder model)."""
 
-    client_id: str | None = None
+    schema_registry_url: str | None = None
+    schema_registry_vendor: str | None = None
 
 
 @dataclass(slots=True)
@@ -19,10 +20,15 @@ class KafkaChannelBinding(Binding):
 
     topic: str | None = None
     partitions: int | None = None
+    replicas: int | None = None
+    topic_configuration: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
 class KafkaMessageBinding(Binding):
     """Kafka message binding (minimal placeholder model)."""
 
-    key: dict[str, Any] | None = None
+    key: dict[str, Any] | bool | None = None
+    schema_id_location: str | None = None
+    schema_id_payload_encoding: str | None = None
+    schema_lookup_strategy: str | None = None

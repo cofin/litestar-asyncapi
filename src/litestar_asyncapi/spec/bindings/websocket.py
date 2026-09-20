@@ -10,10 +10,6 @@ __all__ = ("WebSocketChannelBinding", "WebSocketMessageBinding", "WebSocketServe
 class WebSocketServerBinding(Binding):
     """WebSocket server binding (minimal initial model)."""
 
-    method: str | None = None
-    query: dict[str, Any] | None = None
-    headers: dict[str, Any] | None = None
-
 
 @dataclass(slots=True)
 class WebSocketChannelBinding(Binding):
@@ -26,6 +22,4 @@ class WebSocketChannelBinding(Binding):
 
 @dataclass(slots=True)
 class WebSocketMessageBinding(Binding):
-    """WebSocket message binding (minimal initial model)."""
-
-    headers: dict[str, Any] | None = None
+    """WebSocket message binding, which defines no protocol-specific fields."""

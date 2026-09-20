@@ -37,7 +37,7 @@ class AsyncAPIGenerator:
         info = Info(title=self.config.title, version=self.config.version, description=self.config.description)
         document = AsyncAPI(info=info, default_content_type=self.config.default_content_type)
 
-        document.servers = self.config.to_servers()
+        document.servers.update(self.config.to_servers())
 
         discovered = _discover_channels(self.app, self.config, schema_generator)
         _populate_channels(document, discovered)
@@ -46,7 +46,7 @@ class AsyncAPIGenerator:
         schemas = schema_generator.schema_registry.generate_components_schemas()
         component_schemas: dict[str, Schema | Reference] = dict(schemas)
         document.components = Components(
-            schemas=component_schemas,
+            schemas=dict(component_schemas),
             operation_traits=self.config.to_operation_traits(),
             message_traits=self.config.to_message_traits(),
         )
@@ -145,6 +145,9 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
         channel_key = _channel_key(discovered_channel.address)
         channel_ref = Reference(ref=f"#/channels/{_json_pointer_escape(channel_key)}")
         channel = document.channels[channel_key]
+        if isinstance(channel, Reference):
+            msg = "Discovered channels must be inline Channel objects"
+            raise TypeError(msg)
         for discovered_operation in discovered_channel.operations:
             default_operation_id = _default_operation_id(channel_key, discovered_operation.action)
             operation_id, operation_key = _ensure_unique_operation_id(
@@ -182,7 +185,6 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
             document.operations[operation_key] = Operation(
                 action=discovered_operation.action,
                 channel=channel_ref,
-                operation_id=operation_id,
                 title=discovered_operation.title,
                 summary=discovered_operation.summary,
                 description=discovered_operation.description,

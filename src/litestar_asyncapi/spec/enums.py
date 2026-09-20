@@ -49,3 +49,7 @@ class SecuritySchemeType(str, Enum):
     SYMMETRIC_ENCRYPTION = "symmetricEncryption"
     ASYMMETRIC_ENCRYPTION = "asymmetricEncryption"
     HTTP_API_KEY = "httpApiKey"
+    SASL_PLAIN = "plain"
+    SASL_SCRAM_SHA256 = "scramSha256"
+    SASL_SCRAM_SHA512 = "scramSha512"
+    SASL_GSSAPI = "gssapi"

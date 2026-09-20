@@ -9,12 +9,11 @@ def test_operation_serialization() -> None:
     operation = Operation(
         action=OperationAction.SEND,
         channel=Reference("#/channels/chat"),
-        operation_id="sendChat",
         messages=[Message(name="Chat", payload=Schema(type=SchemaType.OBJECT))],
     )
 
     schema = operation.to_schema()
     assert schema["action"] == "send"
     assert schema["channel"]["$ref"] == "#/channels/chat"
-    assert schema["operationId"] == "sendChat"
+    assert "operationId" not in schema
     assert schema["messages"][0]["name"] == "Chat"

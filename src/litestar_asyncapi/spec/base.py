@@ -6,7 +6,16 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from dataclasses import Field
 
-__all__ = ("BaseSchemaObject",)
+__all__ = ("UNSET", "BaseSchemaObject", "UnsetType")
+
+
+class UnsetType(Enum):
+    """Sentinel distinguishing an omitted field from a JSON null literal."""
+
+    UNSET = 0
+
+
+UNSET = UnsetType.UNSET
 
 
 def _normalize_key(key: str) -> str:
@@ -18,10 +27,9 @@ def _normalize_key(key: str) -> str:
     Returns:
         The normalized key used in serialized output.
     """
-    if key.endswith("_in"):
+    if key == "in_" or key.endswith("_in"):
         return "in"
-    if key.startswith("schema_"):
-        # reserved word escape hatch (mirrors Litestar OpenAPI's approach)
+    if key.startswith("schema_") and key != "schema_format":
         return key.split("_", maxsplit=1)[1]
     if "_" in key:
         components = key.split("_")
@@ -33,10 +41,10 @@ def _normalize_value(value: Any) -> Any:
     if isinstance(value, BaseSchemaObject):
         return value.to_schema()
     if is_dataclass(value) and not isinstance(value, type):
-        return {k: _normalize_value(v) for k, v in asdict(value).items() if v is not None}
+        return {k: _normalize_value(v) for k, v in asdict(value).items()}
     if isinstance(value, dict):
-        return {_normalize_value(k): _normalize_value(v) for k, v in value.items() if v is not None}
-    if isinstance(value, list):
+        return {_normalize_value(k): _normalize_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
         return [_normalize_value(v) for v in value]
     return value.value if isinstance(value, Enum) else value
 
@@ -58,7 +66,7 @@ class BaseSchemaObject:
         """Serialize the object to a JSON/YAML ready dictionary.
 
         Serialization rules:
-        - omit fields with a value of ``None``
+        - omit absent optional fields while preserving explicit nullable literals
         - normalize keys to AsyncAPI/JSON Schema conventions (camelCase, `$ref`, etc.)
         - serialize nested spec objects recursively
 
@@ -67,17 +75,20 @@ class BaseSchemaObject:
 
         Raises:
             TypeError: If a field declares an invalid alias metadata value.
+            ValueError: If an extension key is not prefixed with ``x-``.
         """
         result: dict[str, Any] = {}
         exclude = self._exclude_fields
 
         for field_ in self._iter_fields():
-            if field_.name in exclude:
+            if field_.name in exclude or field_.name == "extensions":
                 continue
 
-            value = _normalize_value(getattr(self, field_.name, None))
-            if value is None:
+            raw_value = getattr(self, field_.name)
+            if raw_value is UNSET or (raw_value is None and not field_.metadata.get("nullable")):
                 continue
+
+            value = _normalize_value(raw_value)
 
             if "alias" in field_.metadata:
                 alias = field_.metadata["alias"]
@@ -89,5 +100,11 @@ class BaseSchemaObject:
                 key = _normalize_key(field_.name)
 
             result[key] = value
+
+        for key, value in getattr(self, "extensions", {}).items():
+            if not isinstance(key, str) or not key.startswith("x-") or key in result:
+                msg = f"Invalid specification extension: {key!r}"
+                raise ValueError(msg)
+            result[key] = _normalize_value(value)
 
         return result

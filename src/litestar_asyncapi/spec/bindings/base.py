@@ -15,12 +15,3 @@ class Binding(BaseSchemaObject):
 
     binding_version: str | None = None
     extensions: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def _exclude_fields(self) -> set[str]:
-        return {"extensions"}
-
-    def to_schema(self) -> dict[str, Any]:
-        schema = BaseSchemaObject.to_schema(self)
-        schema.update(self.extensions)
-        return schema

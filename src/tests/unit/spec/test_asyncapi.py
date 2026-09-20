@@ -30,7 +30,7 @@ def test_asyncapi_root_serialization() -> None:
     )
 
     schema = doc.to_schema()
-    assert schema["asyncapi"] == "3.0.0"
+    assert schema["asyncapi"] == "3.1.0"
     assert schema["info"]["title"] == "My API"
     assert schema["defaultContentType"] == "application/json"
     assert "channels" in schema

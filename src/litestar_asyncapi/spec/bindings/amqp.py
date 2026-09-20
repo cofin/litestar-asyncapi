@@ -10,8 +10,6 @@ __all__ = ("AMQPChannelBinding", "AMQPMessageBinding", "AMQPServerBinding")
 class AMQPServerBinding(Binding):
     """AMQP server binding (minimal placeholder model)."""
 
-    virtual_host: str | None = None
-
 
 @dataclass(slots=True)
 class AMQPChannelBinding(Binding):
@@ -27,3 +25,4 @@ class AMQPMessageBinding(Binding):
     """AMQP message binding (minimal placeholder model)."""
 
     content_encoding: str | None = None
+    message_type: str | None = None

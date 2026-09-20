@@ -5,6 +5,7 @@ from litestar_asyncapi.spec.base import BaseSchemaObject
 
 if TYPE_CHECKING:
     from litestar_asyncapi.spec.external_docs import ExternalDocumentation
+    from litestar_asyncapi.spec.reference import Reference
 
 __all__ = ("Tag",)
 
@@ -15,15 +16,5 @@ class Tag(BaseSchemaObject):
 
     name: str
     description: str | None = None
-    external_docs: "ExternalDocumentation | None" = None
+    external_docs: "ExternalDocumentation | Reference | None" = None
     extensions: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def _exclude_fields(self) -> set[str]:
-        # Inline extension keys in output.
-        return {"extensions"}
-
-    def to_schema(self) -> dict[str, Any]:
-        schema = BaseSchemaObject.to_schema(self)
-        schema.update(self.extensions)
-        return schema

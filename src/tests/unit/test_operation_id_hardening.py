@@ -21,7 +21,7 @@ def test_operation_id_case_insensitive_collision() -> None:
 
     schema = generator.build_asyncapi()
 
-    op_ids = [op.operation_id for op in schema.operations.values()]
+    op_ids = list(schema.operations)
 
     # Should have 4 unique IDs, not a collision on 'myop_receive'
     assert len(op_ids) == 4

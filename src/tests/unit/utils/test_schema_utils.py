@@ -57,7 +57,7 @@ def test_apply_field_constraints_comprehensive() -> None:
     assert updated.title == "Title"
     assert updated.description == "Desc"
     assert updated.const == "def"
-    assert updated.default is None
+    assert "default" not in updated.to_schema()
     assert updated.exclusive_minimum == 0
     assert updated.maximum == 10
     assert updated.exclusive_maximum == 11

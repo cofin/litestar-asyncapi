@@ -39,7 +39,7 @@ def test_generator_builds_document_with_channels_and_operations() -> None:
     document = AsyncAPIGenerator(app=app, config=config).build_asyncapi()
 
     assert isinstance(document, AsyncAPI)
-    assert document.asyncapi == "3.0.0"
+    assert document.asyncapi == "3.1.0"
     assert document.info.title == "Test"
     assert document.default_content_type == "application/json"
     assert "/listen" in document.channels
@@ -67,7 +67,7 @@ def test_generator_ensures_unique_operation_ids_for_channels_plugin() -> None:
     config = AsyncAPIConfig(include_websocket_routes=False, include_channels_plugin=True)
 
     document = AsyncAPIGenerator(app=app, config=config).build_asyncapi()
-    operation_ids = [op.operation_id for op in document.operations.values()]
+    operation_ids = list(document.operations)
 
     assert all(operation_ids)
     assert len(operation_ids) == len(set(operation_ids))
