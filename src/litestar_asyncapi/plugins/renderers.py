@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from litestar.enums import MediaType
 from litestar.openapi.plugins import JsonRenderPlugin, OpenAPIRenderPlugin, YamlRenderPlugin
+from litestar.serialization import decode_json, encode_json, get_serializer
 
 from litestar_asyncapi.docs import bootstrap_html
-from litestar_asyncapi.serialization import normalize_document
 
 if TYPE_CHECKING:
     from litestar.connection import Request
@@ -42,9 +42,6 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
         self._config = config or {}
 
     def render(self, request: "Request[Any, Any, Any]", openapi_schema: dict[str, Any]) -> bytes:
-        openapi_schema = normalize_document(
-            openapi_schema, getattr(getattr(request, "app", None), "type_encoders", None)
-        )
         title = "AsyncAPI"
         if isinstance(openapi_schema.get("info"), dict) and isinstance(openapi_schema["info"].get("title"), str):
             title = openapi_schema["info"]["title"]
@@ -52,7 +49,10 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
         bootstrap = bootstrap_html(
             request,
             entry="react" if self.renderer == "asyncapi" else "scalar",
-            options={**normalize_document(self._config, request.app.type_encoders), "interactive": self.interactive},
+            options={
+                **decode_json(encode_json(self._config, serializer=get_serializer(request.app.type_encoders))),
+                "interactive": self.interactive,
+            },
         )
         escaped_title = html.escape(title, quote=True)
         limitation = (

@@ -7,12 +7,11 @@ from litestar.handlers import get
 from litestar.plugins import InitPluginProtocol
 from litestar.response import Response
 from litestar.router import Router
-from litestar.serialization import encode_json
+from litestar.serialization import decode_json, encode_json, get_serializer
 from litestar.static_files import create_static_files_router
 from litestar.status_codes import HTTP_404_NOT_FOUND
 
 from litestar_asyncapi.docs import asset_directory, renderer_name
-from litestar_asyncapi.serialization import normalize_document
 
 if TYPE_CHECKING:
     from click import Group
@@ -104,8 +103,8 @@ class AsyncAPIPlugin(InitPluginProtocol):
         from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
         document = deepcopy(AsyncAPIGenerator(app=app, config=self.config).build_asyncapi())
-        schema = normalize_document(document, app.type_encoders)
-        encoded = encode_json(schema)
+        encoded = encode_json(document.to_schema(), serializer=get_serializer(app.type_encoders))
+        schema = decode_json(encoded)
         if self.config.use_cache:
             self._cached_asyncapi, self._cached_schema, self._cached_json = document, schema, encoded
         return document, schema, encoded
