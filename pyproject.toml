@@ -39,10 +39,6 @@ Homepage = "https://github.com/litestar-org/litestar-asyncapi"
 Issue = "https://github.com/litestar-org/litestar-asyncapi/issues/"
 Source = "https://github.com/litestar-org/litestar-asyncapi"
 
-[project.entry-points."pygments.styles"]
-litestar-asyncapi-dark = "tools.sphinx_ext.pygments_styles:LitestarAsyncApiDarkStyle"
-litestar-asyncapi-light = "tools.sphinx_ext.pygments_styles:LitestarAsyncApiLightStyle"
-
 ######################
 # Build & Versioning #
 ######################
@@ -69,23 +65,13 @@ dev = [
 ]
 docs = [
   "auto-pytabs[sphinx]>=0.5.0",
+  "shibuya",
   "sphinx>=8.0.0",
   "sphinx-autobuild>=2021.3.14",
   "sphinx-copybutton>=0.5.2",
-  "sphinx-click>=6.0.0",
   "sphinx-design>=0.5.0",
-  "sphinxcontrib-mermaid>=0.9.2",
   "sphinx-paramlinks>=0.6.0",
-  "sphinx-togglebutton>=0.3.2",
-  "sphinx-tabs",
-  "sphinx-datatables",
-  "sphinxcontrib-jquery",
-  "numpydoc",
-  "sphinx-iconify",
-  "click-extra[sphinx]",
-  "myst-parser",
-  "sphinx-autodoc-typehints",
-  "shibuya",
+  "sphinxcontrib-mermaid>=0.9.2",
 ]
 lint = [
   "codespell",
