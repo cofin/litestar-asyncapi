@@ -43,11 +43,7 @@ def test_to_schema_normalizes_keys_and_values() -> None:
 
 def test_to_schema_serializes_nested_objects() -> None:
     nested = _Dummy(
-        snake_case=2,
-        ref="#/components/schemas/Bar",
-        schema_type="string",
-        parameter_in="path",
-        aliased="y",
+        snake_case=2, ref="#/components/schemas/Bar", schema_type="string", parameter_in="path", aliased="y"
     )
     dummy = _Dummy(
         snake_case=1,

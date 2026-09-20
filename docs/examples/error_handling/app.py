@@ -72,30 +72,16 @@ async def error_demo(socket: "WebSocket", data: ErrorPayload) -> ErrorResponse:
         ValueError: When action is 'error' to demonstrate error handling.
     """
     if data.action == "echo":
-        return ErrorResponse(
-            status="ok",
-            message=f"Echoed: {data.value}",
-            original_action=data.action,
-        )
+        return ErrorResponse(status="ok", message=f"Echoed: {data.value}", original_action=data.action)
     if data.action == "error":
         raise ValueError(_INTENTIONAL_ERROR_MSG)
     if data.action == "validate":
         if not data.value:
             return ErrorResponse(
-                status="error",
-                message="Validation failed: value is required",
-                original_action=data.action,
+                status="error", message="Validation failed: value is required", original_action=data.action
             )
-        return ErrorResponse(
-            status="ok",
-            message=f"Validation passed for: {data.value}",
-            original_action=data.action,
-        )
-    return ErrorResponse(
-        status="error",
-        message=f"Unknown action: {data.action}",
-        original_action=data.action,
-    )
+        return ErrorResponse(status="ok", message=f"Validation passed for: {data.value}", original_action=data.action)
+    return ErrorResponse(status="error", message=f"Unknown action: {data.action}", original_action=data.action)
 
 
 @get("/", sync_to_thread=False)

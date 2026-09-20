@@ -37,9 +37,7 @@ EXAMPLES: tuple[Path, ...] = (
     ROOT / "docs/examples/websocket_stream/app.py",
 )
 
-_BLOCK_RE = re.compile(
-    r"(?ms)^# /// script\s*\n(?P<body>(?:^#(?: .*|)\n)+?)^# ///\s*$",
-)
+_BLOCK_RE = re.compile(r"(?ms)^# /// script\s*\n(?P<body>(?:^#(?: .*|)\n)+?)^# ///\s*$")
 
 
 def extract_block(source: str) -> str | None:
@@ -70,7 +68,7 @@ def validate_file(path: Path) -> list[str]:
         return [f"{path}: no `# /// script` PEP 723 block found"]
     try:
         data = tomllib.loads(body)
-    except Exception as exc:  # noqa: BLE001 - surface parse error verbatim
+    except Exception as exc:
         return [f"{path}: PEP 723 block is not valid TOML: {exc}"]
 
     requires = data.get("requires-python")

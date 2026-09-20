@@ -81,12 +81,7 @@ def _sanitize_operation_id(value: str) -> str:
 
 
 def _ensure_unique_operation_id(
-    operation_id: str,
-    *,
-    default_operation_id: str,
-    used_ids: set[str],
-    used_keys: set[str],
-    config: "AsyncAPIConfig",
+    operation_id: str, *, default_operation_id: str, used_ids: set[str], used_keys: set[str], config: "AsyncAPIConfig"
 ) -> tuple[str, str]:
     base_id = operation_id or default_operation_id
     candidate = base_id
@@ -123,9 +118,7 @@ def _ensure_unique_message_key(message_key: str, used_keys: set[str]) -> str:
 
 
 def _discover_channels(
-    app: "Litestar",
-    config: "AsyncAPIConfig",
-    schema_generator: AsyncAPISchemaGenerator,
+    app: "Litestar", config: "AsyncAPIConfig", schema_generator: AsyncAPISchemaGenerator
 ) -> list[Any]:
     discovered: list[Any] = []
     if config.include_websocket_routes:
@@ -139,8 +132,7 @@ def _populate_channels(document: AsyncAPI, discovered: list[Any]) -> None:
     for discovered_channel in discovered:
         channel_key = _channel_key(discovered_channel.address)
         document.channels[channel_key] = Channel(
-            address=discovered_channel.address,
-            parameters=discovered_channel.parameters,
+            address=discovered_channel.address, parameters=discovered_channel.parameters
         )
 
 
@@ -169,20 +161,16 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
             if discovered_operation.message is not None:
                 message = discovered_operation.message.to_spec_message()
                 if discovered_operation.message.traits:
-                    message.traits = _resolve_message_traits(
-                        discovered_operation.message.traits,
-                        config=config,
-                    )
+                    message.traits = _resolve_message_traits(discovered_operation.message.traits, config=config)
                 message_key = _ensure_unique_message_key(
-                    operation_key,
-                    channel_message_keys.setdefault(channel_key, set()),
+                    operation_key, channel_message_keys.setdefault(channel_key, set())
                 )
                 channel.messages = channel.messages or {}
                 channel.messages[message_key] = message
                 messages = [
                     Reference(
-                        ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}",
-                    ),
+                        ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}"
+                    )
                 ]
 
             operation_trait_refs = (

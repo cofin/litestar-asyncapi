@@ -24,10 +24,7 @@ from litestar_asyncapi.asyncapi.schema_generation.plugins.dataclass import Datac
 from litestar_asyncapi.asyncapi.schema_generation.plugins.msgspec import MsgspecSchemaPlugin
 from litestar_asyncapi.asyncapi.schema_generation.plugins.pydantic import PydanticSchemaPlugin
 from litestar_asyncapi.asyncapi.schema_generation.plugins.typed_dict import TypedDictSchemaPlugin
-from litestar_asyncapi.asyncapi.schema_generation.utils import (
-    apply_field_constraints,
-    create_literal_schema,
-)
+from litestar_asyncapi.asyncapi.schema_generation.utils import apply_field_constraints, create_literal_schema
 from litestar_asyncapi.spec import Reference, Schema, SchemaFormat, SchemaType
 
 if TYPE_CHECKING:
@@ -82,7 +79,7 @@ class AsyncAPISchemaGenerator:
                 DataclassSchemaPlugin(),
                 MsgspecSchemaPlugin(),
                 TypedDictSchemaPlugin(),
-            ),
+            )
         )
 
     @staticmethod
@@ -120,9 +117,7 @@ class AsyncAPISchemaGenerator:
                 # Always componentize supported "model" types.
                 component_schema = self.schema_registry.get_schema_for_field_definition(field_definition)
                 plugin.populate_component_schema(
-                    schema=component_schema,
-                    field_definition=field_definition,
-                    generator=self,
+                    schema=component_schema, field_definition=field_definition, generator=self
                 )
                 reference = self.schema_registry.get_reference_for_field_definition(field_definition)
                 if reference is None:
@@ -140,12 +135,7 @@ class AsyncAPISchemaGenerator:
             return cast("Schema", apply_field_constraints(Schema(type=SchemaType.ARRAY, items=items), field_definition))
 
         prefix_items = [self.generate_schema(FieldDefinition.from_annotation(arg)) for arg in args]
-        schema = Schema(
-            type=SchemaType.ARRAY,
-            prefix_items=prefix_items,
-            min_items=len(args),
-            max_items=len(args),
-        )
+        schema = Schema(type=SchemaType.ARRAY, prefix_items=prefix_items, min_items=len(args), max_items=len(args))
         return cast("Schema", apply_field_constraints(schema, field_definition))
 
     def _generate_list_schema(self, field_definition: FieldDefinition) -> Schema:
@@ -159,10 +149,7 @@ class AsyncAPISchemaGenerator:
         additional = self.generate_schema(FieldDefinition.from_annotation(value_type))
         return cast(
             "Schema",
-            apply_field_constraints(
-                Schema(type=SchemaType.OBJECT, additional_properties=additional),
-                field_definition,
-            ),
+            apply_field_constraints(Schema(type=SchemaType.OBJECT, additional_properties=additional), field_definition),
         )
 
     def _generate_union_schema(self, field_definition: FieldDefinition) -> Schema | Reference:

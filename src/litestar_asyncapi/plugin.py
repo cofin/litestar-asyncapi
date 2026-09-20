@@ -117,13 +117,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
         Returns:
             A Litestar router that serves all configured render plugin paths.
         """
-        router = Router(
-            self.config.path,
-            route_handlers=[],
-            include_in_schema=False,
-            dto=None,
-            return_dto=None,
-        )
+        router = Router(self.config.path, route_handlers=[], include_in_schema=False, dto=None, return_dto=None)
 
         plugins: list[AsyncAPIRenderPlugin] = list(self.config.render_plugins)
 
@@ -145,7 +139,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
             not_found_handler_paths.append("/")
 
         router.register(
-            get(not_found_handler_paths, media_type=MediaType.HTML, sync_to_thread=False)(_handle_docs_path_not_found),
+            get(not_found_handler_paths, media_type=MediaType.HTML, sync_to_thread=False)(_handle_docs_path_not_found)
         )
 
         for render_plugin in plugins:

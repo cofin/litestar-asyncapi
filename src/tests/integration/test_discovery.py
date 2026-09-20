@@ -44,10 +44,7 @@ def test_websocket_extraction_across_handler_variants() -> None:
     assert set(by_address) == {"/plain", "/listen/{room}", "/stream"}
 
     # Raw websockets now generate placeholder operations for both directions
-    assert {op.action for op in by_address["/plain"].operations} == {
-        OperationAction.RECEIVE,
-        OperationAction.SEND,
-    }
+    assert {op.action for op in by_address["/plain"].operations} == {OperationAction.RECEIVE, OperationAction.SEND}
     assert {op.action for op in by_address["/listen/{room}"].operations} == {
         OperationAction.RECEIVE,
         OperationAction.SEND,

@@ -1,11 +1,6 @@
 from enum import Enum
 
-__all__ = (
-    "OperationAction",
-    "SchemaFormat",
-    "SchemaType",
-    "SecuritySchemeType",
-)
+__all__ = ("OperationAction", "SchemaFormat", "SchemaType", "SecuritySchemeType")
 
 
 class OperationAction(str, Enum):

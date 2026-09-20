@@ -195,53 +195,103 @@ search = 'version = "{current_version}"'
 
 # Ruff configuration
 [tool.ruff]
+extend-exclude = ["docs/_build"]
 line-length = 120
-src = ["litestar_asyncapi", "tests", "examples", "docs", "docs/examples"]
+src = ["src"]
 target-version = "py310"
+
+[tool.ruff.format]
+docstring-code-format = true
+exclude = ["*.md"]
+preview = true
+skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 fixable = ["ALL"]
 ignore = [
-  "A003",    # flake8-builtins - class attribute {name} is shadowing a python builtin
-  "A005",    # flake8-builtins - module {name} shadows a Python standard-library module
-  "B010",    # flake8-bugbear - do not call setattr with a constant attribute value
-  "D100",    # pydocstyle - missing docstring in public module
-  "D101",    # pydocstyle - missing docstring in public class
-  "D102",    # pydocstyle - missing docstring in public method
-  "D103",    # pydocstyle - missing docstring in public function
-  "D104",    # pydocstyle - missing docstring in public package
-  "D105",    # pydocstyle - missing docstring in magic method
-  "D106",    # pydocstyle - missing docstring in public nested class
-  "D107",    # pydocstyle - missing docstring in __init__
-  "D202",    # pydocstyle - no blank lines allowed after function docstring
-  "D205",    # pydocstyle - 1 blank line required between summary line and description
-  "D415",    # pydocstyle - first line should end with a period, question mark, or exclamation point
-  "E501",    # pydocstyle line too long, handled by black
-  "PLW2901", # pylint - for loop variable overwritten by assignment target
-  "RUF012",  # Ruff-specific rule - annotated with classvar
+  "A003",
+  "A005",
+  "B010",
+  "COM812",
+  "CPY001",
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D106",
+  "D107",
+  "D202",
+  "D205",
+  "D415",
+  "E501",
+  "ISC001",
   "ANN401",
   "FBT",
-  "PLR0913", # too many arguments
+  "PLR0912",
+  "PLR0913",
+  "PLW2901",
   "PT",
   "TD",
-  "ARG002",  # ignore for now; investigate
-  "ARG003",  # ignore for now; investigate
-  "PERF203", # ignore for now; investigate
-  "PD011",   # pandas
-  "PLR0912",
+  "ARG001",
+  "ARG002",
+  "ARG003",
+  "FIX",
+  "PERF203",
+  "PD011",
   "C901",
   "TC002",
+  "RUF012",
 ]
 select = ["ALL"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["litestar_asyncapi", "tests"]
+split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.lint.pyupgrade]
-keep-runtime-typing = true
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+"docs/conf.py" = ["A001", "INP001"]
+"docs/**/*.py" = ["A", "B", "D", "ERA", "S"]
+"src/litestar_asyncapi/spec/enums.py" = ["S105"]
+"src/litestar_asyncapi/config.py" = ["PLC0415"]
+"src/litestar_asyncapi/plugin.py" = ["PLC0415"]
+"src/litestar_asyncapi/asyncapi/utils/examples.py" = ["PLC0415", "PLR0911"]
+"src/litestar_asyncapi/asyncapi/schema_generation/schema.py" = ["PLR0911", "PLR2004"]
+"src/litestar_asyncapi/asyncapi/schema_generation/utils.py" = ["PLR0911"]
+"src/litestar_asyncapi/asyncapi/extractors/*.py" = ["PLC0415", "SLF001"]
+"src/tests/**/*" = [
+  "ANN",
+  "ARG",
+  "D",
+  "FBT",
+  "PLC0415",
+  "PLR0913",
+  "PLR2004",
+  "PT",
+  "S",
+  "S101",
+  "SLF001",
+  "TID252",
+]
+"tools/**/*.py" = [
+  "BLE001",
+  "D",
+  "DOC502",
+  "PGH003",
+  "PLC0415",
+  "S310",
+  "S404",
+  "S603",
+  "S607",
+  "T201",
+]
 
 # Mypy configuration
 [tool.mypy]

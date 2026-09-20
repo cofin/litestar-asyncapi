@@ -14,7 +14,7 @@ class Binding(BaseSchemaObject):
     """
 
     binding_version: str | None = None
-    extensions: dict[str, Any] = field(default_factory=dict)  # pyright: ignore
+    extensions: dict[str, Any] = field(default_factory=dict)
 
     @property
     def _exclude_fields(self) -> set[str]:

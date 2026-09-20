@@ -3,9 +3,7 @@ from litestar_asyncapi.spec import ExternalDocumentation, Tag
 
 def test_tag_to_schema() -> None:
     tag = Tag(
-        name="user",
-        description="User operations",
-        external_docs=ExternalDocumentation(url="https://example.com"),
+        name="user", description="User operations", external_docs=ExternalDocumentation(url="https://example.com")
     )
     schema = tag.to_schema()
     assert schema["name"] == "user"

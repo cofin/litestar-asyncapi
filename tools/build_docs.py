@@ -8,7 +8,7 @@ parser.add_argument("output")
 
 
 def build(output_dir: str) -> None:
-    subprocess.run(["make", "docs"], check=True)  # noqa: S607
+    subprocess.run(["make", "docs"], check=True)
 
     docs_src_path = Path("docs/_build/html")
     output_path = Path(output_dir)

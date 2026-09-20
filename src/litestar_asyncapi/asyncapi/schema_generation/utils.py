@@ -7,12 +7,7 @@ from litestar.typing import FieldDefinition
 
 from litestar_asyncapi.spec import Reference, Schema, SchemaType
 
-__all__ = (
-    "apply_field_constraints",
-    "create_literal_schema",
-    "is_literal",
-    "is_union",
-)
+__all__ = ("apply_field_constraints", "create_literal_schema", "is_literal", "is_union")
 
 
 from litestar.utils.predicates import is_union

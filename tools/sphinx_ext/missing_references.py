@@ -153,19 +153,17 @@ def on_warn_missing_reference(app: Sphinx, domain: str, node: Node) -> bool | No
         if ref_type in {"class", "obj"} and (
             (
                 isinstance(target, str)
-                and target.startswith(
-                    (
-                        "datastructures.",
-                        "config.app.",
-                        "connection.",
-                        "types.",
-                        "di.",
-                        "dto.",
-                        "params.",
-                        "router.",
-                        "response.",
-                    ),
-                )
+                and target.startswith((
+                    "datastructures.",
+                    "config.app.",
+                    "connection.",
+                    "types.",
+                    "di.",
+                    "dto.",
+                    "params.",
+                    "router.",
+                    "response.",
+                ))
             )
             or target
             in {

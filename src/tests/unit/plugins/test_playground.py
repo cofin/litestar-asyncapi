@@ -89,10 +89,7 @@ def test_playground_includes_channels() -> None:
     schema = {
         "asyncapi": "3.0.0",
         "info": {"title": "Test", "version": "1.0.0"},
-        "channels": {
-            "/ws/one": {"description": "First channel"},
-            "/ws/two": {"description": "Second channel"},
-        },
+        "channels": {"/ws/one": {"description": "First channel"}, "/ws/two": {"description": "Second channel"}},
     }
 
     result = plugin.render(mock_request, schema)
@@ -129,11 +126,7 @@ def test_playground_dark_theme() -> None:
     plugin = AsyncAPIPlaygroundRenderPlugin(theme="dark")
 
     mock_request = MagicMock()
-    schema = {
-        "asyncapi": "3.0.0",
-        "info": {"title": "Test", "version": "1.0.0"},
-        "channels": {},
-    }
+    schema = {"asyncapi": "3.0.0", "info": {"title": "Test", "version": "1.0.0"}, "channels": {}}
 
     result = plugin.render(mock_request, schema)
     html = result.decode("utf-8")
@@ -148,11 +141,7 @@ def test_playground_validation_disabled_in_js() -> None:
     plugin = AsyncAPIPlaygroundRenderPlugin(enable_validation=False)
 
     mock_request = MagicMock()
-    schema = {
-        "asyncapi": "3.0.0",
-        "info": {"title": "Test", "version": "1.0.0"},
-        "channels": {},
-    }
+    schema = {"asyncapi": "3.0.0", "info": {"title": "Test", "version": "1.0.0"}, "channels": {}}
 
     result = plugin.render(mock_request, schema)
     html = result.decode("utf-8")
@@ -179,10 +168,7 @@ def test_playground_integration_with_app() -> None:
     from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
     from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
 
-    config = AsyncAPIConfig(
-        title="Integration Test",
-        render_plugins=[AsyncAPIPlaygroundRenderPlugin()],
-    )
+    config = AsyncAPIConfig(title="Integration Test", render_plugins=[AsyncAPIPlaygroundRenderPlugin()])
     app = Litestar(route_handlers=[], plugins=[AsyncAPIPlugin(config)])
 
     with TestClient(app=app) as client:

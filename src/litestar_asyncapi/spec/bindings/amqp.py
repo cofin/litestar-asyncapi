@@ -3,11 +3,7 @@ from typing import Any
 
 from litestar_asyncapi.spec.bindings.base import Binding
 
-__all__ = (
-    "AMQPChannelBinding",
-    "AMQPMessageBinding",
-    "AMQPServerBinding",
-)
+__all__ = ("AMQPChannelBinding", "AMQPMessageBinding", "AMQPServerBinding")
 
 
 @dataclass(slots=True)

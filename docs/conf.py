@@ -18,7 +18,7 @@ __all__ = ("setup", "update_html_context")
 # -- Project information -----------------------------------------------------
 current_year = datetime.datetime.now(tz=datetime.timezone.utc).year
 project = "Litestar AsyncAPI"
-copyright = f"{current_year}, Litestar Organization"  # noqa: A001
+copyright = f"{current_year}, Litestar Organization"
 release = os.getenv("_LITESTAR_ASYNCAPI_DOCS_BUILD_VERSION", __version__.rsplit(".")[0])
 suppress_warnings = [
     "autosectionlabel.*",
@@ -174,31 +174,15 @@ html_theme_options = {
         {
             "title": "Docs",
             "children": [
-                {
-                    "title": "Getting Started",
-                    "url": "getting-started",
-                    "summary": "Installation and quickstart guide",
-                },
-                {
-                    "title": "Usage",
-                    "url": "usage/index",
-                    "summary": "Detailed usage guides and tutorials",
-                },
-                {
-                    "title": "API Reference",
-                    "url": "reference/index",
-                    "summary": "Comprehensive API documentation",
-                },
+                {"title": "Getting Started", "url": "getting-started", "summary": "Installation and quickstart guide"},
+                {"title": "Usage", "url": "usage/index", "summary": "Detailed usage guides and tutorials"},
+                {"title": "API Reference", "url": "reference/index", "summary": "Comprehensive API documentation"},
             ],
         },
         {
             "title": "About",
             "children": [
-                {
-                    "title": "Changelog",
-                    "url": "changelog",
-                    "summary": "All changes for Litestar AsyncAPI",
-                },
+                {"title": "Changelog", "url": "changelog", "summary": "All changes for Litestar AsyncAPI"},
                 {
                     "title": "Litestar Organization",
                     "summary": "Details about the Litestar organization, the team behind Litestar AsyncAPI",

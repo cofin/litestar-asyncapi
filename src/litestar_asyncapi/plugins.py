@@ -105,8 +105,7 @@ class YamlRenderPlugin(AsyncAPIRenderPlugin):
 
     def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
         builtins = msgspec.to_builtins(
-            asyncapi_schema,
-            enc_hook=get_serializer(request.route_handler.resolve_type_encoders()),
+            asyncapi_schema, enc_hook=get_serializer(request.route_handler.resolve_type_encoders())
         )
         return cast("bytes", yaml.safe_dump(builtins, default_flow_style=False, sort_keys=False).encode("utf-8"))
 

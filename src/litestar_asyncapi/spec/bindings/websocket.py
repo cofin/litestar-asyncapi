@@ -3,11 +3,7 @@ from typing import Any
 
 from litestar_asyncapi.spec.bindings.base import Binding
 
-__all__ = (
-    "WebSocketChannelBinding",
-    "WebSocketMessageBinding",
-    "WebSocketServerBinding",
-)
+__all__ = ("WebSocketChannelBinding", "WebSocketMessageBinding", "WebSocketServerBinding")
 
 
 @dataclass(slots=True)

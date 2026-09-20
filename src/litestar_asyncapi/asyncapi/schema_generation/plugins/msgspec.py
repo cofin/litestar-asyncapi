@@ -21,10 +21,7 @@ class MsgspecSchemaPlugin:
 
     @staticmethod
     def populate_component_schema(
-        *,
-        schema: Schema,
-        field_definition: FieldDefinition,
-        generator: "AsyncAPISchemaGenerator",
+        *, schema: Schema, field_definition: FieldDefinition, generator: "AsyncAPISchemaGenerator"
     ) -> None:
         model = field_definition.annotation
 
@@ -48,14 +45,10 @@ class MsgspecSchemaPlugin:
 
     @staticmethod
     def create_inline_schema(
-        *,
-        field_definition: FieldDefinition,
-        generator: "AsyncAPISchemaGenerator",
+        *, field_definition: FieldDefinition, generator: "AsyncAPISchemaGenerator"
     ) -> Schema | Reference:
         component_schema = Schema()
         MsgspecSchemaPlugin.populate_component_schema(
-            schema=component_schema,
-            field_definition=field_definition,
-            generator=generator,
+            schema=component_schema, field_definition=field_definition, generator=generator
         )
         return component_schema

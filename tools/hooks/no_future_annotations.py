@@ -26,10 +26,7 @@ def check_file(path: Path) -> bool:
     try:
         tree = ast.parse(content, filename=str(path))
     except SyntaxError:
-        for line in content.splitlines():
-            if line.strip() == "from __future__ import annotations":
-                return True
-        return False
+        return any(line.strip() == "from __future__ import annotations" for line in content.splitlines())
 
     for node in tree.body:
         if (

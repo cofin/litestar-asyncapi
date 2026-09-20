@@ -21,11 +21,7 @@ def asyncapi_config() -> "AsyncAPIConfig":
     """Return a default AsyncAPI configuration for testing."""
     from litestar_asyncapi import AsyncAPIConfig
 
-    return AsyncAPIConfig(
-        title="Test API",
-        version="1.0.0",
-        description="A test API",
-    )
+    return AsyncAPIConfig(title="Test API", version="1.0.0", description="A test API")
 
 
 @pytest.fixture

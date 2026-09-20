@@ -3,11 +3,7 @@ from typing import Any
 
 from litestar_asyncapi.spec.bindings.base import Binding
 
-__all__ = (
-    "KafkaChannelBinding",
-    "KafkaMessageBinding",
-    "KafkaServerBinding",
-)
+__all__ = ("KafkaChannelBinding", "KafkaMessageBinding", "KafkaServerBinding")
 
 
 @dataclass(slots=True)

@@ -43,10 +43,7 @@ def test_schema_component_key_override_is_sanitized() -> None:
     from litestar.params import Parameter
 
     registry = SchemaRegistry()
-    field = FieldDefinition.from_annotation(
-        dict,
-        kwarg_definition=Parameter(schema_component_key="Bad Key!"),
-    )
+    field = FieldDefinition.from_annotation(dict, kwarg_definition=Parameter(schema_component_key="Bad Key!"))
 
     registry.get_schema_for_field_definition(field)
     ref = registry.get_reference_for_field_definition(field)
@@ -62,10 +59,7 @@ def test_schema_component_key_override_rejects_invalid() -> None:
     from litestar.params import Parameter
 
     registry = SchemaRegistry()
-    field = FieldDefinition.from_annotation(
-        dict,
-        kwarg_definition=Parameter(schema_component_key="!!!"),
-    )
+    field = FieldDefinition.from_annotation(dict, kwarg_definition=Parameter(schema_component_key="!!!"))
 
     with pytest.raises(ImproperlyConfiguredException):
         registry.get_schema_for_field_definition(field)
