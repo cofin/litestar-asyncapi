@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from litestar.exceptions import ImproperlyConfiguredException
 from litestar.openapi.plugins import JsonRenderPlugin, YamlRenderPlugin
-from litestar.serialization import encode_json
+from litestar.serialization import decode_json, encode_json
 
 if TYPE_CHECKING:
     from litestar import Request
@@ -45,14 +45,36 @@ def bootstrap_html(request: "Request[Any, Any, Any]", *, entry: str, options: di
     config = {"schemaUrl": links["json"], "entry": entry, "options": options}
     if entry == "playground":
         config["entryUrl"] = request.url_for(names["assets"], file_path="playground.js")
+    styles = ""
+    if entry in {"react", "scalar"}:
+        try:
+            manifest = decode_json((asset_directory() / "ui" / "manifest.json").read_bytes())
+            selected = manifest[f"frontend/{entry}.ts"]
+            config["entryUrl"] = request.url_for(names["assets"], file_path="ui/" + selected["file"])
+            pending = [selected]
+            visited: set[str] = set()
+            css: set[str] = set()
+            while pending:
+                item = pending.pop()
+                if item["file"] in visited:
+                    continue
+                visited.add(item["file"])
+                css.update(item.get("css", []))
+                pending.extend(manifest[key] for key in item.get("imports", []))
+            styles = "".join(
+                f'<link rel="stylesheet" href="{html.escape(request.url_for(names["assets"], file_path="ui/" + name), quote=True)}">'
+                for name in sorted(css)
+            )
+        except (OSError, KeyError, ValueError):
+            styles = '<p role="alert">Packaged documentation assets are missing. Use the JSON download.</p>'
     encoded = encode_json(config).decode("utf-8").replace("<", "\\u003c")
     source = html.escape(request.url_for(names["assets"], file_path="bootstrap.js"), quote=True)
     navigation = " ".join(
         f'<a href="{html.escape(url, quote=True)}">{html.escape(label.upper())}</a>' for label, url in links.items()
     )
     return (
-        f'<nav aria-label="Documentation">{navigation}</nav>'
-        '<p id="asyncapi-status" role="status" aria-live="polite">Loading documentation…</p>'
+        styles + f'<nav aria-label="Documentation">{navigation}</nav>'
+        '<p id="asyncapi-status" role="status" aria-live="polite">Loading documentation… If it does not appear, use the JSON download and check your browser content security settings.</p>'
         f'<script id="asyncapi-config" type="application/json">{encoded}</script>'
         f'<script src="{source}" defer></script>'
     )

@@ -1,3 +1,5 @@
+exclude: ^src/litestar_asyncapi/assets/ui/
+
 default_language_version:
   python: "3"
 

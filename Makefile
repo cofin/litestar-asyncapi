@@ -92,9 +92,10 @@ lock:                                               ## Rebuild lockfiles from sc
 # =============================================================================
 
 .PHONY: build
-build:                                             ## Build the project
+build: js-build                                    ## Build the project
 	@echo "${INFO} Building package... 📦"
 	@uv build
+	@uv run python frontend/tests/distribution.py
 	@echo "${OK} Package build complete 📦"
 
 .PHONY: release
@@ -299,3 +300,13 @@ check-all: lint test-all coverage                  ## Run all checks (lint, test
 .PHONY: validate-asyncapi
 validate-asyncapi:                                 ## Validate offline AsyncAPI contracts and Draft07 payloads
 	@npm run validate:asyncapi
+
+.PHONY: js-build js-test browser-test
+js-build:                                          ## Build packaged browser assets
+	@npm run build
+
+js-test:                                           ## Test rendering-view transformations
+	@npm test
+
+browser-test:                                      ## Test packaged documentation in Chromium
+	@npm run test:browser

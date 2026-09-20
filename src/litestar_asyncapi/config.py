@@ -16,11 +16,11 @@ if TYPE_CHECKING:
 __all__ = ("AsyncAPIConfig", "DocsConfig")
 
 
-def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
+def _default_render_plugins(renderer: Literal["asyncapi", "scalar"] = "asyncapi") -> list["AsyncAPIRenderPlugin"]:
     from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin
 
     return [
-        AsyncAPIUIRenderPlugin(),
+        AsyncAPIUIRenderPlugin(renderer=renderer),
         JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json")),
     ]
 
@@ -49,7 +49,9 @@ class DocsConfig:
         from litestar_asyncapi.docs import renderer_name
         from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
 
-        plugins = list(self.render_plugins) if self.render_plugins is not None else _default_render_plugins()
+        plugins = (
+            list(self.render_plugins) if self.render_plugins is not None else _default_render_plugins(self.renderer)
+        )
         if not any(isinstance(plugin, JsonRenderPlugin) for plugin in plugins):
             plugins.append(
                 JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json"))

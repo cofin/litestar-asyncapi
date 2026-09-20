@@ -16,7 +16,9 @@
       });
       window.asyncapiPlayground(schema, config);
     } else {
-      AsyncApiStandalone.render({ schema, config: config.options }, document.getElementById("asyncapi"));
+      if (!schema || !["3.0.0", "3.1.0"].includes(schema.asyncapi) || !schema.info) throw new Error("Invalid document");
+      const renderer = await import(config.entryUrl);
+      await renderer.render(schema, config.options);
     }
   } catch {
     status.setAttribute("role", "alert");

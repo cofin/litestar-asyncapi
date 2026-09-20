@@ -1,0 +1,938 @@
+{
+  "_add-scalar-classes-B1PNjs93.js": {
+    "file": "assets/add-scalar-classes-B1PNjs93.js",
+    "name": "add-scalar-classes",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js",
+      "_interface-content-folder.svg-C-mpftw8.js",
+      "_browser-OGEYGyGx.js"
+    ],
+    "dynamicImports": [
+      "node_modules/@scalar/icons/dist/library/icons/basic-shape-diamond.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/basic-shape-hexagon.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/basic-shape-primary-circle-ellipse-round.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/basic-shape-primary-square-rectangle.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/basic-shape-shield.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-desktop-monitor.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-desktop.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-laptop.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-android-samsung-back.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-android-samsung.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-iphone-x-back.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-iphone-x.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-tablet-touch.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-tablet.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-network-ethernet-cat6.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-network-lan-www.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-network-wifi-connection.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/computer-device-network-wifi-router.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/ecology-science-erlenmeyer-flask.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/image-flash-lightning.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/image-picture-flower.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-alert-exclamation-diamond.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-alert-exclamation-triangle-warning.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-alert-information-circle.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-award-crown.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-bookmark-tag.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-bookmark.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-calendar-date-one.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-content-book-open-pages.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-content-book-page.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-content-file.svg.js",
+      "_interface-content-folder.svg-C-mpftw8.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-copy-clipboard.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-edit-attachment.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-edit-binocular.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-edit-magic-wand.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-edit-tool-paint-roller.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-edit-tool-pencil.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-favorite-award.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-favorite-flag.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-favorite-heart.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-favorite-star.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-favorite-stars-sparkles.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-hierarchy-flowchart.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-home-house.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-hyperlink.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-lighting-brightness.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-lock-closed.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-lock-open-unlock.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-login-key.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-search.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-setting-cog.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-share-megaphone-bullhorn.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-share-rocket.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-share-satellite.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-share-space-ship.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-share.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-signal-square.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-time-clock-circle.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-time-hour-glass.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-users-multiple.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/interface-weather-moon.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/mail-chat-bubble-square.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/mail-send-email-paper-airplane.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/mail-send-envelope.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/money-cashier-receipt.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/money-currency-dollar-pay.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/money-graph-arrow-increase.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/money-graph-bar-chart-increase.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/nature-ecology-leaf.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/phone-telephone.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-bug.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-cloud.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-computer-database-server.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-computer-database.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-module-four-layout.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-module-three.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-module.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/programming-script-code.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/shopping-cart.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/shopping-gift-present.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/shopping-shipping-box-parcel-package.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/tag-new-circle.svg.js",
+      "node_modules/@scalar/icons/dist/library/icons/travel-map-earth-globe.svg.js"
+    ]
+  },
+  "_browser-OGEYGyGx.js": {
+    "file": "assets/browser-OGEYGyGx.js",
+    "name": "browser",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js"
+    ]
+  },
+  "_client-BCmhQpq7.js": {
+    "file": "assets/client-BCmhQpq7.js",
+    "name": "client",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_add-scalar-classes-B1PNjs93.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js",
+      "_browser-OGEYGyGx.js"
+    ]
+  },
+  "_interface-content-folder.svg-C-mpftw8.js": {
+    "file": "assets/interface-content-folder.svg-C-mpftw8.js",
+    "name": "interface-content-folder.svg",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "_modal-SNl8wql_.js": {
+    "file": "assets/modal-SNl8wql_.js",
+    "name": "modal",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_add-scalar-classes-B1PNjs93.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "_preload-helper-CnY6jOj8.js": {
+    "file": "assets/preload-helper-CnY6jOj8.js",
+    "name": "preload-helper"
+  },
+  "_runtime-core.esm-bundler-CTh8txNY.js": {
+    "file": "assets/runtime-core.esm-bundler-CTh8txNY.js",
+    "name": "runtime-core.esm-bundler",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js"
+    ]
+  },
+  "frontend/react.ts": {
+    "file": "assets/react-B4CtNO0T.js",
+    "name": "react",
+    "src": "frontend/react.ts",
+    "isEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js"
+    ],
+    "dynamicImports": [
+      "frontend/react.ts"
+    ],
+    "css": [
+      "assets/react-Dd5XIGmt.css"
+    ]
+  },
+  "frontend/scalar.ts": {
+    "file": "assets/scalar-QljgO4Eu.js",
+    "name": "scalar",
+    "src": "frontend/scalar.ts",
+    "isEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_add-scalar-classes-B1PNjs93.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js",
+      "_client-BCmhQpq7.js"
+    ],
+    "dynamicImports": [
+      "node_modules/@scalar/api-reference/dist/components/AgentScalar/AgentScalarChatInterface.vue.js",
+      "_browser-OGEYGyGx.js",
+      "_modal-SNl8wql_.js"
+    ],
+    "css": [
+      "assets/scalar-B7rUY8pC.css"
+    ]
+  },
+  "node_modules/@scalar/api-reference/dist/components/AgentScalar/AgentScalarChatInterface.vue.js": {
+    "file": "assets/AgentScalarChatInterface.vue-CUUEluhs.js",
+    "name": "AgentScalarChatInterface.vue",
+    "src": "node_modules/@scalar/api-reference/dist/components/AgentScalar/AgentScalarChatInterface.vue.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_add-scalar-classes-B1PNjs93.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js",
+      "_client-BCmhQpq7.js",
+      "_modal-SNl8wql_.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/basic-shape-diamond.svg.js": {
+    "file": "assets/basic-shape-diamond.svg-DRh1gVM9.js",
+    "name": "basic-shape-diamond.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/basic-shape-diamond.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/basic-shape-hexagon.svg.js": {
+    "file": "assets/basic-shape-hexagon.svg-c2W0YtBx.js",
+    "name": "basic-shape-hexagon.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/basic-shape-hexagon.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/basic-shape-primary-circle-ellipse-round.svg.js": {
+    "file": "assets/basic-shape-primary-circle-ellipse-round.svg-rAiM2zmG.js",
+    "name": "basic-shape-primary-circle-ellipse-round.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/basic-shape-primary-circle-ellipse-round.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/basic-shape-primary-square-rectangle.svg.js": {
+    "file": "assets/basic-shape-primary-square-rectangle.svg-BNzcfqNX.js",
+    "name": "basic-shape-primary-square-rectangle.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/basic-shape-primary-square-rectangle.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/basic-shape-shield.svg.js": {
+    "file": "assets/basic-shape-shield.svg-DycbVLak.js",
+    "name": "basic-shape-shield.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/basic-shape-shield.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-desktop-monitor.svg.js": {
+    "file": "assets/computer-device-desktop-monitor.svg-DhVSnXHD.js",
+    "name": "computer-device-desktop-monitor.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-desktop-monitor.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-desktop.svg.js": {
+    "file": "assets/computer-device-desktop.svg-D6VquCaA.js",
+    "name": "computer-device-desktop.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-desktop.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-laptop.svg.js": {
+    "file": "assets/computer-device-laptop.svg-CpmikpSS.js",
+    "name": "computer-device-laptop.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-laptop.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-android-samsung-back.svg.js": {
+    "file": "assets/computer-device-mobile-phone-android-samsung-back.svg-xpwCyiWa.js",
+    "name": "computer-device-mobile-phone-android-samsung-back.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-android-samsung-back.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-android-samsung.svg.js": {
+    "file": "assets/computer-device-mobile-phone-android-samsung.svg-CL8_PgeA.js",
+    "name": "computer-device-mobile-phone-android-samsung.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-android-samsung.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-iphone-x-back.svg.js": {
+    "file": "assets/computer-device-mobile-phone-iphone-x-back.svg-Jnhdneg7.js",
+    "name": "computer-device-mobile-phone-iphone-x-back.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-iphone-x-back.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-iphone-x.svg.js": {
+    "file": "assets/computer-device-mobile-phone-iphone-x.svg-CXT_8fZR.js",
+    "name": "computer-device-mobile-phone-iphone-x.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-phone-iphone-x.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-tablet-touch.svg.js": {
+    "file": "assets/computer-device-mobile-tablet-touch.svg-BctDVOQ2.js",
+    "name": "computer-device-mobile-tablet-touch.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-tablet-touch.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-tablet.svg.js": {
+    "file": "assets/computer-device-mobile-tablet.svg-xyjQJdul.js",
+    "name": "computer-device-mobile-tablet.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-mobile-tablet.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-network-ethernet-cat6.svg.js": {
+    "file": "assets/computer-device-network-ethernet-cat6.svg-esVLlvDx.js",
+    "name": "computer-device-network-ethernet-cat6.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-network-ethernet-cat6.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-network-lan-www.svg.js": {
+    "file": "assets/computer-device-network-lan-www.svg-Buwyu1-W.js",
+    "name": "computer-device-network-lan-www.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-network-lan-www.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-network-wifi-connection.svg.js": {
+    "file": "assets/computer-device-network-wifi-connection.svg-CrZYq3dh.js",
+    "name": "computer-device-network-wifi-connection.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-network-wifi-connection.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/computer-device-network-wifi-router.svg.js": {
+    "file": "assets/computer-device-network-wifi-router.svg-BYPFahcX.js",
+    "name": "computer-device-network-wifi-router.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/computer-device-network-wifi-router.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/ecology-science-erlenmeyer-flask.svg.js": {
+    "file": "assets/ecology-science-erlenmeyer-flask.svg-BHtpHrfH.js",
+    "name": "ecology-science-erlenmeyer-flask.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/ecology-science-erlenmeyer-flask.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/image-flash-lightning.svg.js": {
+    "file": "assets/image-flash-lightning.svg-QZoO4ePB.js",
+    "name": "image-flash-lightning.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/image-flash-lightning.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/image-picture-flower.svg.js": {
+    "file": "assets/image-picture-flower.svg-BLqASrJK.js",
+    "name": "image-picture-flower.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/image-picture-flower.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-alert-exclamation-diamond.svg.js": {
+    "file": "assets/interface-alert-exclamation-diamond.svg-eLakE_ox.js",
+    "name": "interface-alert-exclamation-diamond.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-alert-exclamation-diamond.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-alert-exclamation-triangle-warning.svg.js": {
+    "file": "assets/interface-alert-exclamation-triangle-warning.svg-cMoPZzey.js",
+    "name": "interface-alert-exclamation-triangle-warning.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-alert-exclamation-triangle-warning.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-alert-information-circle.svg.js": {
+    "file": "assets/interface-alert-information-circle.svg-Cud1S9AP.js",
+    "name": "interface-alert-information-circle.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-alert-information-circle.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-award-crown.svg.js": {
+    "file": "assets/interface-award-crown.svg-7Gklt_TO.js",
+    "name": "interface-award-crown.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-award-crown.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-bookmark-tag.svg.js": {
+    "file": "assets/interface-bookmark-tag.svg-DvQ4BlAy.js",
+    "name": "interface-bookmark-tag.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-bookmark-tag.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-bookmark.svg.js": {
+    "file": "assets/interface-bookmark.svg-DvQ4BlAy.js",
+    "name": "interface-bookmark.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-bookmark.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-calendar-date-one.svg.js": {
+    "file": "assets/interface-calendar-date-one.svg-CWxOloar.js",
+    "name": "interface-calendar-date-one.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-calendar-date-one.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-content-book-open-pages.svg.js": {
+    "file": "assets/interface-content-book-open-pages.svg-Bu8wU-4G.js",
+    "name": "interface-content-book-open-pages.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-content-book-open-pages.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-content-book-page.svg.js": {
+    "file": "assets/interface-content-book-page.svg-D-4LOA10.js",
+    "name": "interface-content-book-page.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-content-book-page.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-content-file.svg.js": {
+    "file": "assets/interface-content-file.svg-Ckxusdgg.js",
+    "name": "interface-content-file.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-content-file.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-copy-clipboard.svg.js": {
+    "file": "assets/interface-copy-clipboard.svg-BLQrNFrw.js",
+    "name": "interface-copy-clipboard.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-copy-clipboard.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-edit-attachment.svg.js": {
+    "file": "assets/interface-edit-attachment.svg-BN2R-y8K.js",
+    "name": "interface-edit-attachment.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-edit-attachment.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-edit-binocular.svg.js": {
+    "file": "assets/interface-edit-binocular.svg-CEiGD8jh.js",
+    "name": "interface-edit-binocular.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-edit-binocular.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-edit-magic-wand.svg.js": {
+    "file": "assets/interface-edit-magic-wand.svg-r6B9pE2p.js",
+    "name": "interface-edit-magic-wand.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-edit-magic-wand.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-edit-tool-paint-roller.svg.js": {
+    "file": "assets/interface-edit-tool-paint-roller.svg-Cn8ANiec.js",
+    "name": "interface-edit-tool-paint-roller.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-edit-tool-paint-roller.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-edit-tool-pencil.svg.js": {
+    "file": "assets/interface-edit-tool-pencil.svg-DmfJ8n41.js",
+    "name": "interface-edit-tool-pencil.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-edit-tool-pencil.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-favorite-award.svg.js": {
+    "file": "assets/interface-favorite-award.svg-C5ifjI1C.js",
+    "name": "interface-favorite-award.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-favorite-award.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-favorite-flag.svg.js": {
+    "file": "assets/interface-favorite-flag.svg-D7hn3s-I.js",
+    "name": "interface-favorite-flag.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-favorite-flag.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-favorite-heart.svg.js": {
+    "file": "assets/interface-favorite-heart.svg-B34oFQSs.js",
+    "name": "interface-favorite-heart.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-favorite-heart.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-favorite-star.svg.js": {
+    "file": "assets/interface-favorite-star.svg-BNAgC4vq.js",
+    "name": "interface-favorite-star.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-favorite-star.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-favorite-stars-sparkles.svg.js": {
+    "file": "assets/interface-favorite-stars-sparkles.svg-Bm1WkWv_.js",
+    "name": "interface-favorite-stars-sparkles.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-favorite-stars-sparkles.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-hierarchy-flowchart.svg.js": {
+    "file": "assets/interface-hierarchy-flowchart.svg-CBtuBxq5.js",
+    "name": "interface-hierarchy-flowchart.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-hierarchy-flowchart.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-home-house.svg.js": {
+    "file": "assets/interface-home-house.svg-CFAD8wY_.js",
+    "name": "interface-home-house.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-home-house.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-hyperlink.svg.js": {
+    "file": "assets/interface-hyperlink.svg-B_TPHwwA.js",
+    "name": "interface-hyperlink.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-hyperlink.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-lighting-brightness.svg.js": {
+    "file": "assets/interface-lighting-brightness.svg-siasqaqQ.js",
+    "name": "interface-lighting-brightness.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-lighting-brightness.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-lock-closed.svg.js": {
+    "file": "assets/interface-lock-closed.svg-CRarakRG.js",
+    "name": "interface-lock-closed.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-lock-closed.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-lock-open-unlock.svg.js": {
+    "file": "assets/interface-lock-open-unlock.svg-BIoZ-FBh.js",
+    "name": "interface-lock-open-unlock.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-lock-open-unlock.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-login-key.svg.js": {
+    "file": "assets/interface-login-key.svg-xxgi2IE-.js",
+    "name": "interface-login-key.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-login-key.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-search.svg.js": {
+    "file": "assets/interface-search.svg-C0xYerwd.js",
+    "name": "interface-search.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-search.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-setting-cog.svg.js": {
+    "file": "assets/interface-setting-cog.svg-zQtMRe6g.js",
+    "name": "interface-setting-cog.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-setting-cog.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-share-megaphone-bullhorn.svg.js": {
+    "file": "assets/interface-share-megaphone-bullhorn.svg-DZjST7Zb.js",
+    "name": "interface-share-megaphone-bullhorn.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-share-megaphone-bullhorn.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-share-rocket.svg.js": {
+    "file": "assets/interface-share-rocket.svg-B0vsdziN.js",
+    "name": "interface-share-rocket.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-share-rocket.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-share-satellite.svg.js": {
+    "file": "assets/interface-share-satellite.svg-rtOYxawJ.js",
+    "name": "interface-share-satellite.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-share-satellite.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-share-space-ship.svg.js": {
+    "file": "assets/interface-share-space-ship.svg-DIUf4Hi4.js",
+    "name": "interface-share-space-ship.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-share-space-ship.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-share.svg.js": {
+    "file": "assets/interface-share.svg-3PtJHEcT.js",
+    "name": "interface-share.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-share.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-signal-square.svg.js": {
+    "file": "assets/interface-signal-square.svg-DPwkL4Vq.js",
+    "name": "interface-signal-square.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-signal-square.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-time-clock-circle.svg.js": {
+    "file": "assets/interface-time-clock-circle.svg-D0Hd6RHV.js",
+    "name": "interface-time-clock-circle.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-time-clock-circle.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-time-hour-glass.svg.js": {
+    "file": "assets/interface-time-hour-glass.svg-Cqo_g7od.js",
+    "name": "interface-time-hour-glass.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-time-hour-glass.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-users-multiple.svg.js": {
+    "file": "assets/interface-users-multiple.svg-BLpgi6MX.js",
+    "name": "interface-users-multiple.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-users-multiple.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/interface-weather-moon.svg.js": {
+    "file": "assets/interface-weather-moon.svg-DPOyAVbD.js",
+    "name": "interface-weather-moon.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/interface-weather-moon.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/mail-chat-bubble-square.svg.js": {
+    "file": "assets/mail-chat-bubble-square.svg-CYwRIkDc.js",
+    "name": "mail-chat-bubble-square.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/mail-chat-bubble-square.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/mail-send-email-paper-airplane.svg.js": {
+    "file": "assets/mail-send-email-paper-airplane.svg-SdiaonW7.js",
+    "name": "mail-send-email-paper-airplane.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/mail-send-email-paper-airplane.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/mail-send-envelope.svg.js": {
+    "file": "assets/mail-send-envelope.svg-DkiXO8BE.js",
+    "name": "mail-send-envelope.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/mail-send-envelope.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/money-cashier-receipt.svg.js": {
+    "file": "assets/money-cashier-receipt.svg-C1-iXttU.js",
+    "name": "money-cashier-receipt.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/money-cashier-receipt.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/money-currency-dollar-pay.svg.js": {
+    "file": "assets/money-currency-dollar-pay.svg-BUJEQQRj.js",
+    "name": "money-currency-dollar-pay.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/money-currency-dollar-pay.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/money-graph-arrow-increase.svg.js": {
+    "file": "assets/money-graph-arrow-increase.svg-Beya_glt.js",
+    "name": "money-graph-arrow-increase.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/money-graph-arrow-increase.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/money-graph-bar-chart-increase.svg.js": {
+    "file": "assets/money-graph-bar-chart-increase.svg-BNkpB8Vb.js",
+    "name": "money-graph-bar-chart-increase.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/money-graph-bar-chart-increase.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/nature-ecology-leaf.svg.js": {
+    "file": "assets/nature-ecology-leaf.svg-CTji0R8q.js",
+    "name": "nature-ecology-leaf.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/nature-ecology-leaf.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/phone-telephone.svg.js": {
+    "file": "assets/phone-telephone.svg-DcgQEioi.js",
+    "name": "phone-telephone.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/phone-telephone.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-bug.svg.js": {
+    "file": "assets/programming-bug.svg-BUnNIIux.js",
+    "name": "programming-bug.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-bug.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-cloud.svg.js": {
+    "file": "assets/programming-cloud.svg-CWkHFETv.js",
+    "name": "programming-cloud.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-cloud.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-computer-database-server.svg.js": {
+    "file": "assets/programming-computer-database-server.svg-BT2qnQlQ.js",
+    "name": "programming-computer-database-server.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-computer-database-server.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-computer-database.svg.js": {
+    "file": "assets/programming-computer-database.svg-C0hzA2NX.js",
+    "name": "programming-computer-database.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-computer-database.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-module-four-layout.svg.js": {
+    "file": "assets/programming-module-four-layout.svg-FOiuICKz.js",
+    "name": "programming-module-four-layout.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-module-four-layout.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-module-three.svg.js": {
+    "file": "assets/programming-module-three.svg-DpDDK7Qq.js",
+    "name": "programming-module-three.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-module-three.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-module.svg.js": {
+    "file": "assets/programming-module.svg-Ij-kaIvQ.js",
+    "name": "programming-module.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-module.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/programming-script-code.svg.js": {
+    "file": "assets/programming-script-code.svg-BtViN0bu.js",
+    "name": "programming-script-code.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/programming-script-code.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/shopping-cart.svg.js": {
+    "file": "assets/shopping-cart.svg-GfmUE5v2.js",
+    "name": "shopping-cart.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/shopping-cart.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/shopping-gift-present.svg.js": {
+    "file": "assets/shopping-gift-present.svg-B6_cOky_.js",
+    "name": "shopping-gift-present.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/shopping-gift-present.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/shopping-shipping-box-parcel-package.svg.js": {
+    "file": "assets/shopping-shipping-box-parcel-package.svg-NyIf3bwD.js",
+    "name": "shopping-shipping-box-parcel-package.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/shopping-shipping-box-parcel-package.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/tag-new-circle.svg.js": {
+    "file": "assets/tag-new-circle.svg-C6N-CY12.js",
+    "name": "tag-new-circle.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/tag-new-circle.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "node_modules/@scalar/icons/dist/library/icons/travel-map-earth-globe.svg.js": {
+    "file": "assets/travel-map-earth-globe.svg-B5pJfXVv.js",
+    "name": "travel-map-earth-globe.svg",
+    "src": "node_modules/@scalar/icons/dist/library/icons/travel-map-earth-globe.svg.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  }
+}

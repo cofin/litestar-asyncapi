@@ -77,3 +77,7 @@ benchmarks/
 
 # Development-only JavaScript dependencies
 node_modules/
+
+# Browser test artifacts
+test-results/
+playwright-report/

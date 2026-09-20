@@ -1,7 +1,6 @@
 import html
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
-from urllib.parse import urlsplit
+from typing import TYPE_CHECKING, Any, Literal
 
 from litestar.enums import MediaType
 from litestar.openapi.plugins import JsonRenderPlugin, OpenAPIRenderPlugin, YamlRenderPlugin
@@ -26,23 +25,19 @@ AsyncAPIRenderPlugin = OpenAPIRenderPlugin
 class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
     """Render an HTML UI using AsyncAPI's React component."""
 
-    __slots__ = ("_config", "css_url", "js_url")
+    __slots__ = ("_config", "renderer")
 
     def __init__(
         self,
         *,
         path: str | Sequence[str] = "/",
-        js_url: str = "https://unpkg.com/@asyncapi/react-component@2.6.5/browser/standalone/index.js",
-        css_url: str = "https://unpkg.com/@asyncapi/react-component@2.6.5/styles/default.min.css",
+        renderer: Literal["asyncapi", "scalar"] = "asyncapi",
         config: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
+        kwargs.setdefault("favicon", "")
         super().__init__(path=path, media_type=MediaType.HTML, **kwargs)
-        if any(urlsplit(url).scheme not in {"", "http", "https"} for url in (js_url, css_url)):
-            message = "Documentation asset URLs must use HTTP(S) or relative paths"
-            raise ValueError(message)
-        self.js_url = js_url
-        self.css_url = css_url
+        self.renderer = renderer
         self._config = config or {}
 
     def render(self, request: "Request[Any, Any, Any]", openapi_schema: dict[str, Any]) -> bytes:
@@ -54,9 +49,17 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
             title = openapi_schema["info"]["title"]
 
         bootstrap = bootstrap_html(
-            request, entry="asyncapi", options=normalize_document(self._config, request.app.type_encoders)
+            request,
+            entry="react" if self.renderer == "asyncapi" else "scalar",
+            options=normalize_document(self._config, request.app.type_encoders),
         )
         escaped_title = html.escape(title, quote=True)
+        limitation = (
+            '<p role="note">Scalar currently omits tuple positions, zero-length bounds and boolean payload schemas. '
+            "Use the JSON download for the complete contract.</p>"
+            if self.renderer == "scalar"
+            else ""
+        )
 
         html_content = f"""
         <!DOCTYPE html>
@@ -66,11 +69,10 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
             {self.favicon}
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link rel="stylesheet" href="{html.escape(self.css_url, quote=True)}" />
-            <script src="{html.escape(self.js_url, quote=True)}" crossorigin></script>
             {self.style}
           </head>
           <body>
+            {limitation}
             <div id="asyncapi"></div>
             {bootstrap}
           </body>

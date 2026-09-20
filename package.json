@@ -6,11 +6,28 @@
     "node": "22.x"
   },
   "scripts": {
-    "validate:asyncapi": "node tools/validate_asyncapi.mjs"
+    "validate:asyncapi": "node tools/validate_asyncapi.mjs",
+    "build": "vite build",
+    "test": "vitest run frontend/tests/*.test.ts",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
     "@asyncapi/parser": "3.6.3",
+    "@asyncapi/react-component": "3.2.1",
     "@asyncapi/specs": "6.11.1",
-    "ajv": "8.20.0"
+    "@playwright/test": "1.63.0",
+    "@scalar/api-reference": "1.69.2",
+    "ajv": "8.20.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.0",
+    "vite-plugin-node-polyfills": "0.28.0",
+    "vitest": "5.0.1"
+  },
+  "type": "module",
+  "overrides": {
+    "undici": "7.29.0",
+    "@ai-sdk/provider-utils": "4.0.33"
   }
 }
