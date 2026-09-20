@@ -125,13 +125,15 @@ def test_array_like_struct_can_forbid_extra_items() -> None:
 
 
 def test_pydantic_aliases_and_constraints() -> None:
+    from litestar import Litestar
+    from litestar.plugins.pydantic import PydanticPlugin
     from pydantic import BaseModel, Field
 
     class Model(BaseModel):
         user_name: str = Field(alias="userName", min_length=2)
         count: int = Field(gt=0)
 
-    generator = AsyncAPISchemaGenerator()
+    generator = AsyncAPISchemaGenerator(Litestar([], plugins=[PydanticPlugin(prefer_alias=True)]))
     generator.generate(Model)
     props = next(iter(generator.components().values()))["properties"]
     assert props["userName"]["minLength"] == 2

@@ -1,18 +1,23 @@
 import sys
 from enum import Enum
+from random import Random
 from types import SimpleNamespace
-from typing import Any, cast, get_args, get_origin, get_type_hints
+from typing import Any, ClassVar, cast, get_args, get_origin, get_type_hints
 
 import msgspec
+from faker import Faker
 from litestar import Litestar
 from litestar._openapi.datastructures import SchemaRegistry
+from litestar._openapi.schema_generation.examples import ExampleFactory, _create_field_meta
 from litestar._openapi.schema_generation.plugins.struct import StructSchemaPlugin
 from litestar._openapi.schema_generation.schema import SchemaCreator
 from litestar.openapi.spec import Reference, Schema
 from litestar.openapi.spec.base import BaseSchemaObject
 from litestar.openapi.spec.enums import OpenAPIType
 from litestar.params import KwargDefinition
+from litestar.plugins.pydantic.plugins.schema import PydanticSchemaPlugin
 from litestar.typing import FieldDefinition
+from polyfactory.factories.base import BaseFactory
 
 from litestar_asyncapi.spec.base import _normalize_key
 
@@ -22,13 +27,14 @@ __all__ = ("create_schema_creator", "normalize_native_schema", "resolve_annotati
 class _SchemaCreator(SchemaCreator):
     """Apply narrow wire-shape corrections around Litestar's native type engine."""
 
-    __slots__ = ("_namespaces", "_signature_namespace", "null_fields")
+    __slots__ = ("_namespaces", "_null_schemas", "_signature_namespace", "null_fields")
 
     def __init__(self, *, signature_namespace: dict[str, Any] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._signature_namespace = signature_namespace or {}
         self._namespaces: list[dict[str, Any]] = []
         self.null_fields: dict[int, set[str]] = {}
+        self._null_schemas: dict[int, Schema] = {}
 
     def process_schema_result(self, field: FieldDefinition, schema: Schema) -> Schema | Reference:
         """Record explicit null defaults before native optional fields lose presence."""
@@ -41,6 +47,8 @@ class _SchemaCreator(SchemaCreator):
             for name in ("const", "default"):
                 if name in extra and extra[name] is None:
                     self.null_fields.setdefault(id(schema), set()).add(name)
+        if id(schema) in self.null_fields:
+            self._null_schemas[id(schema)] = schema
         return super().process_schema_result(field, schema)
 
     def for_field_definition(self, field_definition: FieldDefinition) -> Schema | Reference:
@@ -121,6 +129,9 @@ def create_schema_creator(app: Litestar) -> _SchemaCreator:
     """Create an isolated native registry using the application's schema plugins."""
     return _SchemaCreator(
         plugins=app.plugins.openapi,
+        prefer_alias=next(
+            (plugin.prefer_alias for plugin in app.plugins.openapi if isinstance(plugin, PydanticSchemaPlugin)), True
+        ),
         schema_registry=SchemaRegistry(),
         generate_examples=False,
         signature_namespace=app.signature_namespace,
@@ -153,3 +164,50 @@ def normalize_native_schema(value: Any, null_fields: dict[int, set[str]] | None 
     if isinstance(value, (list, tuple)):
         return [normalize_native_schema(item, null_fields) for item in value]
     return value.value if isinstance(value, Enum) else value
+
+
+def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) -> list[Any] | None:
+    """Read declared examples without finalizing the native registry's reference names."""
+    native = creator.for_field_definition(field)
+    if isinstance(native, Reference):
+        native = creator.schema_registry.get_schema_for_field_definition(field)
+    if native.examples is not None:
+        return list(native.examples)
+    if native.example is not None:
+        return [native.example]
+    model_config = getattr(field.type_, "model_config", {})
+    extra = model_config.get("json_schema_extra") if isinstance(model_config, dict) else None
+    if isinstance(extra, dict) and "examples" in extra:
+        return list(extra["examples"])
+    return None
+
+
+def native_example_value(field: FieldDefinition) -> Any:
+    """Use an isolated native example factory without reseeding shared random state."""
+    faker = Faker()
+    faker.seed_instance()
+
+    class IsolatedExampleFactory(ExampleFactory):
+        __slots__ = ()
+        __random_seed__: ClassVar[Any] = None
+        __random__ = Random()
+        __faker__ = faker
+        __max_collection_length__ = 1
+        __min_collection_length__ = 1
+
+        @classmethod
+        def _get_or_create_factory(cls, model: type[Any]) -> Any:
+            factory = cast("Any", BaseFactory._get_or_create_factory).__func__(cls, model)
+            return factory.create_factory(
+                model,
+                **{
+                    **cls._get_config(),
+                    "__random_seed__": None,
+                    "__set_as_default_factory_for_type__": False,
+                    "_get_or_create_factory": classmethod(
+                        cast("Any", IsolatedExampleFactory._get_or_create_factory).__func__
+                    ),
+                },
+            )
+
+    return IsolatedExampleFactory.get_field_value(_create_field_meta(field))

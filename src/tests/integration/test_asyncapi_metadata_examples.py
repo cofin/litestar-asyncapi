@@ -42,7 +42,7 @@ def test_asyncapi_docstrings_and_examples_in_document() -> None:
             yield Payload(value=1)
 
     app = Litestar(route_handlers=[listener, stream])
-    config = AsyncAPIConfig(use_handler_docstrings=True, create_examples=True, random_seed=1)
+    config = AsyncAPIConfig(use_handler_docstrings=True, create_examples=True)
     document = AsyncAPIGenerator(app=app, config=config).build_asyncapi()
 
     receive_op = next(op for op in document.operations.values() if op.action is OperationAction.RECEIVE)
@@ -59,7 +59,7 @@ def test_asyncapi_docstrings_and_examples_in_document() -> None:
     message = channel.messages[message_key]
     assert not isinstance(message, Reference)
     assert message.examples
-    assert isinstance(message.examples[0], dict)
+    assert isinstance(message.examples[0].payload, dict)
 
     stream_op = next(
         op

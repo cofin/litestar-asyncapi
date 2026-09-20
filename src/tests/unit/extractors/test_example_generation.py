@@ -28,7 +28,7 @@ def test_examples_generated_for_listener_messages() -> None:
         raise RuntimeError
 
     app = Litestar(route_handlers=[handler])
-    config = AsyncAPIConfig(create_examples=True, random_seed=1)
+    config = AsyncAPIConfig(create_examples=True)
     channels = extract_websocket_channels(app, schema_generator=AsyncAPISchemaGenerator(), config=config)
     by_action = {op.action: op for op in channels[0].operations}
 
@@ -37,12 +37,12 @@ def test_examples_generated_for_listener_messages() -> None:
 
     assert receive.message is not None
     assert receive.message.examples
-    assert isinstance(receive.message.examples[0], dict)
-    assert "value" in receive.message.examples[0]
+    assert isinstance(receive.message.examples[0].payload, dict)
+    assert "value" in receive.message.examples[0].payload
 
     assert send.message is not None
     assert send.message.examples
-    assert isinstance(send.message.examples[0], dict)
+    assert isinstance(send.message.examples[0].payload, dict)
 
 
 def test_examples_generated_for_stream_messages() -> None:
@@ -56,10 +56,10 @@ def test_examples_generated_for_stream_messages() -> None:
             yield Payload(value=1)
 
     app = Litestar(route_handlers=[stream])
-    config = AsyncAPIConfig(create_examples=True, random_seed=1)
+    config = AsyncAPIConfig(create_examples=True)
     channels = extract_websocket_channels(app, schema_generator=AsyncAPISchemaGenerator(), config=config)
     operation = channels[0].operations[0]
 
     assert operation.message is not None
     assert operation.message.examples
-    assert isinstance(operation.message.examples[0], dict)
+    assert isinstance(operation.message.examples[0].payload, dict)

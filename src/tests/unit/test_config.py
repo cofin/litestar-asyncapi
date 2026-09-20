@@ -11,7 +11,6 @@ def test_config_defaults() -> None:
     assert config.default_content_type == "application/json"
     assert config.use_handler_docstrings is False
     assert config.create_examples is False
-    assert config.random_seed is None
     assert config.include_websocket_routes is True
     assert config.include_channels_plugin is True
     assert config.use_cache is True

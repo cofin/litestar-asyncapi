@@ -20,6 +20,12 @@ def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
     return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin(), AsyncAPIPlaygroundRenderPlugin()]
 
 
+def _validate_create_examples(value: object) -> None:
+    if not isinstance(value, bool):
+        message = "create_examples must be a bool; provide explicit message examples instead of custom factories"
+        raise TypeError(message)
+
+
 @dataclass
 class AsyncAPIConfig:
     """Configuration for the AsyncAPI plugin.
@@ -38,10 +44,8 @@ class AsyncAPIConfig:
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False
     """Whether to use handler docstrings for operation descriptions."""
-    create_examples: bool | object | dict[type[Any], object] = False
+    create_examples: bool = False
     """Whether to auto-generate examples for message payloads."""
-    random_seed: int | None = None
-    """Optional random seed for deterministic example generation."""
 
     strict_uniqueness: bool = False
     """Whether to raise an exception on operationId collision instead of suffixing."""
@@ -72,6 +76,9 @@ class AsyncAPIConfig:
 
     message_traits: dict[str, MessageTrait | dict[str, Any]] = field(default_factory=dict)
     """Reusable message traits registered under `components.messageTraits`."""
+
+    def __post_init__(self) -> None:
+        _validate_create_examples(self.create_examples)
 
     def to_servers(self) -> dict[str, Server]:
         """Return a mapping of server definitions.

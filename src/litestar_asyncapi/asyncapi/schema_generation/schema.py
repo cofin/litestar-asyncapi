@@ -3,7 +3,12 @@ from typing import Any
 from litestar import Litestar
 from litestar.exceptions import ImproperlyConfiguredException
 
-from litestar_asyncapi._compat import create_schema_creator, normalize_native_schema, resolve_annotation
+from litestar_asyncapi._compat import (
+    create_schema_creator,
+    declared_schema_examples,
+    normalize_native_schema,
+    resolve_annotation,
+)
 from litestar_asyncapi.asyncapi.schema_generation.dialect import to_asyncapi_schema
 from litestar_asyncapi.spec import MultiFormatSchema
 
@@ -57,3 +62,7 @@ class AsyncAPISchemaGenerator:
         except ImproperlyConfiguredException as error:
             detail = f"Cannot export AsyncAPI components for payloads {', '.join(self._origins)}: {error}"
             raise ImproperlyConfiguredException(detail) from error
+
+    def declared_examples(self, type_or_field: Any) -> list[Any] | None:
+        """Read native schema example declarations without finalizing components."""
+        return declared_schema_examples(resolve_annotation(type_or_field, self._app), self._creator)

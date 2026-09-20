@@ -9,7 +9,7 @@ from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredOperation,
     DiscoverySource,
 )
-from litestar_asyncapi.spec import OperationAction, Parameter, Reference, Schema
+from litestar_asyncapi.spec import MultiFormatSchema, OperationAction, Parameter, Reference, Schema
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -53,7 +53,7 @@ def extract_websocket_channels(
 
         parameters = _path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
         operations = _infer_operations_from_handler(
-            route.route_handler, schema_generator=schema_generator, config=config
+            route.route_handler, schema_generator=schema_generator, config=config, app=app
         )
         channels.append(
             DiscoveredChannel(
@@ -96,7 +96,11 @@ def _path_parameters_to_parameters(
 
 
 def _infer_operations_from_handler(
-    route_handler: "WebsocketRouteHandler", *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig"
+    route_handler: "WebsocketRouteHandler",
+    *,
+    schema_generator: "AsyncAPISchemaGenerator",
+    config: "AsyncAPIConfig",
+    app: "Litestar",
 ) -> list[DiscoveredOperation]:
     from litestar.handlers.websocket_handlers.listener import WebsocketListenerRouteHandler
     from litestar.handlers.websocket_handlers.stream import WebSocketStreamHandler
@@ -104,20 +108,26 @@ def _infer_operations_from_handler(
     operations: list[DiscoveredOperation]
 
     if isinstance(route_handler, WebsocketListenerRouteHandler):
-        operations = _infer_listener_operations(route_handler, schema_generator=schema_generator, config=config)
+        operations = _infer_listener_operations(
+            route_handler, schema_generator=schema_generator, config=config, app=app
+        )
         _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
+        return _apply_decorator_overrides(
+            route_handler, operations, schema_generator=schema_generator, config=config, app=app
+        )
 
     if isinstance(route_handler, WebSocketStreamHandler):
-        operations = _infer_stream_operations(route_handler, schema_generator=schema_generator, config=config)
+        operations = _infer_stream_operations(route_handler, schema_generator=schema_generator, config=config, app=app)
         _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
+        return _apply_decorator_overrides(
+            route_handler, operations, schema_generator=schema_generator, config=config, app=app
+        )
 
     operations = _infer_raw_websocket_operations(route_handler)
     _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
     _apply_docstring_descriptions(route_handler, operations, config=config)
     return _apply_decorator_overrides(
-        route_handler, operations, schema_generator=schema_generator, replace_placeholders=True
+        route_handler, operations, schema_generator=schema_generator, config=config, app=app, replace_placeholders=True
     )
 
 
@@ -126,8 +136,11 @@ def _apply_decorator_overrides(
     operations: list[DiscoveredOperation],
     *,
     schema_generator: "AsyncAPISchemaGenerator",
+    config: "AsyncAPIConfig",
+    app: "Litestar",
     replace_placeholders: bool = False,
 ) -> list[DiscoveredOperation]:
+    from litestar_asyncapi.asyncapi.utils.examples import normalize_examples
     from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
 
     raw_metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
@@ -177,7 +190,14 @@ def _apply_decorator_overrides(
         if override.message.description is not None:
             message.description = override.message.description
         if override.message.examples is not None:
-            message.examples = override.message.examples
+            message.examples = normalize_examples(override.message.examples, app=app)
+        elif override.message.payload is not None and not isinstance(override.message.payload, MultiFormatSchema):
+            message.examples = _generate_examples(
+                FieldDefinition.from_annotation(override.message.payload),
+                config=config,
+                app=app,
+                schema_generator=schema_generator,
+            )
         if override.message.headers is not None:
             headers = schema_generator.generate(override.message.headers, provenance=str(route_handler))
             message.headers = headers
@@ -192,7 +212,7 @@ def _apply_decorator_overrides(
 
 
 def _infer_listener_operations(
-    route_handler: Any, *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig"
+    route_handler: Any, *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig", app: "Litestar"
 ) -> list[DiscoveredOperation]:
     # These are set by Litestar during handler registration.
     data_field = cast("FieldDefinition", route_handler._parsed_data_field)
@@ -200,30 +220,30 @@ def _infer_listener_operations(
 
     operations: list[DiscoveredOperation] = []
     receive_payload = schema_generator.generate(data_field, provenance=str(route_handler))
-    receive_example = _generate_example(data_field, config=config)
+    receive_examples = _inferred_examples(
+        data_field, OperationAction.RECEIVE, route_handler, config=config, app=app, schema_generator=schema_generator
+    )
     operations.append(
         DiscoveredOperation(
             action=OperationAction.RECEIVE,
             operation_id=f"{route_handler.handler_name}_receive",
             message=DiscoveredMessage(
-                payload=receive_payload,
-                content_type=_infer_content_type(receive_payload),
-                examples=[receive_example] if receive_example is not None else None,
+                payload=receive_payload, content_type=_infer_content_type(receive_payload), examples=receive_examples
             ),
         )
     )
 
     if not _is_none_return_type(return_field):
         send_payload = schema_generator.generate(return_field, provenance=str(route_handler))
-        send_example = _generate_example(return_field, config=config)
+        send_examples = _inferred_examples(
+            return_field, OperationAction.SEND, route_handler, config=config, app=app, schema_generator=schema_generator
+        )
         operations.append(
             DiscoveredOperation(
                 action=OperationAction.SEND,
                 operation_id=f"{route_handler.handler_name}_send",
                 message=DiscoveredMessage(
-                    payload=send_payload,
-                    content_type=_infer_content_type(send_payload),
-                    examples=[send_example] if send_example is not None else None,
+                    payload=send_payload, content_type=_infer_content_type(send_payload), examples=send_examples
                 ),
             )
         )
@@ -233,21 +253,19 @@ def _infer_listener_operations(
 
 
 def _infer_stream_operations(
-    route_handler: Any, *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig"
+    route_handler: Any, *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig", app: "Litestar"
 ) -> list[DiscoveredOperation]:
     return_field = cast("FieldDefinition", route_handler._parsed_return_field)
 
     payload = schema_generator.generate(return_field, provenance=str(route_handler))
-    example = _generate_example(return_field, config=config)
+    examples = _inferred_examples(
+        return_field, OperationAction.SEND, route_handler, config=config, app=app, schema_generator=schema_generator
+    )
     operations = [
         DiscoveredOperation(
             action=OperationAction.SEND,
             operation_id=f"{route_handler.handler_name}_send",
-            message=DiscoveredMessage(
-                payload=payload,
-                content_type=_infer_content_type(payload),
-                examples=[example] if example is not None else None,
-            ),
+            message=DiscoveredMessage(payload=payload, content_type=_infer_content_type(payload), examples=examples),
         )
     ]
     _apply_handler_metadata(route_handler, operations, include_action_suffix=False)
@@ -330,13 +348,43 @@ def _apply_docstring_descriptions(
             operation.description = docstring
 
 
-def _generate_example(field_definition: FieldDefinition, *, config: "AsyncAPIConfig") -> Any | None:
-    if not config.create_examples:
+def _inferred_examples(
+    field_definition: FieldDefinition,
+    action: OperationAction,
+    route_handler: Any,
+    *,
+    config: "AsyncAPIConfig",
+    app: "Litestar",
+    schema_generator: "AsyncAPISchemaGenerator",
+) -> list[Any] | None:
+    from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
+
+    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+    override = metadata.operations.get(action) if isinstance(metadata, AsyncAPIMetadata) else None
+    if (
+        override
+        and override.message
+        and (override.message.examples is not None or override.message.payload is not None)
+    ):
         return None
+    return _generate_examples(field_definition, config=config, app=app, schema_generator=schema_generator)
 
-    from litestar_asyncapi.asyncapi.utils.examples import generate_example
 
-    return generate_example(field_definition, config=config)
+def _generate_examples(
+    field_definition: FieldDefinition,
+    *,
+    config: "AsyncAPIConfig",
+    app: "Litestar",
+    schema_generator: "AsyncAPISchemaGenerator",
+) -> list[Any] | None:
+    from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
+    from litestar_asyncapi.spec.base import UNSET
+
+    declared = schema_generator.declared_examples(field_definition)
+    if declared is not None:
+        return normalize_examples(declared, app=app)
+    example = generate_example(field_definition, config=config, app=app)
+    return normalize_examples([example], app=app) if example is not UNSET else None
 
 
 def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
