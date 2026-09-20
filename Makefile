@@ -316,3 +316,40 @@ js-test:                                           ## Test rendering-view transf
 
 browser-test:                                      ## Test packaged documentation in Chromium
 	@npm run test:browser
+
+WHEEL ?= $(wildcard dist/*.whl)
+LITESTAR_BOUNDARY ?= minimum
+
+.PHONY: js-install installed-test browser-test-installed
+js-install:                                        ## Install the exact frontend lockfile
+	@npm ci
+
+installed-test:                                    ## Test a built wheel outside the checkout on PYTHON_VERSION
+	@set -eu; \
+	wheel="$$(realpath "$(WHEEL)")"; \
+	workdir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$workdir"' EXIT; \
+	cp -R src/tests "$$workdir/tests"; \
+	cp pyproject.toml "$$workdir/pyproject.toml"; \
+	uv export --frozen --only-group tests --no-emit-project --no-hashes --output-file "$$workdir/requirements.txt" >/dev/null; \
+	uv venv --python "$(PYTHON_VERSION)" "$$workdir/.venv"; \
+	framework='litestar==2.24.0'; \
+	if [ "$(LITESTAR_BOUNDARY)" = latest ]; then framework='litestar>=2.24,<3'; fi; \
+	uv pip install --python "$$workdir/.venv/bin/python" "$$wheel" "$$framework"; \
+	(cd "$$workdir" && uv run --no-project --no-sync --python .venv/bin/python python -c 'import sys; from pathlib import Path; from importlib.metadata import version; import litestar_asyncapi; from litestar import Litestar; from litestar_asyncapi import AsyncAPIPlugin; assert Path(litestar_asyncapi.__file__).is_relative_to(sys.prefix); plugin = AsyncAPIPlugin(); assert plugin.get_asyncapi_schema(Litestar(plugins=[plugin]))["asyncapi"] == "3.1.0"; print("Minimal installed wheel:", sys.version, "Litestar", version("litestar"), litestar_asyncapi.__file__)'); \
+	uv pip install --python "$$workdir/.venv/bin/python" -r "$$workdir/requirements.txt" "$$wheel"; \
+	if [ "$(LITESTAR_BOUNDARY)" = latest ]; then uv pip install --python "$$workdir/.venv/bin/python" --upgrade 'litestar[standard,attrs,pydantic]>=2.24,<3'; else uv pip install --python "$$workdir/.venv/bin/python" 'litestar[standard,attrs,pydantic]==2.24.0'; fi; \
+	"$$workdir/.venv/bin/python" -c 'import sys; from importlib.metadata import version; resolved = version("litestar"); assert sys.argv[1] != "minimum" or resolved == "2.24.0"; print("Full test dependency boundary:", sys.argv[1], resolved)' "$(LITESTAR_BOUNDARY)"; \
+	(cd "$$workdir" && uv run --no-project --no-sync --python .venv/bin/python python -m pytest tests --no-cov -q)
+
+browser-test-installed:                            ## Open the built wheel in a real browser outside the checkout
+	@set -eu; \
+	wheel="$$(realpath "$(WHEEL)")"; \
+	workdir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$workdir"' EXIT; \
+	cp frontend/tests/server.py "$$workdir/server.py"; \
+	uv venv --python "$(PYTHON_VERSION)" "$$workdir/.venv"; \
+	uv pip install --python "$$workdir/.venv/bin/python" "$$wheel" uvicorn websockets; \
+	manifest="$$(realpath src/litestar_asyncapi/assets/ui/manifest.json)"; \
+	(cd "$$workdir" && .venv/bin/python -c 'import sys; from pathlib import Path; from hashlib import sha256; import litestar_asyncapi; package = Path(litestar_asyncapi.__file__).parent; assert package.is_relative_to(sys.prefix); assert sha256((package / "assets/ui/manifest.json").read_bytes()).digest() == sha256(Path(sys.argv[1]).read_bytes()).digest(); print("Installed browser package and exact manifest:", package)' "$$manifest"); \
+	ASYNCAPI_BROWSER_SERVER="$$workdir/.venv/bin/python $$workdir/server.py" npm run test:browser

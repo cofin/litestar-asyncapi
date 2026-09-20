@@ -6,6 +6,9 @@ on:
       python-version:
         required: true
         type: string
+      litestar-boundary:
+        required: true
+        type: string
       coverage:
         required: false
         type: boolean
@@ -28,6 +31,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout }}
     env:
       PYTHON_VERSION: ${{ inputs.python-version }}
+      LITESTAR_BOUNDARY: ${{ inputs.litestar-boundary }}
     defaults:
       run:
         shell: bash
@@ -45,19 +49,22 @@ jobs:
       - name: Set up Python
         run: uv python install "$PYTHON_VERSION"
 
-      - name: Install dependencies
-        run: make install PYTHON_VERSION="$PYTHON_VERSION"
+      - name: Download the tested distribution
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: tested-distribution
+          path: dist
 
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PWD/src" >> "$GITHUB_ENV"
+      - name: Test installed wheel with minimum and newest compatible Litestar
+        run: make installed-test
 
-      - name: Test
-        if: ${{ !inputs.coverage }}
-        run: make test
-
-      - name: Test with coverage
+      - name: Install locked coverage dependencies
         if: ${{ inputs.coverage }}
-        run: uv run pytest src/tests --cov=litestar_asyncapi --cov-report=xml -n auto
+        run: uv sync --frozen --all-groups --python "$PYTHON_VERSION"
+
+      - name: Test with locked coverage
+        if: ${{ inputs.coverage }}
+        run: uv run --no-sync pytest src/tests --cov=litestar_asyncapi --cov-report=xml -n auto
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ inputs.coverage }}

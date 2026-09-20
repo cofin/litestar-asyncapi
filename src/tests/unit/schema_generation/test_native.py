@@ -59,8 +59,10 @@ def test_mutual_recursion_and_finalized_references() -> None:
 def test_same_short_names_update_early_references() -> None:
     from dataclasses import make_dataclass
 
-    first = make_dataclass("Model", [("first", int)], namespace={"__module__": "first.models"})
-    second = make_dataclass("Model", [("second", str)], namespace={"__module__": "second.models"})
+    first = make_dataclass("Model", [("first", int)])
+    second = make_dataclass("Model", [("second", str)])
+    first.__module__ = "first.models"
+    second.__module__ = "second.models"
     generator = AsyncAPISchemaGenerator()
     first_ref = generator.generate(first)
     second_ref = generator.generate(second)
