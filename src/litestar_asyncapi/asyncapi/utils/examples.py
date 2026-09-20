@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING, Any
 
 from litestar import Litestar
 from litestar.params import KwargDefinition
-from litestar.serialization import decode_json, encode_json, get_serializer
 from litestar.types import Empty
 from litestar.typing import FieldDefinition
 from polyfactory.exceptions import ParameterException
 
 from litestar_asyncapi._compat import native_example_value
+from litestar_asyncapi.serialization import normalize_value
 from litestar_asyncapi.spec import MessageExample
 from litestar_asyncapi.spec.base import UNSET
 
@@ -18,10 +18,6 @@ if TYPE_CHECKING:
 __all__ = ("generate_example", "normalize_examples")
 
 
-def _wire_value(value: Any, app: Litestar) -> Any:
-    return decode_json(encode_json(value, serializer=get_serializer(app.type_encoders)))
-
-
 def normalize_examples(values: list[Any], *, app: Litestar) -> list[MessageExample]:
     """Normalize explicit values while preserving typed Message Example metadata."""
     result = []
@@ -29,14 +25,14 @@ def normalize_examples(values: list[Any], *, app: Litestar) -> list[MessageExamp
         if isinstance(value, MessageExample):
             result.append(
                 MessageExample(
-                    payload=_wire_value(value.payload, app) if value.payload is not UNSET else UNSET,
-                    headers=_wire_value(value.headers, app) if value.headers is not None else None,
+                    payload=normalize_value(value.payload, app.type_encoders) if value.payload is not UNSET else UNSET,
+                    headers=normalize_value(value.headers, app.type_encoders) if value.headers is not None else None,
                     name=value.name,
                     summary=value.summary,
                 )
             )
         else:
-            result.append(MessageExample(payload=_wire_value(value, app)))
+            result.append(MessageExample(payload=normalize_value(value, app.type_encoders)))
     return result
 
 
@@ -78,7 +74,7 @@ def generate_example(
         else:
             _check_constraints(kwarg)
             candidate = native_example_value(field_definition)
-        return _wire_value(candidate, app)
+        return normalize_value(candidate, app.type_encoders)
     except (ParameterException, TypeError, ValueError, RecursionError, NameError) as error:
         warnings.warn(f"Omitting automatic AsyncAPI example for {field_definition.annotation!r}: {error}", stacklevel=2)
         return UNSET

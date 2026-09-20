@@ -40,3 +40,19 @@ def test_explicit_legacy_version_and_extensions() -> None:
     assert AsyncAPI(info=Info("Example", "1"), asyncapi="3.0.0").to_schema()["asyncapi"] == "3.0.0"
     assert ServerVariable().to_schema() == {}
     assert Message(extensions={"x-example": {"value": None}}).to_schema() == {"x-example": {"value": None}}
+
+
+def test_deepcopy_omission_and_ordinary_enums() -> None:
+    from copy import deepcopy
+    from enum import Enum
+
+    from litestar_asyncapi.spec import MessageExample
+    from litestar_asyncapi.spec.base import UNSET
+
+    class Choice(Enum):
+        VALUE = "value"
+
+    assert deepcopy(UNSET) is UNSET
+    assert deepcopy(Schema()).to_schema() == {}
+    assert deepcopy(MessageExample(payload=None)).to_schema() == {"payload": None}
+    assert Schema(default=Choice.VALUE).to_schema() == {"default": "value"}

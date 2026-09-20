@@ -2,20 +2,15 @@ from dataclasses import asdict, dataclass, fields, is_dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from litestar.types import Empty
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from dataclasses import Field
 
-__all__ = ("UNSET", "BaseSchemaObject", "UnsetType")
+__all__ = ("UNSET", "BaseSchemaObject")
 
-
-class UnsetType(Enum):
-    """Sentinel distinguishing an omitted field from a JSON null literal."""
-
-    UNSET = 0
-
-
-UNSET = UnsetType.UNSET
+UNSET = Empty
 
 
 def _normalize_key(key: str) -> str:
