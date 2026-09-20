@@ -1,7 +1,15 @@
-Reference
-=========
+=============
+API Reference
+=============
+
+Modular API reference for ``litestar-asyncapi``.
 
 .. toctree::
-   :maxdepth: 1
+    :titlesonly:
+    :maxdepth: 1
 
-   api
+    core
+    plugins
+    spec
+    extractors
+    schema-generation

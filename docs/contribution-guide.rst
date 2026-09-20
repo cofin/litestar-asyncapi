@@ -7,84 +7,68 @@ We welcome contributions of all kinds! This guide will help you get started with
 Setting Up Your Development Environment
 =======================================
 
-We use ``uv`` for dependency and environment management.
+We use ``uv`` for dependency, virtual environment, and tool execution management.
 
-1.  **Clone the repository**:
+1. **Clone the repository**:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-        git clone https://github.com/litestar-org/litestar-asyncapi.git
-        cd litestar-asyncapi
+       git clone https://github.com/cofin/litestar-asyncapi.git
+       cd litestar-asyncapi
 
-2.  **Install dependencies and set up pre-commit**:
+2. **Install dependencies**:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-        uv sync
-        uv run pre-commit install
+       make install
+
+3. **Install git hooks (powered by prek)**:
+
+   .. code-block:: bash
+
+       uvx prek install
 
 Development Workflow
 ====================
 
-1.  **Create a branch**:
+1. **Create a branch**:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-        git checkout -b your-feature-branch
+       git checkout -b your-feature-branch
 
-2.  **Make your changes**: Implement your feature or fix your bug.
-3.  **Run quality checks**: Use the provided Makefile targets to ensure your changes meet our standards.
+2. **Implement changes**: Follow PEP 585/604 modern typing conventions and enforce docstrings (no inline comments).
+3. **Run quality gates**:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-        make lint  # Run all linters and formatters
-        make test  # Run all tests
-        make docs  # Build documentation
+       make lint          # Runs prek hooks, mypy, pyright, slotscheck, zizmor
+       make test          # Run test suite
+       make docs          # Build documentation
+       make docs-audit    # Verify documentation structural integrity
 
-4.  **Commit your changes**: We use conventional commits.
+4. **Run the complete validation suite**:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-        git commit -m "feat: your new feature"
+       make check-all     # Aggregate check: lint, test-all, coverage
 
-5.  **Push your branch**:
+5. **Commit your changes**: Use Conventional Commits formatting:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-        git push origin your-feature-branch
+       git commit -m "feat: your concise summary"
 
-6.  **Open a Pull Request**: Submit your PR on GitHub and wait for review.
+6. **Submit a Pull Request**: Push your branch to GitHub and open a PR against ``main``.
 
 Quality Gates
 =============
 
-We use several tools to maintain code quality:
+Every PR must pass our CI matrix before merge:
 
-- **Ruff**: For linting and formatting.
-- **Mypy/Pyright**: For type checking.
-- **Pytest**: For testing.
-- **Slotscheck**: To ensure ``__slots__`` are correctly defined.
-
-All checks must pass before a PR can be merged.
-
-Documentation
-=============
-
-Documentation is located in the ``docs/`` directory and is built using Sphinx. We use the Shibuya theme with AsyncAPI-specific styling.
-
-To build the documentation locally:
-
-.. code-block:: bash
-
-    make docs
-
-To serve the documentation with live-reload:
-
-.. code-block:: bash
-
-    uv run sphinx-autobuild docs docs/_build/html
-
-Issue Tracking
-==============
-
-We use **bd (beads)** for issue tracking and development workflows. See the ``AGENTS.md`` for more details on how to use ``bd``.
+- **prek / ruff**: Formatting and linting according to Litestar preview rules.
+- **mypy & pyright**: Strict type verification scoped to ``src/litestar_asyncapi``.
+- **slotscheck**: Validation of ``__slots__`` on all library classes.
+- **zizmor**: GitHub Actions workflow security static analysis.
+- **pytest**: 100% passing tests across supported Python versions.
+- **docs-audit**: Zero structural documentation errors or orphaned pages.

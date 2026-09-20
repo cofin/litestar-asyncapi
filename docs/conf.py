@@ -124,6 +124,7 @@ html_theme_options: dict[str, Any] = {
             "children": [
                 {"title": "Getting Started", "url": "getting-started", "summary": "Installation and quickstart guide"},
                 {"title": "Usage", "url": "usage/index", "summary": "Detailed usage guides and tutorials"},
+                {"title": "Examples", "url": "examples/index", "summary": "Interactive runnable application examples"},
                 {"title": "API Reference", "url": "reference/index", "summary": "Comprehensive API documentation"},
             ],
         },
