@@ -15,6 +15,7 @@ from litestar_asyncapi.docs import asset_directory, renderer_name
 from litestar_asyncapi.serialization import normalize_document
 
 if TYPE_CHECKING:
+    from click import Group
     from litestar import Litestar
     from litestar.config.app import AppConfig
     from litestar.handlers import HTTPRouteHandler
@@ -179,6 +180,12 @@ class AsyncAPIPlugin(InitPluginProtocol):
             render_plugin.receive_router(router)
 
         return router
+
+    def on_cli_init(self, cli: "Group") -> None:
+        """Extend Litestar's CLI with headless AsyncAPI export."""
+        from litestar_asyncapi.cli import register_commands
+
+        register_commands(cli, self)
 
     def on_app_init(self, app_config: "AppConfig") -> "AppConfig":
         """Handle application initialization.

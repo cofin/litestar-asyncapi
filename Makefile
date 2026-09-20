@@ -298,8 +298,14 @@ lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run
 check-all: lint test-all coverage                  ## Run all checks (lint, test, coverage)
 
 .PHONY: validate-asyncapi
-validate-asyncapi:                                 ## Validate offline AsyncAPI contracts and Draft07 payloads
+validate-asyncapi: export-asyncapi-fixture          ## Validate offline AsyncAPI contracts and Draft07 payloads
 	@npm run validate:asyncapi
+	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json
+
+.PHONY: export-asyncapi-fixture
+export-asyncapi-fixture:                           ## Export a headless application contract for the official gate
+	@mkdir -p .tmp
+	@uv run litestar --app-dir src --app tests.fixtures.apps.cli:app asyncapi export --output .tmp/asyncapi-fixture.json --overwrite
 
 .PHONY: js-build js-test browser-test
 js-build:                                          ## Build packaged browser assets

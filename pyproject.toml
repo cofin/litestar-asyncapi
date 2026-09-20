@@ -135,6 +135,7 @@ exclude_lines = [
 ]
 
 [tool.coverage.run]
+patch = ["subprocess"]
 branch = true
 concurrency = ["multiprocessing"]
 disable_warnings = ["no-data-collected", "module-not-measured", "module-not-imported"]
