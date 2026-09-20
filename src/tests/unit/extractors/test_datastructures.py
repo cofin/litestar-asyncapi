@@ -18,7 +18,9 @@ def test_message_definition_retains_payload_contract() -> None:
 
 
 def test_discovered_channel_defaults() -> None:
-    channel = DiscoveredChannel(key="room", address="/ws/{room}", source=DiscoverySource.WEBSOCKET, provenance="test")
+    channel = DiscoveredChannel(
+        route_identity=None, key="room", address="/ws/{room}", source=DiscoverySource.WEBSOCKET, provenance="test"
+    )
     assert channel.parameters is None
     assert channel.operations == ()
 
@@ -29,7 +31,7 @@ def test_explicit_contracts_preserve_metadata_and_replace_only_matching_key() ->
     from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition, MessageDefinition, OperationDefinition
     from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator, _discover_channels
     from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
-    from litestar_asyncapi.spec import CorrelationId, OperationAction, Reference, Reply, SecurityScheme, Tag
+    from litestar_asyncapi.spec import CorrelationId, OperationAction, Reference, Reply, SecurityScheme, Server, Tag
 
     @websocket_listener("/same")
     async def handler(data: str) -> None:
@@ -52,6 +54,7 @@ def test_explicit_contracts_preserve_metadata_and_replace_only_matching_key() ->
         ],
     )
     config = AsyncAPIConfig(
+        servers={"main": Server(host="localhost", protocol="ws")},
         channels=[
             ChannelDefinition(
                 key="/same",
@@ -61,7 +64,7 @@ def test_explicit_contracts_preserve_metadata_and_replace_only_matching_key() ->
                 bindings={"ws": {}},
             ),
             ChannelDefinition(key="other", address="/same"),
-        ]
+        ],
     )
     app = Litestar([handler])
     channels = _discover_channels(app, config, AsyncAPISchemaGenerator(app))

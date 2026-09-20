@@ -103,7 +103,8 @@ class DiscoveredOperation(OperationDefinition):
 class DiscoveredChannel(ChannelDefinition):
     """A channel definition with discovery provenance."""
 
-    __slots__ = ("provenance", "source")
+    __slots__ = ("provenance", "route_identity", "source")
 
     source: DiscoverySource
     provenance: str
+    route_identity: object | None

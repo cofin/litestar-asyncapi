@@ -15,13 +15,13 @@ from litestar._openapi.schema_generation.plugins.struct import StructSchemaPlugi
 from litestar._openapi.schema_generation.schema import SchemaCreator
 from litestar.channels.plugin import ChannelsPlugin
 from litestar.dto import AbstractDTO
+from litestar.exceptions import MissingDependencyException
 from litestar.handlers.websocket_handlers.listener import WebsocketListenerRouteHandler
 from litestar.handlers.websocket_handlers.stream import WebSocketStreamHandler
 from litestar.openapi.spec import Reference, Schema
 from litestar.openapi.spec.base import BaseSchemaObject
 from litestar.openapi.spec.enums import OpenAPIType
 from litestar.params import KwargDefinition
-from litestar.plugins.pydantic.plugins.schema import PydanticSchemaPlugin
 from litestar.typing import FieldDefinition
 from polyfactory.factories.base import BaseFactory
 
@@ -133,11 +133,18 @@ class _SchemaCreator(SchemaCreator):
 
 def create_schema_creator(app: Litestar) -> _SchemaCreator:
     """Create an isolated native registry using the application's schema plugins."""
+    prefer_alias = True
+    try:
+        from litestar.plugins.pydantic.plugins.schema import PydanticSchemaPlugin
+    except MissingDependencyException:
+        pass
+    else:
+        prefer_alias = next(
+            (plugin.prefer_alias for plugin in app.plugins.openapi if isinstance(plugin, PydanticSchemaPlugin)), True
+        )
     return _SchemaCreator(
         plugins=app.plugins.openapi,
-        prefer_alias=next(
-            (plugin.prefer_alias for plugin in app.plugins.openapi if isinstance(plugin, PydanticSchemaPlugin)), True
-        ),
+        prefer_alias=prefer_alias,
         schema_registry=SchemaRegistry(),
         generate_examples=False,
         signature_namespace=app.signature_namespace,

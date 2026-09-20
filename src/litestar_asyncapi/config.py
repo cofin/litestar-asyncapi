@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
-from litestar_asyncapi.spec import MessageTrait, OperationTrait, Reference, Server
+from litestar_asyncapi.spec import Components, MessageTrait, OperationTrait, Reference, Server
 
 if TYPE_CHECKING:
     from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
@@ -67,34 +67,36 @@ class AsyncAPIConfig:
     include_channels_plugin: bool = True
     """Whether to include ChannelsPlugin channels (best-effort)."""
 
-    servers: dict[str, Server | dict[str, Any]] = field(default_factory=dict)
+    servers: dict[str, Server | Reference | dict[str, Any]] = field(default_factory=dict)
     """Server definitions for the AsyncAPI document."""
 
     use_cache: bool = True
     """Whether plugin methods should cache built documents for subsequent calls."""
 
+    components: Components = field(default_factory=Components)
+
     spec_version: Literal["3.0.0", "3.1.0"] = "3.1.0"
     channels: list[ChannelDefinition] = field(default_factory=list)
     docs: "DocsConfig" = field(default_factory=DocsConfig)
 
-    operation_traits: dict[str, OperationTrait | dict[str, Any]] = field(default_factory=dict)
+    operation_traits: dict[str, OperationTrait | Reference | dict[str, Any]] = field(default_factory=dict)
     """Reusable operation traits registered under `components.operationTraits`."""
 
-    message_traits: dict[str, MessageTrait | dict[str, Any]] = field(default_factory=dict)
+    message_traits: dict[str, MessageTrait | Reference | dict[str, Any]] = field(default_factory=dict)
     """Reusable message traits registered under `components.messageTraits`."""
 
     def __post_init__(self) -> None:
         _validate_create_examples(self.create_examples)
 
-    def to_servers(self) -> dict[str, Server]:
+    def to_servers(self) -> dict[str, Server | Reference]:
         """Return a mapping of server definitions.
 
         Returns:
             A mapping of server name to :class:`~litestar_asyncapi.spec.Server`.
         """
-        servers: dict[str, Server] = {}
+        servers: dict[str, Server | Reference] = {}
         for name, value in self.servers.items():
-            if isinstance(value, Server):
+            if isinstance(value, (Server, Reference)):
                 servers[name] = value
             else:
                 servers[name] = Server(**value)
@@ -108,7 +110,7 @@ class AsyncAPIConfig:
         """
         traits: dict[str, OperationTrait | Reference] = {}
         for name, value in self.operation_traits.items():
-            if isinstance(value, OperationTrait):
+            if isinstance(value, (OperationTrait, Reference)):
                 traits[name] = value
             else:
                 traits[name] = OperationTrait(**value)
@@ -122,7 +124,7 @@ class AsyncAPIConfig:
         """
         traits: dict[str, MessageTrait | Reference] = {}
         for name, value in self.message_traits.items():
-            if isinstance(value, MessageTrait):
+            if isinstance(value, (MessageTrait, Reference)):
                 traits[name] = value
             else:
                 traits[name] = MessageTrait(**value)

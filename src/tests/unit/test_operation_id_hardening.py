@@ -49,3 +49,42 @@ def test_strict_uniqueness_raises_exception() -> None:
         pytest.raises(ImproperlyConfiguredException, match="Duplicate operationId found"),
     ):
         generator.build_asyncapi()
+
+
+def test_reversed_explicit_channels_have_stable_sanitized_casefold_keys() -> None:
+    from litestar_asyncapi import ChannelDefinition, MessageDefinition, OperationDefinition
+
+    channels = [
+        ChannelDefinition(
+            key,
+            "/shared",
+            [OperationDefinition(action="send", operation_id=operation_id, messages=[MessageDefinition(payload=int)])],
+        )
+        for key, operation_id in [("z", "A/B"), ("a", "a b"), ("c", "A_B")]
+    ]
+    app = Litestar([])
+    first = AsyncAPIGenerator(app, AsyncAPIConfig(channels=channels)).build_schema()
+    second = AsyncAPIGenerator(app, AsyncAPIConfig(channels=list(reversed(channels)))).build_schema()
+    assert first == second
+    assert set(first["channels"]) == {"a", "c", "z"}
+    assert list(first["operations"]) == ["a_b", "A_B_2", "A_B_3"]
+
+
+def test_channel_message_refs_uri_escape_literal_percent() -> None:
+    from litestar_asyncapi import ChannelDefinition, MessageDefinition, OperationDefinition
+
+    document = AsyncAPIGenerator(
+        Litestar([]),
+        AsyncAPIConfig(
+            channels=[
+                ChannelDefinition(
+                    "literal%2F/#",
+                    "/socket",
+                    [OperationDefinition(action="send", messages=[MessageDefinition(name="m%/~", payload=int)])],
+                )
+            ]
+        ),
+    ).build_schema()
+    operation = next(iter(document["operations"].values()))
+    assert operation["channel"]["$ref"] == "#/channels/literal%252F~1%23"
+    assert operation["messages"] == [{"$ref": "#/channels/literal%252F~1%23/messages/m%25~1~0"}]

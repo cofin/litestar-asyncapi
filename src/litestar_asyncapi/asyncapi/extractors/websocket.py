@@ -75,6 +75,7 @@ def extract_websocket_channels(
             operation.provenance = f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}"
         channels.append(
             DiscoveredChannel(
+                route_identity=route,
                 key=route.path_format,
                 address=route.path_format,
                 provenance=f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}",

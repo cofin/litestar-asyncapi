@@ -34,6 +34,7 @@ def extract_channels_plugin_channels(
         provenance = f"ChannelsPlugin route {route.path_format} handler {route.route_handler.handler_name}"
         discovered.append(
             DiscoveredChannel(
+                route_identity=route,
                 key=route.path_format,
                 address=route.path_format,
                 source=DiscoverySource.CHANNELS_PLUGIN,

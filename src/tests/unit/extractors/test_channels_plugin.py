@@ -1,3 +1,5 @@
+from urllib.parse import unquote
+
 import pytest
 
 from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channels
@@ -87,7 +89,7 @@ def test_actual_channels_routes_are_deduplicated_by_native_identity(arbitrary: b
     actions = [
         operation["action"]
         for operation in document["operations"].values()
-        if operation["channel"]["$ref"] == "#/channels/" + generated_path.replace("/", "~1")
+        if unquote(operation["channel"]["$ref"]) == "#/channels/" + generated_path.replace("/", "~1")
     ]
     assert actions == ["send"]
     message = next(iter(document["channels"][generated_path]["messages"].values()))
