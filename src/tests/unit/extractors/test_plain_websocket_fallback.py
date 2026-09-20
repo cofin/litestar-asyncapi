@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from litestar_asyncapi import AsyncAPIConfig
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import OperationAction
@@ -22,7 +23,11 @@ def test_plain_websocket_handler_produces_placeholder_operations() -> None:
     app = Litestar(route_handlers=[handler])
     gen = AsyncAPISchemaGenerator()
 
-    channel = extract_websocket_channels(app, schema_generator=gen)[0]
+    assert extract_websocket_channels(app, schema_generator=gen) == []
+    with pytest.warns(UserWarning, match="cannot infer the raw WebSocket"):
+        channel = extract_websocket_channels(
+            app, schema_generator=gen, config=AsyncAPIConfig(include_raw_websocket_routes=True)
+        )[0]
     assert channel.address == "/plain"
 
     # Raw websockets now produce placeholder operations for both directions

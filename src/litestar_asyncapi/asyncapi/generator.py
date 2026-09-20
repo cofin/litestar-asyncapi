@@ -1,10 +1,12 @@
 import re
+import warnings
 from dataclasses import dataclass, fields
 from typing import TYPE_CHECKING, Any, cast
 
 from litestar.exceptions import ImproperlyConfiguredException
 from litestar.typing import FieldDefinition
 
+from litestar_asyncapi._compat import NativeDTOPayload
 from litestar_asyncapi.asyncapi.datastructures import (
     ChannelDefinition,
     DiscoveredChannel,
@@ -310,7 +312,7 @@ def _build_message(
     if (
         examples is None
         and definition.payload is not None
-        and not isinstance(definition.payload, (Schema, Reference, dict, bool, MultiFormatSchema))
+        and not isinstance(definition.payload, (Schema, Reference, dict, bool, MultiFormatSchema, NativeDTOPayload))
     ):
         examples = schema_generator.declared_examples(definition.payload)
         if examples is None:
@@ -321,6 +323,11 @@ def _build_message(
             )
             example = generate_example(field, config=config, app=app)
             examples = [example] if example is not UNSET else None
+    if examples is None and isinstance(definition.payload, NativeDTOPayload) and config.create_examples:
+        warnings.warn(
+            f"Omitting automatic AsyncAPI example for native DTO at {provenance}; provide an explicit transferred example",
+            stacklevel=2,
+        )
     return Message(
         payload=payload,
         headers=schema(definition.headers),
@@ -334,6 +341,7 @@ def _build_message(
         traits=_resolve_message_traits(definition.traits, config=config) if definition.traits is not None else None,
         bindings=definition.bindings,
         tags=definition.tags,
+        extensions=definition.extensions,
     )
 
 

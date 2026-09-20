@@ -8,7 +8,7 @@ pytestmark = pytest.mark.anyio
 
 def test_config_defaults() -> None:
     config = AsyncAPIConfig()
-    assert config.default_content_type == "application/json"
+    assert config.default_content_type is None
     assert config.use_handler_docstrings is False
     assert config.create_examples is False
     assert config.include_websocket_routes is True

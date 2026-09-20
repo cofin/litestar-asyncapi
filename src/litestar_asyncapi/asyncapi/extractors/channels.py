@@ -1,20 +1,21 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-from litestar.channels.plugin import ChannelsPlugin
+from litestar.routes.websocket import WebSocketRoute
 
+from litestar_asyncapi._compat import generated_channels_mode
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
     DiscoveredOperation,
     DiscoverySource,
     MessageDefinition,
 )
-from litestar_asyncapi.spec import OperationAction, Parameter, Schema, SchemaType
+from litestar_asyncapi.asyncapi.extractors.websocket import _path_parameters_to_parameters, _should_include_handler
+from litestar_asyncapi.spec import OperationAction, Schema
 
 if TYPE_CHECKING:
     from litestar import Litestar
 
     from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
-
 
 __all__ = ("extract_channels_plugin_channels",)
 
@@ -22,64 +23,36 @@ __all__ = ("extract_channels_plugin_channels",)
 def extract_channels_plugin_channels(
     app: "Litestar", *, schema_generator: "AsyncAPISchemaGenerator"
 ) -> list[DiscoveredChannel]:
-    """Extract channels from Litestar's ChannelsPlugin (best-effort).
-
-    Notes:
-        - If ChannelsPlugin is configured with ``create_ws_route_handlers=True``, websocket extraction will already
-          discover the generated websocket routes, so this extractor returns an empty list to avoid duplication.
-        - ChannelsPlugin does not currently expose a stable public list of declared channels; this uses its internal
-          ``_channels`` mapping when present.
-
-    Args:
-        app: Litestar application.
-        schema_generator: Schema generator used to produce placeholder schemas.
-
-    Returns:
-        A list of discovered channels.
-    """
-    plugin = next((p for p in app.plugins if isinstance(p, ChannelsPlugin)), None)
-    if plugin is None:
-        return []
-
-    if plugin._create_route_handlers:
-        return []
-
-    root_path = plugin._handler_root_path
-
-    placeholder_payload = Schema(type=SchemaType.OBJECT)
-    send_operation = DiscoveredOperation(
-        provenance="ChannelsPlugin",
-        action=OperationAction.SEND,
-        operation_id=None,
-        messages=[MessageDefinition(payload=placeholder_payload, content_type="application/json")],
-    )
-
-    discovered: list[DiscoveredChannel] = []
-    if plugin._arbitrary_channels_allowed:
-        channel_name_param = Parameter(description="The name of the arbitrary channel.")
+    """Describe finalized native Channels sockets without exposing broker subscriptions."""
+    discovered = []
+    for route in app.routes:
+        if not isinstance(route, WebSocketRoute) or not _should_include_handler(route.route_handler):
+            continue
+        mode = generated_channels_mode(route.route_handler, app)
+        if mode is None:
+            continue
+        provenance = f"ChannelsPlugin route {route.path_format} handler {route.route_handler.handler_name}"
         discovered.append(
             DiscoveredChannel(
-                provenance="ChannelsPlugin",
-                key=f"{root_path}{{channel_name}}",
-                address=f"{root_path}{{channel_name}}",
+                key=route.path_format,
+                address=route.path_format,
                 source=DiscoverySource.CHANNELS_PLUGIN,
-                parameters={"channel_name": channel_name_param},
-                operations=[send_operation],
+                provenance=provenance,
+                parameters=_path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
+                or None,
+                operations=[
+                    DiscoveredOperation(
+                        action=OperationAction.SEND,
+                        provenance=provenance,
+                        messages=[
+                            MessageDefinition(
+                                payload=Schema(),
+                                content_type="text/plain" if mode == "text" else "application/octet-stream",
+                                extensions={"x-websocket-mode": mode},
+                            )
+                        ],
+                    )
+                ],
             )
         )
-        return discovered
-
-    channel_map = cast("dict[str, object]", plugin._channels)
-    discovered.extend(
-        DiscoveredChannel(
-            provenance="ChannelsPlugin",
-            key=f"{root_path}{name}",
-            address=f"{root_path}{name}",
-            source=DiscoverySource.CHANNELS_PLUGIN,
-            parameters=None,
-            operations=[send_operation],
-        )
-        for name in channel_map
-    )
-
     return discovered

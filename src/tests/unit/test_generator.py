@@ -41,7 +41,7 @@ def test_generator_builds_document_with_channels_and_operations() -> None:
     assert isinstance(document, AsyncAPI)
     assert document.asyncapi == "3.1.0"
     assert document.info.title == "Test"
-    assert document.default_content_type == "application/json"
+    assert document.default_content_type is None
     assert "/listen" in document.channels
     assert "/stream" in document.channels
     assert {op.action for op in document.operations.values()} == {OperationAction.RECEIVE, OperationAction.SEND}

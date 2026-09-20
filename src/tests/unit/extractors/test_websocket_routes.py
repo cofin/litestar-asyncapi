@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from litestar_asyncapi import asyncapi_message
 from litestar_asyncapi.asyncapi.datastructures import DiscoverySource
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
@@ -15,6 +16,7 @@ pytestmark = pytest.mark.anyio
 def test_websocket_routes_are_discovered() -> None:
     from litestar import Litestar, websocket
 
+    @asyncapi_message(action="receive", payload=str)
     @websocket("/ws/{room:int}")
     async def handler(socket: "WebSocket") -> None:
         return None

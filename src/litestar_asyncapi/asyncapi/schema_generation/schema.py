@@ -4,6 +4,7 @@ from litestar import Litestar
 from litestar.exceptions import ImproperlyConfiguredException
 
 from litestar_asyncapi._compat import (
+    NativeDTOPayload,
     create_schema_creator,
     declared_schema_examples,
     normalize_native_schema,
@@ -31,9 +32,17 @@ class AsyncAPISchemaGenerator:
         if isinstance(type_or_field, MultiFormatSchema):
             return type_or_field.to_schema()
         try:
-            field = resolve_annotation(type_or_field, self._app)
+            field = (
+                type_or_field.field
+                if isinstance(type_or_field, NativeDTOPayload)
+                else resolve_annotation(type_or_field, self._app)
+            )
             self._origins.append(f"{field.annotation!r} for {provenance or 'direct generation'}")
-            native = self._creator.for_field_definition(field)
+            native = (
+                type_or_field.create_schema(self._creator)
+                if isinstance(type_or_field, NativeDTOPayload)
+                else self._creator.for_field_definition(field)
+            )
             result = to_asyncapi_schema(normalize_native_schema(native, self._creator.null_fields))
             if isinstance(result, dict):
                 self._outputs.append((native, result))

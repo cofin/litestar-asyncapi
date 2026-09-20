@@ -1,16 +1,19 @@
 from litestar import Litestar, websocket
 from litestar.handlers.websocket_handlers import WebsocketRouteHandler
 
+from litestar_asyncapi import asyncapi_message
 from litestar_asyncapi.asyncapi.extractors.websocket import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
 
 def test_should_respect_include_in_schema_opt() -> None:
+    @asyncapi_message(action="receive", payload=str)
     @websocket("/included")
     async def included_handler(socket: WebsocketRouteHandler) -> None:
         await socket.accept()
         await socket.close()
 
+    @asyncapi_message(action="receive", payload=str)
     @websocket("/excluded", include_in_schema=False)
     async def excluded_handler(socket: WebsocketRouteHandler) -> None:
         await socket.accept()

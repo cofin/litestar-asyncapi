@@ -131,6 +131,7 @@ def asyncapi_message(
     correlation_id: CorrelationId | Reference | None = None,
     bindings: dict[str, Any] | Reference | None = None,
     tags: list[Tag | Reference] | None = None,
+    extensions: dict[str, Any] | None = None,
 ) -> Callable[[T], T]:
     """Attach AsyncAPI message metadata to a websocket route handler.
 
@@ -161,6 +162,7 @@ def asyncapi_message(
             correlation_id=correlation_id,
             bindings=bindings,
             tags=tags,
+            extensions=extensions or {},
         )
         operation.messages = [existing for existing in operation.messages or [] if existing.name != name]
         operation.messages.append(message)

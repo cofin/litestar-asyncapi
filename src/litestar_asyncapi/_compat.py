@@ -1,5 +1,7 @@
 import sys
+from dataclasses import dataclass
 from enum import Enum
+from inspect import getclosurevars, unwrap
 from random import Random
 from types import SimpleNamespace
 from typing import Any, ClassVar, cast, get_args, get_origin, get_type_hints
@@ -11,6 +13,10 @@ from litestar._openapi.datastructures import SchemaRegistry
 from litestar._openapi.schema_generation.examples import ExampleFactory, _create_field_meta
 from litestar._openapi.schema_generation.plugins.struct import StructSchemaPlugin
 from litestar._openapi.schema_generation.schema import SchemaCreator
+from litestar.channels.plugin import ChannelsPlugin
+from litestar.dto import AbstractDTO
+from litestar.handlers.websocket_handlers.listener import WebsocketListenerRouteHandler
+from litestar.handlers.websocket_handlers.stream import WebSocketStreamHandler
 from litestar.openapi.spec import Reference, Schema
 from litestar.openapi.spec.base import BaseSchemaObject
 from litestar.openapi.spec.enums import OpenAPIType
@@ -211,3 +217,68 @@ def native_example_value(field: FieldDefinition) -> Any:
             )
 
     return IsolatedExampleFactory.get_field_value(_create_field_meta(field))
+
+
+def websocket_signature(handler: Any) -> tuple[FieldDefinition | None, FieldDefinition | None, str, str] | None:
+    """Read finalized native listener/stream fields and their frame carrier modes."""
+    if isinstance(handler, WebsocketListenerRouteHandler):
+        return handler.parsed_data_field, handler.parsed_return_field, handler._receive_mode, handler._send_mode
+    if isinstance(handler, WebSocketStreamHandler):
+        return None, handler.parsed_return_field, "text", handler._ws_stream_options.send_mode
+    return None
+
+
+def websocket_handler_name(handler: Any) -> str:
+    """Return the user callback name behind native listener and stream wrappers."""
+    callback = handler.fn
+    if isinstance(handler, WebsocketListenerRouteHandler):
+        callback = callback._fn
+    return str(getattr(unwrap(callback), "__qualname__", handler.handler_name))
+
+
+def generated_channels_mode(handler: Any, app: Litestar) -> str | None:
+    """Recognize actual native Channels callbacks by owner and generated function identity."""
+    callback = handler.fn
+    plugins = [plugin for plugin in app.plugins if isinstance(plugin, ChannelsPlugin)]
+    owner = getattr(callback, "__self__", None)
+    if owner in plugins and getattr(callback, "__func__", None) is ChannelsPlugin._ws_handler_func:
+        return cast("ChannelsPlugin", owner)._socket_send_mode
+    code = getattr(callback, "__code__", None)
+    if code is None or code not in ChannelsPlugin._create_ws_handler_func.__code__.co_consts:
+        return None
+    owner = getclosurevars(callback).nonlocals.get("self")
+    return owner._socket_send_mode if owner in plugins else None
+
+
+def websocket_content_type(handler: Any, field: FieldDefinition, *, sending: bool) -> str | None:
+    """Describe native logical serialization separately from text/binary frame carriage."""
+    if (handler.resolve_return_dto() if sending else handler.resolve_data_dto()) is not None:
+        return "application/json"
+    if field.annotation is str:
+        return "text/plain"
+    if field.annotation is bytes:
+        return "application/octet-stream"
+    if isinstance(handler, WebSocketStreamHandler) and (field.annotation is Any or field.is_union):
+        return None
+    return "application/json"
+
+
+@dataclass(slots=True)
+class NativeDTOPayload:
+    """Defer native DTO schema production until document component assembly."""
+
+    field: FieldDefinition
+    dto: type[AbstractDTO[Any]]
+    handler_id: str
+
+    def create_schema(self, creator: SchemaCreator) -> Schema | Reference:
+        """Delegate transfer-model generation to the registered native DTO."""
+        return self.dto.create_openapi_schema(
+            field_definition=self.field, handler_id=self.handler_id, schema_creator=creator
+        )
+
+
+def websocket_payload(handler: Any, field: FieldDefinition, *, sending: bool) -> FieldDefinition | NativeDTOPayload:
+    """Retain a handler's native DTO when it changes the transferred payload shape."""
+    dto = handler.resolve_return_dto() if sending else handler.resolve_data_dto()
+    return NativeDTOPayload(field, dto, handler.handler_id) if dto is not None else field

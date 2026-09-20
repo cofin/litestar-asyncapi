@@ -48,7 +48,7 @@ class AsyncAPIConfig:
     """The version of the API."""
     description: str | None = None
     """An optional description of the API."""
-    default_content_type: str = "application/json"
+    default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False
     """Whether to use handler docstrings for operation descriptions."""
@@ -60,6 +60,9 @@ class AsyncAPIConfig:
 
     include_websocket_routes: bool = True
     """Whether to include websocket routes discovered from the application."""
+
+    include_raw_websocket_routes: bool = False
+    """Include uncertain raw socket contracts with a warning when no explicit metadata exists."""
 
     include_channels_plugin: bool = True
     """Whether to include ChannelsPlugin channels (best-effort)."""

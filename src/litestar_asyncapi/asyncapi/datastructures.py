@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -49,6 +49,7 @@ class MessageDefinition:
     traits: list[str | MessageTrait | Reference] | None = None
     bindings: dict[str, Any] | Reference | None = None
     tags: list[Tag | Reference] | None = None
+    extensions: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

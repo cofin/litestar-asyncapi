@@ -1,9 +1,17 @@
+import warnings
 from dataclasses import fields, replace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from litestar.types.builtin_types import NoneType
 from litestar.typing import FieldDefinition
 
+from litestar_asyncapi._compat import (
+    generated_channels_mode,
+    websocket_content_type,
+    websocket_handler_name,
+    websocket_payload,
+    websocket_signature,
+)
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
     DiscoveredOperation,
@@ -45,25 +53,31 @@ def extract_websocket_channels(
 
         config = AsyncAPIConfig()
 
+    if not config.include_websocket_routes:
+        return []
     channels: list[DiscoveredChannel] = []
     for route in app.routes:
         if not isinstance(route, WebSocketRoute):
             continue
 
-        if not _should_include_handler(route.route_handler):
+        if generated_channels_mode(route.route_handler, app) is not None or not _should_include_handler(
+            route.route_handler
+        ):
             continue
 
         parameters = _path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
         operations = _infer_operations_from_handler(
             route.route_handler, schema_generator=schema_generator, config=config, app=app
         )
+        if not operations:
+            continue
         for operation in operations:
-            operation.provenance = f"route {route.path_format} handler {route.route_handler.handler_name}"
+            operation.provenance = f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}"
         channels.append(
             DiscoveredChannel(
                 key=route.path_format,
                 address=route.path_format,
-                provenance=f"route {route.path_format} handler {route.route_handler.handler_name}",
+                provenance=f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}",
                 source=DiscoverySource.WEBSOCKET,
                 parameters=parameters or None,
                 operations=operations,
@@ -108,33 +122,54 @@ def _infer_operations_from_handler(
     config: "AsyncAPIConfig",
     app: "Litestar",
 ) -> list[DiscoveredOperation]:
-    from litestar.handlers.websocket_handlers.listener import WebsocketListenerRouteHandler
-    from litestar.handlers.websocket_handlers.stream import WebSocketStreamHandler
+    from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
 
-    operations: list[DiscoveredOperation]
-
-    if isinstance(route_handler, WebsocketListenerRouteHandler):
-        operations = _infer_listener_operations(
-            route_handler, schema_generator=schema_generator, config=config, app=app
-        )
+    signature = websocket_signature(route_handler)
+    if signature is not None:
+        receive, send, receive_mode, send_mode = signature
+        operations = [
+            DiscoveredOperation(
+                action=action,
+                provenance=websocket_handler_name(route_handler),
+                operation_id=f"{route_handler.handler_name}_{action.value}",
+                messages=[
+                    MessageDefinition(
+                        payload=websocket_payload(route_handler, field, sending=action is OperationAction.SEND),
+                        content_type=websocket_content_type(
+                            route_handler, field, sending=action is OperationAction.SEND
+                        ),
+                        extensions={"x-websocket-mode": mode},
+                    )
+                ],
+            )
+            for action, field, mode in (
+                (OperationAction.RECEIVE, receive, receive_mode),
+                (OperationAction.SEND, send, send_mode),
+            )
+            if field is not None and not (action is OperationAction.SEND and _is_none_return_type(field))
+        ]
+        _apply_handler_metadata(route_handler, operations, include_action_suffix=receive is not None)
         _apply_docstring_descriptions(route_handler, operations, config=config)
         return _apply_decorator_overrides(
             route_handler, operations, schema_generator=schema_generator, config=config, app=app
         )
 
-    if isinstance(route_handler, WebSocketStreamHandler):
-        operations = _infer_stream_operations(route_handler, schema_generator=schema_generator, config=config, app=app)
-        _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(
-            route_handler, operations, schema_generator=schema_generator, config=config, app=app
-        )
-
+    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+    explicit = isinstance(metadata, AsyncAPIMetadata) and bool(metadata.operations)
+    if not explicit and not config.include_raw_websocket_routes:
+        return []
     operations = _infer_raw_websocket_operations(route_handler)
     _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
     _apply_docstring_descriptions(route_handler, operations, config=config)
-    return _apply_decorator_overrides(
+    operations = _apply_decorator_overrides(
         route_handler, operations, schema_generator=schema_generator, config=config, app=app, replace_placeholders=True
     )
+    if any(message.payload is None for operation in operations for message in operation.messages or []):
+        warnings.warn(
+            f"AsyncAPI cannot infer the raw WebSocket payload for {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}; emitting an unconstrained message",
+            stacklevel=2,
+        )
+    return operations
 
 
 def _apply_decorator_overrides(
@@ -166,56 +201,14 @@ def _apply_decorator_overrides(
         if override.messages is not None:
             inferred = operation.messages[0] if operation.messages else MessageDefinition()
             operation.messages = [
-                replace(message, payload=message.payload if message.payload is not None else inferred.payload)
+                replace(
+                    message,
+                    payload=message.payload if message.payload is not None else inferred.payload,
+                    content_type=message.content_type if message.content_type is not None else inferred.content_type,
+                    extensions={**inferred.extensions, **message.extensions},
+                )
                 for message in override.messages
             ]
-    return operations
-
-
-def _infer_listener_operations(
-    route_handler: Any, *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig", app: "Litestar"
-) -> list[DiscoveredOperation]:
-    # These are set by Litestar during handler registration.
-    data_field = cast("FieldDefinition", route_handler._parsed_data_field)
-    return_field = cast("FieldDefinition", route_handler._parsed_return_field)
-
-    operations: list[DiscoveredOperation] = []
-    operations.append(
-        DiscoveredOperation(
-            provenance=str(route_handler),
-            action=OperationAction.RECEIVE,
-            operation_id=f"{route_handler.handler_name}_receive",
-            messages=[MessageDefinition(payload=data_field)],
-        )
-    )
-    if not _is_none_return_type(return_field):
-        operations.append(
-            DiscoveredOperation(
-                provenance=str(route_handler),
-                action=OperationAction.SEND,
-                operation_id=f"{route_handler.handler_name}_send",
-                messages=[MessageDefinition(payload=return_field)],
-            )
-        )
-
-    _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
-    return operations
-
-
-def _infer_stream_operations(
-    route_handler: Any, *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig", app: "Litestar"
-) -> list[DiscoveredOperation]:
-    return_field = cast("FieldDefinition", route_handler._parsed_return_field)
-
-    operations = [
-        DiscoveredOperation(
-            provenance=str(route_handler),
-            action=OperationAction.SEND,
-            operation_id=f"{route_handler.handler_name}_send",
-            messages=[MessageDefinition(payload=return_field)],
-        )
-    ]
-    _apply_handler_metadata(route_handler, operations, include_action_suffix=False)
     return operations
 
 

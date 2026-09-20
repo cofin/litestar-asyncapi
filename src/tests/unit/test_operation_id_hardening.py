@@ -16,10 +16,11 @@ def test_operation_id_case_insensitive_collision() -> None:
         pass
 
     app = Litestar(route_handlers=[handler1, handler2])
-    config = AsyncAPIConfig()
+    config = AsyncAPIConfig(include_raw_websocket_routes=True)
     generator = AsyncAPIGenerator(app, config)
 
-    schema = generator.build_asyncapi()
+    with pytest.warns(UserWarning, match="cannot infer the raw WebSocket"):
+        schema = generator.build_asyncapi()
 
     op_ids = list(schema.operations)
 
@@ -40,8 +41,11 @@ def test_strict_uniqueness_raises_exception() -> None:
 
     app = Litestar(route_handlers=[handler1, handler2])
     # Assuming we will add strict_uniqueness to AsyncAPIConfig
-    config = AsyncAPIConfig(strict_uniqueness=True)
+    config = AsyncAPIConfig(strict_uniqueness=True, include_raw_websocket_routes=True)
     generator = AsyncAPIGenerator(app, config)
 
-    with pytest.raises(ImproperlyConfiguredException, match="Duplicate operationId found"):
+    with (
+        pytest.warns(UserWarning, match="cannot infer the raw WebSocket"),
+        pytest.raises(ImproperlyConfiguredException, match="Duplicate operationId found"),
+    ):
         generator.build_asyncapi()
