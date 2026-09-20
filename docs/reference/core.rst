@@ -7,7 +7,7 @@ Core plugin, configuration, and decorator interfaces.
 Plugin & Configuration
 ======================
 
-.. automodule:: litestar_asyncapi.plugin
+.. automodule:: litestar_asyncapi.plugins.core
    :members:
    :undoc-members:
    :show-inheritance:

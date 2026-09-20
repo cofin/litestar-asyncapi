@@ -1,12 +1,16 @@
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 from litestar.enums import MediaType
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import ImproperlyConfiguredException, NotFoundException
 from litestar.handlers import get
 from litestar.plugins import InitPluginProtocol
 from litestar.response import Response
 from litestar.router import Router
+from litestar.serialization import encode_json
 from litestar.status_codes import HTTP_404_NOT_FOUND
+
+from litestar_asyncapi.serialization import normalize_document
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -47,7 +51,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
     similar to how OpenAPI documents REST APIs.
     """
 
-    __slots__ = ("_cached_asyncapi", "_cached_schema", "_config")
+    __slots__ = ("_app", "_cached_asyncapi", "_cached_json", "_cached_schema", "_config")
 
     def __init__(self, config: "AsyncAPIConfig | None" = None) -> None:
         """Initialize the AsyncAPI plugin.
@@ -58,6 +62,8 @@ class AsyncAPIPlugin(InitPluginProtocol):
         from litestar_asyncapi.config import AsyncAPIConfig
 
         self._config = config or AsyncAPIConfig()
+        self._app: Litestar | None = None
+        self._cached_json: bytes | None = None
         self._cached_asyncapi: AsyncAPI | None = None
         self._cached_schema: dict[str, Any] | None = None
 
@@ -70,48 +76,48 @@ class AsyncAPIPlugin(InitPluginProtocol):
         """
         return self._config
 
-    def invalidate_cache(self) -> None:
-        """Invalidate cached AsyncAPI document and schema."""
+    def clear_cache(self) -> None:
+        """Clear generated values while retaining ownership of the bound application."""
         self._cached_asyncapi = None
         self._cached_schema = None
+        self._cached_json = None
 
-    def get_asyncapi(self, app: "Litestar") -> "AsyncAPI":
-        """Return a cached or freshly built AsyncAPI document object.
-
-        Args:
-            app: The Litestar application instance.
-
-        Returns:
-            The built AsyncAPI document.
-        """
-        if self.config.use_cache and self._cached_asyncapi is not None:
-            return self._cached_asyncapi
+    def _get_document(self, app: "Litestar") -> tuple["AsyncAPI", dict[str, Any], bytes]:
+        if self._app is None:
+            self._app = app
+        elif self._app is not app:
+            message = (
+                "An AsyncAPIPlugin instance belongs to one application; create a separate plugin for each application"
+            )
+            raise ImproperlyConfiguredException(message)
+        if (
+            self.config.use_cache
+            and self._cached_asyncapi is not None
+            and self._cached_schema is not None
+            and self._cached_json is not None
+        ):
+            return self._cached_asyncapi, self._cached_schema, self._cached_json
 
         from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
-        document = AsyncAPIGenerator(app=app, config=self.config).build_asyncapi()
+        document = deepcopy(AsyncAPIGenerator(app=app, config=self.config).build_asyncapi())
+        schema = normalize_document(document, app.type_encoders)
+        encoded = encode_json(schema)
         if self.config.use_cache:
-            self._cached_asyncapi = document
-            self._cached_schema = None
-        return document
+            self._cached_asyncapi, self._cached_schema, self._cached_json = document, schema, encoded
+        return document, schema, encoded
+
+    def get_asyncapi(self, app: "Litestar") -> "AsyncAPI":
+        """Return a defensive copy of the application document."""
+        return deepcopy(self._get_document(app)[0])
 
     def get_asyncapi_schema(self, app: "Litestar") -> dict[str, Any]:
-        """Return a cached or freshly built AsyncAPI document schema dict.
+        """Return a defensive copy of the canonical JSON-compatible document."""
+        return deepcopy(self._get_document(app)[1])
 
-        Args:
-            app: The Litestar application instance.
-
-        Returns:
-            A serialized AsyncAPI document dict.
-        """
-        if self.config.use_cache and self._cached_schema is not None:
-            return self._cached_schema
-
-        document = self.get_asyncapi(app)
-        schema = document.to_schema()
-        if self.config.use_cache:
-            self._cached_schema = schema
-        return schema
+    def get_asyncapi_json(self, app: "Litestar") -> bytes:
+        """Return immutable canonical JSON bytes for the bound application."""
+        return self._get_document(app)[2]
 
     def create_docs_router(self) -> Router:
         """Create a router for serving AsyncAPI documentation and schema files.

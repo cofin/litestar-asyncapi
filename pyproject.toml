@@ -259,7 +259,7 @@ ban-relative-imports = "all"
 "docs/**/*.py" = ["A", "B", "D", "ERA", "S"]
 "src/litestar_asyncapi/spec/enums.py" = ["S105"]
 "src/litestar_asyncapi/config.py" = ["PLC0415"]
-"src/litestar_asyncapi/plugin.py" = ["PLC0415"]
+"src/litestar_asyncapi/plugins/*.py" = ["PLC0415"]
 "src/litestar_asyncapi/asyncapi/utils/examples.py" = ["PLC0415", "PLR0911"]
 "src/litestar_asyncapi/asyncapi/schema_generation/schema.py" = ["PLR0911", "PLR2004"]
 "src/litestar_asyncapi/asyncapi/extractors/*.py" = ["PLC0415", "SLF001"]
@@ -326,7 +326,8 @@ module = ["pygments.*", "faker.*"]
 
 [tool.slotscheck]
 strict-imports = false
-exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding"
+# The two UI adapters inherit Litestar's native, unslotted renderer base.
+exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding|litestar_asyncapi\\.plugins\\.renderers:(AsyncAPIUIRenderPlugin|AsyncAPIPlaygroundRenderPlugin)"
 
 [tool.codespell]
 ignore-words-list = ["asyncapi"]

@@ -2,13 +2,13 @@ import pytest
 from litestar import Litestar
 from litestar.testing import TestClient
 
-from litestar_asyncapi import AsyncAPIPlugin
+from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
 
 pytestmark = pytest.mark.anyio
 
 
 def test_docs_routes_exist_and_have_expected_media_types() -> None:
-    app = Litestar(route_handlers=[], plugins=[AsyncAPIPlugin()])
+    app = Litestar(route_handlers=[], plugins=[AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(yaml=True)))])
 
     with TestClient(app=app) as client:
         json_response = client.get("/asyncapi/asyncapi.json")

@@ -1,19 +1,24 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
 from litestar_asyncapi.spec import Components, MessageTrait, OperationTrait, Reference, Server
 
 if TYPE_CHECKING:
+    from litestar.enums import MediaType
+
     from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
 
 __all__ = ("AsyncAPIConfig", "DocsConfig")
 
 
 def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
-    from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
+    from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin
 
-    return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin()]
+    return [
+        AsyncAPIUIRenderPlugin(),
+        JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json")),
+    ]
 
 
 def _validate_create_examples(value: object) -> None:
@@ -31,7 +36,20 @@ class DocsConfig:
     renderer: Literal["asyncapi", "scalar"] = "asyncapi"
     interactive: bool = False
     console: bool = False
+    yaml: bool = False
     render_plugins: list["AsyncAPIRenderPlugin"] = field(default_factory=_default_render_plugins)
+
+    def __post_init__(self) -> None:
+        if self.yaml:
+            from litestar_asyncapi.plugins import YamlRenderPlugin
+
+            if not any(isinstance(plugin, YamlRenderPlugin) for plugin in self.render_plugins):
+                self.render_plugins.append(
+                    YamlRenderPlugin(
+                        path=("/asyncapi.yaml", "/asyncapi.yml"),
+                        media_type=cast("MediaType", "application/vnd.asyncapi+yaml"),
+                    )
+                )
 
 
 @dataclass(slots=True)

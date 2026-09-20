@@ -8,7 +8,7 @@ pytestmark = pytest.mark.anyio
 def test_ui_plugin_renders_html() -> None:
     plugin = AsyncAPIUIRenderPlugin()
     schema = {"info": {"title": "Test API"}, "asyncapi": "3.0.0"}
-    content = plugin.render(request=None, asyncapi_schema=schema)  # type: ignore[arg-type]
+    content = plugin.render(request=None, openapi_schema=schema)  # type: ignore[arg-type]
 
     text = content.decode("utf-8")
     assert "<title>Test API</title>" in text
@@ -19,7 +19,7 @@ def test_ui_plugin_renders_html() -> None:
 def test_ui_plugin_escapes_title() -> None:
     plugin = AsyncAPIUIRenderPlugin()
     schema = {"info": {"title": "<script>alert(1)</script>"}, "asyncapi": "3.0.0"}
-    content = plugin.render(request=None, asyncapi_schema=schema)  # type: ignore[arg-type]
+    content = plugin.render(request=None, openapi_schema=schema)  # type: ignore[arg-type]
 
     text = content.decode("utf-8")
     assert "<title><script>alert(1)</script></title>" not in text

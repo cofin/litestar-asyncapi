@@ -1,13 +1,15 @@
 import html
-import json
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
-import msgspec
-import yaml  # type: ignore[import-untyped]
 from litestar.enums import MediaType
-from litestar.serialization import encode_json, get_serializer
+from litestar.openapi.plugins import JsonRenderPlugin, OpenAPIRenderPlugin, YamlRenderPlugin
+from litestar.serialization import encode_json
+
+from litestar_asyncapi.serialization import normalize_document
+
+if TYPE_CHECKING:
+    from litestar.connection import Request
 
 __all__ = (
     "AsyncAPIPlaygroundRenderPlugin",
@@ -17,97 +19,7 @@ __all__ = (
     "YamlRenderPlugin",
 )
 
-_favicon_url = "https://cdn.jsdelivr.net/gh/litestar-org/branding@main/assets/Branding%20-%20PNG%20-%20Transparent/Badge%20-%20Blue%20and%20Yellow.png"
-_default_favicon = f"<link rel='icon' type='image/png' href='{_favicon_url}'>"
-_default_style = "<style>body { margin: 0; padding: 0 }</style>"
-
-
-if TYPE_CHECKING:
-    from litestar.connection import Request
-    from litestar.router import Router
-
-
-class AsyncAPIRenderPlugin(ABC):
-    """Base class for AsyncAPI render plugins."""
-
-    __slots__ = ("favicon", "media_type", "paths", "style")
-
-    paths: list[str]
-
-    def __init__(
-        self,
-        *,
-        path: str | Sequence[str],
-        media_type: MediaType | str = MediaType.HTML,
-        favicon: str = _default_favicon,
-        style: str = _default_style,
-    ) -> None:
-        self.paths = [path] if isinstance(path, str) else list(path)
-        self.media_type = media_type
-        self.favicon = favicon
-        self.style = style
-
-    @staticmethod
-    def render_json(request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
-        """Render the AsyncAPI schema as JSON.
-
-        Returns:
-            The JSON representation as UTF-8 bytes.
-        """
-        serializer = get_serializer(request.route_handler.resolve_type_encoders())
-        return encode_json(asyncapi_schema, serializer=serializer)
-
-    @abstractmethod
-    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
-        """Render the output."""
-        raise NotImplementedError
-
-    def receive_router(self, router: "Router") -> None:
-        """Receive the router used to serve docs routes."""
-        return
-
-    def has_path(self, path: str) -> bool:
-        """Return ``True`` if the plugin is configured for ``path``."""
-        return path in self.paths
-
-
-class JsonRenderPlugin(AsyncAPIRenderPlugin):
-    """Render the AsyncAPI schema as JSON."""
-
-    __slots__ = ()
-
-    def __init__(
-        self,
-        *,
-        path: str | Sequence[str] = "/asyncapi.json",
-        media_type: str = "application/vnd.asyncapi+json",
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(path=path, media_type=media_type, **kwargs)
-
-    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
-        return self.render_json(request, asyncapi_schema)
-
-
-class YamlRenderPlugin(AsyncAPIRenderPlugin):
-    """Render the AsyncAPI schema as YAML."""
-
-    __slots__ = ()
-
-    def __init__(
-        self,
-        *,
-        path: str | Sequence[str] = ("/asyncapi.yaml", "/asyncapi.yml"),
-        media_type: str = "application/vnd.asyncapi+yaml",
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(path=path, media_type=media_type, **kwargs)
-
-    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
-        builtins = msgspec.to_builtins(
-            asyncapi_schema, enc_hook=get_serializer(request.route_handler.resolve_type_encoders())
-        )
-        return cast("bytes", yaml.safe_dump(builtins, default_flow_style=False, sort_keys=False).encode("utf-8"))
+AsyncAPIRenderPlugin = OpenAPIRenderPlugin
 
 
 class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
@@ -129,13 +41,20 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
         self.css_url = css_url
         self._config = config or {}
 
-    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", openapi_schema: dict[str, Any]) -> bytes:
+        openapi_schema = normalize_document(
+            openapi_schema, getattr(getattr(request, "app", None), "type_encoders", None)
+        )
         title = "AsyncAPI"
-        if isinstance(asyncapi_schema.get("info"), dict) and isinstance(asyncapi_schema["info"].get("title"), str):
-            title = asyncapi_schema["info"]["title"]
+        if isinstance(openapi_schema.get("info"), dict) and isinstance(openapi_schema["info"].get("title"), str):
+            title = openapi_schema["info"]["title"]
 
-        schema_json = json.dumps(asyncapi_schema, ensure_ascii=False).replace("</", "<\\/")
-        config_json = json.dumps(self._config, ensure_ascii=False).replace("</", "<\\/")
+        schema_json = encode_json(openapi_schema).decode("utf-8").replace("</", "<\\/")
+        config_json = (
+            encode_json(normalize_document(self._config, getattr(getattr(request, "app", None), "type_encoders", None)))
+            .decode("utf-8")
+            .replace("</", "<\\/")
+        )
 
         escaped_title = html.escape(title, quote=True)
 
@@ -196,24 +115,27 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
         self.enable_validation = enable_validation
         self.theme = theme
 
-    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", openapi_schema: dict[str, Any]) -> bytes:
         """Render the interactive playground HTML.
 
         Args:
             request: The incoming request.
-            asyncapi_schema: The AsyncAPI schema as a dictionary.
+            openapi_schema: The AsyncAPI schema as a dictionary.
 
         Returns:
             The playground HTML as UTF-8 bytes.
         """
+        openapi_schema = normalize_document(
+            openapi_schema, getattr(getattr(request, "app", None), "type_encoders", None)
+        )
         title = "AsyncAPI"
-        if isinstance(asyncapi_schema.get("info"), dict) and isinstance(asyncapi_schema["info"].get("title"), str):
-            title = asyncapi_schema["info"]["title"]
+        if isinstance(openapi_schema.get("info"), dict) and isinstance(openapi_schema["info"].get("title"), str):
+            title = openapi_schema["info"]["title"]
 
         escaped_title = html.escape(title, quote=True)
 
-        channels = asyncapi_schema.get("channels", {})
-        channels_json = json.dumps(channels, ensure_ascii=False).replace("</", "<\\/")
+        channels = openapi_schema.get("channels", {})
+        channels_json = encode_json(channels).decode("utf-8").replace("</", "<\\/")
 
         if self.theme == "dark":
             bg_color = "#1a1a2e"
