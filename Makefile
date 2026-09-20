@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
 
 # =============================================================================
 # Configuration and Environment Variables
@@ -8,6 +9,14 @@ SHELL := /bin/bash
 .ONESHELL:
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
+PYTHON_VERSION ?= 3.10
+UV_SYNC_ARGS ?= --all-extras --dev
+
+# Detect Rodete and configure index URLs for Python tools
+ifneq ($(shell grep -s -q "rodete" /etc/os-release && echo "yes"),)
+export PIP_INDEX_URL=https://pypi.org/simple
+export UV_INDEX_URL=https://pypi.org/simple
+endif
 
 # -----------------------------------------------------------------------------
 # Display Formatting and Colors
@@ -34,23 +43,30 @@ help:                                               ## Display this help text fo
 # Installation and Environment Setup
 # =============================================================================
 
+.PHONY: setup-env
+setup-env:                                          ## Configure local environment (e.g. Rodete)
+	@./tools/scripts/setup-env.sh
+
 .PHONY: install-uv
 install-uv:                                         ## Install latest version of uv
-	@echo "${INFO} Installing uv..."
+	@echo "${INFO} Installing uv... ⚡"
 	@curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
-	@echo "${OK} UV installed successfully"
+	@echo "${OK} UV installed successfully 🎉"
 
 .PHONY: install
-install: clean                                      ## Install the project, dependencies, and pre-commit for local development
-	@echo "${INFO} Starting fresh installation..."
-	@uv sync --all-extras --dev
-	@echo "${OK} Installation complete!"
+install: destroy clean setup-env                    ## Install all locked development dependencies
+	@echo "${INFO} Starting fresh installation... ⚡"
+	@uv python pin $(PYTHON_VERSION) >/dev/null 2>&1
+	@uv venv >/dev/null 2>&1
+	@uv sync $(UV_SYNC_ARGS)
+	@echo "${OK} Installation complete! 🎉"
 
 .PHONY: destroy
-destroy:                                            ## Destroy the virtual environment
-	@echo "${INFO} Destroying virtual environment..."
+destroy:                                            ## Destroy virtual environment and clean caches
+	@echo "${INFO} Destroying virtual environment... 🗑️"
+	@uvx prek clean >/dev/null 2>&1 || true
 	@rm -rf .venv
-	@echo "${OK} Virtual environment destroyed"
+	@echo "${OK} Virtual environment destroyed 🗑️"
 
 # =============================================================================
 # Dependency Management
@@ -58,17 +74,18 @@ destroy:                                            ## Destroy the virtual envir
 
 .PHONY: upgrade
 upgrade:                                            ## Upgrade all dependencies to latest stable versions
-	@echo "${INFO} Updating all dependencies..."
+	@echo "${INFO} Updating all dependencies... 🔄"
 	@uv lock --upgrade
-	@echo "${OK} Dependencies updated"
-	@uv run pre-commit autoupdate
-	@echo "${OK} Updated Pre-commit hooks"
+	@echo "${OK} Dependencies updated 🔄"
+	@uvx prek autoupdate --cooldown-days 7
+	@echo "${OK} Updated prek hooks (7-day cooldown) 🔄"
+	@uv lock >/dev/null 2>&1
 
 .PHONY: lock
-lock:                                              ## Rebuild lockfiles from scratch
-	@echo "${INFO} Rebuilding lockfiles..."
-	@uv lock --upgrade
-	@echo "${OK} Lockfiles updated"
+lock:                                               ## Rebuild lockfiles from scratch
+	@echo "${INFO} Rebuilding lockfiles... 🔄"
+	@uv lock --upgrade >/dev/null 2>&1
+	@echo "${OK} Lockfiles updated 🔄"
 
 # =============================================================================
 # Build and Release
