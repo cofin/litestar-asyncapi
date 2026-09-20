@@ -21,7 +21,7 @@ classifiers = [
   "Intended Audience :: Developers",
 ]
 dependencies = [
-  "litestar>=2.0.0"
+  "litestar>=2.24.0,<3"
 ]
 description = "AsyncAPI plugin for Litestar"
 keywords = ["litestar", "asyncapi", "async", "api", "documentation"]
@@ -254,6 +254,7 @@ convention = "google"
 ban-relative-imports = "all"
 
 [tool.ruff.lint.per-file-ignores]
+"src/litestar_asyncapi/_compat.py" = ["SLF001"]
 "docs/conf.py" = ["A001", "INP001"]
 "docs/**/*.py" = ["A", "B", "D", "ERA", "S"]
 "src/litestar_asyncapi/spec/enums.py" = ["S105"]
@@ -261,7 +262,6 @@ ban-relative-imports = "all"
 "src/litestar_asyncapi/plugin.py" = ["PLC0415"]
 "src/litestar_asyncapi/asyncapi/utils/examples.py" = ["PLC0415", "PLR0911"]
 "src/litestar_asyncapi/asyncapi/schema_generation/schema.py" = ["PLR0911", "PLR2004"]
-"src/litestar_asyncapi/asyncapi/schema_generation/utils.py" = ["PLR0911"]
 "src/litestar_asyncapi/asyncapi/extractors/*.py" = ["PLC0415", "SLF001"]
 "src/tests/**/*" = [
   "ANN",

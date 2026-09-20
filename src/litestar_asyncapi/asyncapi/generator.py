@@ -33,7 +33,7 @@ class AsyncAPIGenerator:
         Returns:
             The generated AsyncAPI document.
         """
-        schema_generator = AsyncAPISchemaGenerator()
+        schema_generator = AsyncAPISchemaGenerator(self.app)
         info = Info(title=self.config.title, version=self.config.version, description=self.config.description)
         document = AsyncAPI(info=info, default_content_type=self.config.default_content_type)
 
@@ -43,7 +43,7 @@ class AsyncAPIGenerator:
         _populate_channels(document, discovered)
         _populate_operations(document, discovered, config=self.config)
 
-        schemas = schema_generator.schema_registry.generate_components_schemas()
+        schemas = schema_generator.components()
         component_schemas: dict[str, Schema | Reference] = dict(schemas)
         document.components = Components(
             schemas=dict(component_schemas),

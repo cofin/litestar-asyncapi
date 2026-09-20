@@ -9,7 +9,7 @@ from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredOperation,
     DiscoverySource,
 )
-from litestar_asyncapi.spec import OperationAction, Parameter, Reference, Schema, SchemaType
+from litestar_asyncapi.spec import OperationAction, Parameter, Reference, Schema
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -163,7 +163,7 @@ def _apply_decorator_overrides(
 
         message = op.message or DiscoveredMessage()
         if override.message.payload is not None:
-            payload = schema_generator.generate_schema(FieldDefinition.from_annotation(override.message.payload))
+            payload = schema_generator.generate(override.message.payload, provenance=str(route_handler))
             message.payload = payload
             if override.message.content_type is None:
                 message.content_type = _infer_content_type(payload)
@@ -179,7 +179,7 @@ def _apply_decorator_overrides(
         if override.message.examples is not None:
             message.examples = override.message.examples
         if override.message.headers is not None:
-            headers = schema_generator.generate_schema(FieldDefinition.from_annotation(override.message.headers))
+            headers = schema_generator.generate(override.message.headers, provenance=str(route_handler))
             message.headers = headers
         if override.message.content_type is not None:
             message.content_type = override.message.content_type
@@ -199,7 +199,7 @@ def _infer_listener_operations(
     return_field = cast("FieldDefinition", route_handler._parsed_return_field)
 
     operations: list[DiscoveredOperation] = []
-    receive_payload = schema_generator.generate_schema(data_field)
+    receive_payload = schema_generator.generate(data_field, provenance=str(route_handler))
     receive_example = _generate_example(data_field, config=config)
     operations.append(
         DiscoveredOperation(
@@ -214,7 +214,7 @@ def _infer_listener_operations(
     )
 
     if not _is_none_return_type(return_field):
-        send_payload = schema_generator.generate_schema(return_field)
+        send_payload = schema_generator.generate(return_field, provenance=str(route_handler))
         send_example = _generate_example(return_field, config=config)
         operations.append(
             DiscoveredOperation(
@@ -237,7 +237,7 @@ def _infer_stream_operations(
 ) -> list[DiscoveredOperation]:
     return_field = cast("FieldDefinition", route_handler._parsed_return_field)
 
-    payload = schema_generator.generate_schema(return_field)
+    payload = schema_generator.generate(return_field, provenance=str(route_handler))
     example = _generate_example(return_field, config=config)
     operations = [
         DiscoveredOperation(
@@ -361,14 +361,18 @@ def _is_none_return_type(field_definition: FieldDefinition) -> bool:
     )
 
 
-def _infer_content_type(payload: Schema | Reference) -> str | None:
-    # Until PRD-005 renderers are implemented, this is best-effort: treat objects/refs as JSON.
-    if isinstance(payload, Reference):
-        return "application/json"
-    if payload.type is None:
+def _infer_content_type(payload: Schema | Reference | dict[str, Any] | bool) -> str | None:
+    value = payload.to_schema() if isinstance(payload, (Schema, Reference)) else payload
+    if not isinstance(value, dict):
         return None
-    if payload.properties is not None or payload.items is not None:
-        return "application/json"
-    if payload.type in {SchemaType.OBJECT, SchemaType.ARRAY}:
+    raw_types = value.get("type")
+    schema_types = raw_types if isinstance(raw_types, list) else [raw_types]
+    if (
+        "$ref" in value
+        or "properties" in value
+        or "items" in value
+        or "object" in schema_types
+        or "array" in schema_types
+    ):
         return "application/json"
     return None
