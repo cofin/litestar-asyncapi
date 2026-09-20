@@ -1,12 +1,18 @@
-import pytest
+from litestar import Litestar
 
-from litestar_asyncapi.asyncapi.datastructures import DiscoveredMessage
+from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition, MessageDefinition, OperationDefinition
+from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+from litestar_asyncapi.spec import MessageExample
 
-pytestmark = pytest.mark.anyio
 
-
-def test_discovered_message_to_spec_includes_examples() -> None:
-    message = DiscoveredMessage(examples=[{"value": 1}])
-    spec_message = message.to_spec_message()
-
-    assert spec_message.examples == [{"value": 1}]
+def test_explicit_message_examples_normalize_only_at_assembly() -> None:
+    example = MessageExample(name="empty", payload=None, headers={"id": "1"})
+    definition = MessageDefinition(payload=int | None, examples=[example])
+    config = AsyncAPIConfig(
+        channels=[ChannelDefinition("events", "events", [OperationDefinition(action="send", messages=[definition])])]
+    )
+    document = AsyncAPIGenerator(Litestar([]), config).build_schema()
+    message = next(iter(document["channels"]["events"]["messages"].values()))
+    assert message["examples"] == [{"name": "empty", "payload": None, "headers": {"id": "1"}}]
+    assert definition.examples[0] is example
+    assert definition.payload == int | None

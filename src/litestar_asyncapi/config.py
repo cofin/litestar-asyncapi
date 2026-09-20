@@ -1,23 +1,19 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
+from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
 from litestar_asyncapi.spec import MessageTrait, OperationTrait, Reference, Server
 
 if TYPE_CHECKING:
     from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
 
-__all__ = ("AsyncAPIConfig",)
+__all__ = ("AsyncAPIConfig", "DocsConfig")
 
 
 def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
-    from litestar_asyncapi.plugins import (
-        AsyncAPIPlaygroundRenderPlugin,
-        AsyncAPIUIRenderPlugin,
-        JsonRenderPlugin,
-        YamlRenderPlugin,
-    )
+    from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
 
-    return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin(), AsyncAPIPlaygroundRenderPlugin()]
+    return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin()]
 
 
 def _validate_create_examples(value: object) -> None:
@@ -26,7 +22,19 @@ def _validate_create_examples(value: object) -> None:
         raise TypeError(message)
 
 
-@dataclass
+@dataclass(slots=True)
+class DocsConfig:
+    """Documentation routes and optional interactive UI settings."""
+
+    path: str = "/asyncapi"
+    enable_routes: bool = True
+    renderer: Literal["asyncapi", "scalar"] = "asyncapi"
+    interactive: bool = False
+    console: bool = False
+    render_plugins: list["AsyncAPIRenderPlugin"] = field(default_factory=_default_render_plugins)
+
+
+@dataclass(slots=True)
 class AsyncAPIConfig:
     """Configuration for the AsyncAPI plugin.
 
@@ -62,14 +70,9 @@ class AsyncAPIConfig:
     use_cache: bool = True
     """Whether plugin methods should cache built documents for subsequent calls."""
 
-    path: str = "/asyncapi"
-    """Base path for the docs router."""
-
-    render_plugins: list["AsyncAPIRenderPlugin"] = field(default_factory=_default_render_plugins)
-    """Render plugins used to serve JSON/YAML/UI endpoints."""
-
-    enable_routes: bool = True
-    """Whether to register the docs router during app initialization."""
+    spec_version: Literal["3.0.0", "3.1.0"] = "3.1.0"
+    channels: list[ChannelDefinition] = field(default_factory=list)
+    docs: "DocsConfig" = field(default_factory=DocsConfig)
 
     operation_traits: dict[str, OperationTrait | dict[str, Any]] = field(default_factory=dict)
     """Reusable operation traits registered under `components.operationTraits`."""

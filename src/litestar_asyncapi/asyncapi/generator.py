@@ -1,18 +1,41 @@
 import re
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass, fields
+from typing import TYPE_CHECKING, Any, cast
 
 from litestar.exceptions import ImproperlyConfiguredException
+from litestar.typing import FieldDefinition
 
+from litestar_asyncapi.asyncapi.datastructures import (
+    ChannelDefinition,
+    DiscoveredChannel,
+    DiscoveredOperation,
+    DiscoverySource,
+    MessageDefinition,
+    OperationDefinition,
+)
 from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channels, extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
-from litestar_asyncapi.spec import AsyncAPI, Channel, Components, Info, Message, Operation, OperationAction, Reference
+from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
+from litestar_asyncapi.spec import (
+    AsyncAPI,
+    Channel,
+    Components,
+    Info,
+    Message,
+    MessageTrait,
+    MultiFormatSchema,
+    Operation,
+    OperationAction,
+    OperationTrait,
+    Reference,
+    Schema,
+)
+from litestar_asyncapi.spec.base import UNSET
 
 if TYPE_CHECKING:
     from litestar import Litestar
 
     from litestar_asyncapi import AsyncAPIConfig
-    from litestar_asyncapi.spec import MessageTrait, OperationTrait, Schema
 
 __all__ = ("AsyncAPIGenerator",)
 
@@ -35,13 +58,15 @@ class AsyncAPIGenerator:
         """
         schema_generator = AsyncAPISchemaGenerator(self.app)
         info = Info(title=self.config.title, version=self.config.version, description=self.config.description)
-        document = AsyncAPI(info=info, default_content_type=self.config.default_content_type)
+        document = AsyncAPI(
+            info=info, asyncapi=self.config.spec_version, default_content_type=self.config.default_content_type
+        )
 
         document.servers.update(self.config.to_servers())
 
         discovered = _discover_channels(self.app, self.config, schema_generator)
         _populate_channels(document, discovered)
-        _populate_operations(document, discovered, config=self.config)
+        _populate_operations(document, discovered, config=self.config, schema_generator=schema_generator, app=self.app)
 
         schemas = schema_generator.components()
         component_schemas: dict[str, Schema | Reference] = dict(schemas)
@@ -119,37 +144,74 @@ def _ensure_unique_message_key(message_key: str, used_keys: set[str]) -> str:
 
 def _discover_channels(
     app: "Litestar", config: "AsyncAPIConfig", schema_generator: AsyncAPISchemaGenerator
-) -> list[Any]:
-    discovered: list[Any] = []
+) -> list[DiscoveredChannel]:
+    discovered: list[DiscoveredChannel] = []
     if config.include_websocket_routes:
         discovered.extend(extract_websocket_channels(app, schema_generator=schema_generator, config=config))
     if config.include_channels_plugin:
         discovered.extend(extract_channels_plugin_channels(app, schema_generator=schema_generator))
+    explicit: dict[str, tuple[ChannelDefinition, str]] = {}
+    for index, channel in enumerate(config.channels):
+        source = f"AsyncAPIConfig.channels[{index}] ({channel.key})"
+        if channel.key in explicit:
+            message = f"Conflicting explicit channel {channel.key!r}: {explicit[channel.key][1]} and {source}"
+            raise ImproperlyConfiguredException(message)
+        explicit[channel.key] = (channel, source)
+    discovered = [channel for channel in discovered if channel.key not in explicit]
+    discovered.extend(
+        DiscoveredChannel(
+            **{
+                item.name: getattr(channel, item.name)
+                for item in fields(ChannelDefinition)
+                if item.name != "operations"
+            },
+            operations=[
+                DiscoveredOperation(
+                    **{item.name: getattr(operation, item.name) for item in fields(OperationDefinition)},
+                    provenance=f"{source}.operations[{index}]",
+                )
+                for index, operation in enumerate(channel.operations)
+            ],
+            source=DiscoverySource.CONFIG,
+            provenance=source,
+        )
+        for channel, source in explicit.values()
+    )
     return discovered
 
 
-def _populate_channels(document: AsyncAPI, discovered: list[Any]) -> None:
+def _populate_channels(document: AsyncAPI, discovered: list[DiscoveredChannel]) -> None:
     for discovered_channel in discovered:
-        channel_key = _channel_key(discovered_channel.address)
+        channel_key = discovered_channel.key
         document.channels[channel_key] = Channel(
-            address=discovered_channel.address, parameters=discovered_channel.parameters
+            address=discovered_channel.address,
+            parameters=discovered_channel.parameters,
+            servers=discovered_channel.servers,
+            bindings=discovered_channel.bindings,
         )
 
 
-def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "AsyncAPIConfig") -> None:
+def _populate_operations(
+    document: AsyncAPI,
+    discovered: list[DiscoveredChannel],
+    *,
+    config: "AsyncAPIConfig",
+    schema_generator: AsyncAPISchemaGenerator,
+    app: "Litestar",
+) -> None:
     used_operation_ids: set[str] = set()
     used_operation_keys: set[str] = set()
     channel_message_keys: dict[str, set[str]] = {}
 
     for discovered_channel in discovered:
-        channel_key = _channel_key(discovered_channel.address)
+        channel_key = discovered_channel.key
         channel_ref = Reference(ref=f"#/channels/{_json_pointer_escape(channel_key)}")
         channel = document.channels[channel_key]
         if isinstance(channel, Reference):
             msg = "Discovered channels must be inline Channel objects"
             raise TypeError(msg)
         for discovered_operation in discovered_channel.operations:
-            default_operation_id = _default_operation_id(channel_key, discovered_operation.action)
+            default_operation_id = _default_operation_id(channel_key, OperationAction(discovered_operation.action))
             operation_id, operation_key = _ensure_unique_operation_id(
                 discovered_operation.operation_id or default_operation_id,
                 default_operation_id=default_operation_id,
@@ -160,21 +222,25 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
             used_operation_ids.add(operation_id)
             used_operation_keys.add(operation_key)
 
-            messages: list[Message | Reference] | None = None
-            if discovered_operation.message is not None:
-                message = discovered_operation.message.to_spec_message()
-                if discovered_operation.message.traits:
-                    message.traits = _resolve_message_traits(discovered_operation.message.traits, config=config)
+            messages: list[Message | Reference] = []
+            for definition in discovered_operation.messages or []:
+                message = _build_message(
+                    definition,
+                    schema_generator=schema_generator,
+                    app=app,
+                    config=config,
+                    provenance=discovered_channel.provenance,
+                )
                 message_key = _ensure_unique_message_key(
-                    operation_key, channel_message_keys.setdefault(channel_key, set())
+                    definition.name or operation_key, channel_message_keys.setdefault(channel_key, set())
                 )
                 channel.messages = channel.messages or {}
                 channel.messages[message_key] = message
-                messages = [
+                messages.append(
                     Reference(
                         ref=f"#/channels/{_json_pointer_escape(channel_key)}/messages/{_json_pointer_escape(message_key)}"
                     )
-                ]
+                )
 
             operation_trait_refs = (
                 _resolve_operation_traits(discovered_operation.traits, config=config)
@@ -183,29 +249,106 @@ def _populate_operations(document: AsyncAPI, discovered: list[Any], *, config: "
             )
 
             document.operations[operation_key] = Operation(
-                action=discovered_operation.action,
+                action=OperationAction(discovered_operation.action),
                 channel=channel_ref,
                 title=discovered_operation.title,
                 summary=discovered_operation.summary,
                 description=discovered_operation.description,
                 messages=messages,
                 traits=operation_trait_refs,
+                tags=discovered_operation.tags,
+                security=discovered_operation.security,
+                bindings=discovered_operation.bindings,
+                reply=discovered_operation.reply,
             )
 
 
-def _resolve_operation_traits(traits: list[str], *, config: "AsyncAPIConfig") -> "list[OperationTrait | Reference]":
+def _resolve_operation_traits(
+    traits: list[str | OperationTrait | Reference], *, config: "AsyncAPIConfig"
+) -> "list[OperationTrait | Reference]":
     available = config.to_operation_traits()
-    missing = [name for name in traits if name not in available]
+    missing = [name for name in traits if isinstance(name, str) and name not in available]
     if missing:
         msg = f"Unknown operation traits referenced: {missing!r}. Register them on AsyncAPIConfig.operation_traits."
         raise ImproperlyConfiguredException(msg)
-    return [Reference(ref=f"#/components/operationTraits/{_json_pointer_escape(name)}") for name in traits]
+    return [
+        Reference(ref=f"#/components/operationTraits/{_json_pointer_escape(name)}") if isinstance(name, str) else name
+        for name in traits
+    ]
 
 
-def _resolve_message_traits(traits: list[str], *, config: "AsyncAPIConfig") -> "list[MessageTrait | Reference]":
+def _resolve_message_traits(
+    traits: list[str | MessageTrait | Reference], *, config: "AsyncAPIConfig"
+) -> "list[MessageTrait | Reference]":
     available = config.to_message_traits()
-    missing = [name for name in traits if name not in available]
+    missing = [name for name in traits if isinstance(name, str) and name not in available]
     if missing:
         msg = f"Unknown message traits referenced: {missing!r}. Register them on AsyncAPIConfig.message_traits."
         raise ImproperlyConfiguredException(msg)
-    return [Reference(ref=f"#/components/messageTraits/{_json_pointer_escape(name)}") for name in traits]
+    return [
+        Reference(ref=f"#/components/messageTraits/{_json_pointer_escape(name)}") if isinstance(name, str) else name
+        for name in traits
+    ]
+
+
+def _build_message(
+    definition: MessageDefinition,
+    *,
+    schema_generator: AsyncAPISchemaGenerator,
+    app: "Litestar",
+    config: "AsyncAPIConfig",
+    provenance: str,
+) -> Message:
+
+    def schema(value: object | None) -> Any:
+        if value is None or isinstance(value, (Schema, Reference, dict, bool, MultiFormatSchema)):
+            return value
+        return schema_generator.generate(value, provenance=provenance)
+
+    payload = schema(definition.payload)
+    examples = definition.examples
+    if (
+        examples is None
+        and definition.payload is not None
+        and not isinstance(definition.payload, (Schema, Reference, dict, bool, MultiFormatSchema))
+    ):
+        examples = schema_generator.declared_examples(definition.payload)
+        if examples is None:
+            field = (
+                definition.payload
+                if isinstance(definition.payload, FieldDefinition)
+                else FieldDefinition.from_annotation(definition.payload)
+            )
+            example = generate_example(field, config=config, app=app)
+            examples = [example] if example is not UNSET else None
+    return Message(
+        payload=payload,
+        headers=schema(definition.headers),
+        name=definition.name,
+        title=definition.title,
+        summary=definition.summary,
+        description=definition.description,
+        examples=normalize_examples(cast("list[Any]", examples), app=app) if examples is not None else None,
+        content_type=definition.content_type or _infer_content_type(payload),
+        correlation_id=definition.correlation_id,
+        traits=_resolve_message_traits(definition.traits, config=config) if definition.traits is not None else None,
+        bindings=definition.bindings,
+        tags=definition.tags,
+    )
+
+
+def _infer_content_type(payload: Schema | Reference | dict[str, Any] | bool) -> str | None:
+    value = payload.to_schema() if isinstance(payload, (Schema, Reference)) else payload
+    if not isinstance(value, dict):
+        return None
+    raw_types = value.get("type")
+    schema_types = raw_types if isinstance(raw_types, list) else [raw_types]
+    if (
+        "$ref" in value
+        or "properties" in value
+        or "items" in value
+        or "object" in schema_types
+        or "array" in schema_types
+    ):
+        return "application/json"
+    return None

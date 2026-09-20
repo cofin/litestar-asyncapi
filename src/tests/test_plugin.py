@@ -45,3 +45,17 @@ def test_plugin_with_litestar_app(app: "Litestar", asyncapi_plugin: "AsyncAPIPlu
     """Test that the plugin integrates with a Litestar application."""
     assert asyncapi_plugin in app.plugins
     assert asyncapi_plugin.config.title == "Test API"
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_nested_docs_route_configuration(enabled: bool) -> None:
+    from litestar import Litestar
+    from litestar.testing import TestClient
+
+    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
+
+    plugin = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(path="/events", enable_routes=enabled, console=True)))
+    with TestClient(Litestar([], plugins=[plugin])) as client:
+        assert client.get("/events/asyncapi.json").status_code == (200 if enabled else 404)
+        assert client.get("/events/playground").status_code == (200 if enabled else 404)
+        assert client.get("/asyncapi/asyncapi.json").status_code == 404

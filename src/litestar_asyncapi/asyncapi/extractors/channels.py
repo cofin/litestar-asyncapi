@@ -4,9 +4,9 @@ from litestar.channels.plugin import ChannelsPlugin
 
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
-    DiscoveredMessage,
     DiscoveredOperation,
     DiscoverySource,
+    MessageDefinition,
 )
 from litestar_asyncapi.spec import OperationAction, Parameter, Schema, SchemaType
 
@@ -48,9 +48,10 @@ def extract_channels_plugin_channels(
 
     placeholder_payload = Schema(type=SchemaType.OBJECT)
     send_operation = DiscoveredOperation(
+        provenance="ChannelsPlugin",
         action=OperationAction.SEND,
         operation_id=None,
-        message=DiscoveredMessage(payload=placeholder_payload, content_type="application/json"),
+        messages=[MessageDefinition(payload=placeholder_payload, content_type="application/json")],
     )
 
     discovered: list[DiscoveredChannel] = []
@@ -58,6 +59,8 @@ def extract_channels_plugin_channels(
         channel_name_param = Parameter(description="The name of the arbitrary channel.")
         discovered.append(
             DiscoveredChannel(
+                provenance="ChannelsPlugin",
+                key=f"{root_path}{{channel_name}}",
                 address=f"{root_path}{{channel_name}}",
                 source=DiscoverySource.CHANNELS_PLUGIN,
                 parameters={"channel_name": channel_name_param},
@@ -69,6 +72,8 @@ def extract_channels_plugin_channels(
     channel_map = cast("dict[str, object]", plugin._channels)
     discovered.extend(
         DiscoveredChannel(
+            provenance="ChannelsPlugin",
+            key=f"{root_path}{name}",
             address=f"{root_path}{name}",
             source=DiscoverySource.CHANNELS_PLUGIN,
             parameters=None,

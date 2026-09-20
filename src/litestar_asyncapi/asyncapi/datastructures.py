@@ -1,13 +1,28 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from litestar_asyncapi.spec import CorrelationId, Message, OperationAction, Parameter, Reference, Schema
+from litestar_asyncapi.spec import (
+    CorrelationId,
+    MessageTrait,
+    OperationAction,
+    OperationTrait,
+    Parameter,
+    Reference,
+    Reply,
+    SecurityScheme,
+    Tag,
+)
 
-__all__ = ("DiscoveredChannel", "DiscoveredMessage", "DiscoveredOperation", "DiscoverySource")
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
+__all__ = (
+    "ChannelDefinition",
+    "DiscoveredChannel",
+    "DiscoveredOperation",
+    "DiscoverySource",
+    "MessageDefinition",
+    "OperationDefinition",
+)
 
 
 class DiscoverySource(str, Enum):
@@ -15,61 +30,79 @@ class DiscoverySource(str, Enum):
 
     WEBSOCKET = "websocket"
     CHANNELS_PLUGIN = "channels-plugin"
+    CONFIG = "config"
 
 
 @dataclass(slots=True)
-class DiscoveredMessage:
-    """Internal representation of a discovered message."""
+class MessageDefinition:
+    """A message contract retaining Python payload and header types until assembly."""
 
-    payload: Schema | Reference | dict[str, Any] | bool | None = None
+    payload: object | None = None
     name: str | None = None
     title: str | None = None
     summary: str | None = None
     description: str | None = None
-    examples: list[Any] | None = None
-    headers: Schema | Reference | dict[str, Any] | bool | None = None
+    examples: list[object] | None = None
+    headers: object | None = None
     correlation_id: CorrelationId | Reference | None = None
     content_type: str | None = None
-    traits: list[str] | None = None
-
-    def to_spec_message(self) -> Message:
-        """Create an AsyncAPI Message object.
-
-        Returns:
-            A :class:`~litestar_asyncapi.spec.Message` instance.
-        """
-
-        return Message(
-            name=self.name,
-            title=self.title,
-            summary=self.summary,
-            description=self.description,
-            examples=self.examples,
-            headers=self.headers,
-            payload=self.payload,
-            correlation_id=self.correlation_id,
-            content_type=self.content_type,
-        )
+    traits: list[str | MessageTrait | Reference] | None = None
+    bindings: dict[str, Any] | Reference | None = None
+    tags: list[Tag | Reference] | None = None
 
 
 @dataclass(slots=True)
-class DiscoveredOperation:
-    """Internal representation of a discovered operation."""
+class OperationDefinition:
+    """An application-perspective operation and its named message choices."""
 
-    action: OperationAction
-    message: DiscoveredMessage | None = None
+    action: OperationAction | str
+    messages: list[MessageDefinition] | None = None
     operation_id: str | None = None
     title: str | None = None
     summary: str | None = None
     description: str | None = None
-    traits: list[str] | None = None
+    traits: list[str | OperationTrait | Reference] | None = None
+    tags: list[Tag | Reference] | None = None
+    security: list[SecurityScheme | Reference] | None = None
+    bindings: dict[str, Any] | Reference | None = None
+    reply: Reply | Reference | None = None
+
+    def __post_init__(self) -> None:
+        self.action = OperationAction(self.action)
+        names: set[str | None] = set()
+        for message in self.messages or []:
+            if message.name in names:
+                detail = f"Conflicting message declarations for {message.name!r} in operation {self.operation_id or self.action.value!r}"
+                raise ValueError(detail)
+            names.add(message.name)
 
 
 @dataclass(slots=True)
-class DiscoveredChannel:
-    """Internal representation of a discovered AsyncAPI channel."""
+class ChannelDefinition:
+    """An explicit channel keyed independently from its transport address."""
 
+    key: str
     address: str
+    operations: Sequence[OperationDefinition] = ()
+    parameters: dict[str, Parameter | Reference] | None = None
+    servers: list[Reference] | None = None
+    bindings: dict[str, Any] | Reference | None = None
+
+
+@dataclass(kw_only=True)
+class DiscoveredOperation(OperationDefinition):
+    """An operation definition with its source route and handler description."""
+
+    __slots__ = ("provenance",)
+
+    provenance: str
+
+
+@dataclass(kw_only=True)
+class DiscoveredChannel(ChannelDefinition):
+    """A channel definition with discovery provenance."""
+
+    __slots__ = ("provenance", "source")
+
     source: DiscoverySource
-    parameters: dict[str, Parameter] | None = None
-    operations: "Sequence[DiscoveredOperation]" = ()
+    provenance: str

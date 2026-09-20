@@ -32,6 +32,6 @@ def test_plain_websocket_handler_produces_placeholder_operations() -> None:
 
     # Verify placeholder messages have descriptive content
     for op in channel.operations:
-        assert op.message is not None
-        assert op.message.description is not None
-        assert "raw websocket" in op.message.description.lower()
+        assert op.messages[0] is not None
+        assert op.messages[0].description is not None
+        assert "raw websocket" in op.messages[0].description.lower()

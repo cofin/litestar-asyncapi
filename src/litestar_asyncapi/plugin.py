@@ -119,9 +119,14 @@ class AsyncAPIPlugin(InitPluginProtocol):
         Returns:
             A Litestar router that serves all configured render plugin paths.
         """
-        router = Router(self.config.path, route_handlers=[], include_in_schema=False, dto=None, return_dto=None)
+        router = Router(self.config.docs.path, route_handlers=[], include_in_schema=False, dto=None, return_dto=None)
 
-        plugins: list[AsyncAPIRenderPlugin] = list(self.config.render_plugins)
+        plugins: list[AsyncAPIRenderPlugin] = list(self.config.docs.render_plugins)
+        if self.config.docs.interactive or self.config.docs.console:
+            from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
+
+            if not any(isinstance(plugin, AsyncAPIPlaygroundRenderPlugin) for plugin in plugins):
+                plugins.append(AsyncAPIPlaygroundRenderPlugin())
 
         def create_handler(plugin: "AsyncAPIRenderPlugin") -> "HTTPRouteHandler":
             paths = list(plugin.paths)
@@ -161,6 +166,6 @@ class AsyncAPIPlugin(InitPluginProtocol):
         Returns:
             The updated application configuration.
         """
-        if self.config.enable_routes:
+        if self.config.docs.enable_routes:
             app_config.route_handlers.append(self.create_docs_router())
         return app_config

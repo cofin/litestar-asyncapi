@@ -165,10 +165,12 @@ def test_playground_integration_with_app() -> None:
     from litestar import Litestar
     from litestar.testing import TestClient
 
-    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
+    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
     from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
 
-    config = AsyncAPIConfig(title="Integration Test", render_plugins=[AsyncAPIPlaygroundRenderPlugin()])
+    config = AsyncAPIConfig(
+        title="Integration Test", docs=DocsConfig(render_plugins=[AsyncAPIPlaygroundRenderPlugin()])
+    )
     app = Litestar(route_handlers=[], plugins=[AsyncAPIPlugin(config)])
 
     with TestClient(app=app) as client:
@@ -178,8 +180,8 @@ def test_playground_integration_with_app() -> None:
         assert "Integration Test - Playground" in response.text
 
 
-def test_playground_default_in_config() -> None:
-    """Playground should be included in default render plugins."""
+def test_playground_requires_explicit_opt_in() -> None:
+    """Default documentation must not expose an interactive console."""
     from litestar import Litestar
     from litestar.testing import TestClient
 
@@ -189,5 +191,5 @@ def test_playground_default_in_config() -> None:
 
     with TestClient(app=app) as client:
         response = client.get("/asyncapi/playground")
-        assert response.status_code == 200
+        assert response.status_code == 404
         assert response.headers["content-type"].startswith("text/html")

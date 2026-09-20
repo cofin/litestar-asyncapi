@@ -1,3 +1,4 @@
+from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any, cast
 
 from litestar.types.builtin_types import NoneType
@@ -5,11 +6,12 @@ from litestar.typing import FieldDefinition
 
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
-    DiscoveredMessage,
     DiscoveredOperation,
     DiscoverySource,
+    MessageDefinition,
+    OperationDefinition,
 )
-from litestar_asyncapi.spec import MultiFormatSchema, OperationAction, Parameter, Reference, Schema
+from litestar_asyncapi.spec import OperationAction, Parameter, Reference
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -55,9 +57,13 @@ def extract_websocket_channels(
         operations = _infer_operations_from_handler(
             route.route_handler, schema_generator=schema_generator, config=config, app=app
         )
+        for operation in operations:
+            operation.provenance = f"route {route.path_format} handler {route.route_handler.handler_name}"
         channels.append(
             DiscoveredChannel(
+                key=route.path_format,
                 address=route.path_format,
+                provenance=f"route {route.path_format} handler {route.route_handler.handler_name}",
                 source=DiscoverySource.WEBSOCKET,
                 parameters=parameters or None,
                 operations=operations,
@@ -85,8 +91,8 @@ def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
 
 def _path_parameters_to_parameters(
     path_parameters: "dict[str, PathParameterDefinition]", *, schema_generator: "AsyncAPISchemaGenerator"
-) -> dict[str, Parameter]:
-    parameters: dict[str, Parameter] = {}
+) -> dict[str, Parameter | Reference]:
+    parameters: dict[str, Parameter | Reference] = {}
     for name, param in path_parameters.items():
         # AsyncAPI 3.0 parameters are simplified and always treated as strings.
         # We include the original type in the description for clarity.
@@ -140,74 +146,29 @@ def _apply_decorator_overrides(
     app: "Litestar",
     replace_placeholders: bool = False,
 ) -> list[DiscoveredOperation]:
-    from litestar_asyncapi.asyncapi.utils.examples import normalize_examples
     from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
 
     raw_metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
     if not isinstance(raw_metadata, AsyncAPIMetadata) or not raw_metadata.operations:
         return operations
-
-    # If we have explicit decorators and should replace placeholders, start fresh
     if replace_placeholders:
         operations = []
-
     by_action = {op.action: op for op in operations}
-
     for action, override in raw_metadata.operations.items():
-        op = by_action.get(action)
-        if op is None:
-            op = DiscoveredOperation(action=action)
-            operations.append(op)
-            by_action[action] = op
-
-        if override.operation_id is not None:
-            op.operation_id = override.operation_id
-        if override.title is not None:
-            op.title = override.title
-        if override.summary is not None:
-            op.summary = override.summary
-        if override.description is not None:
-            op.description = override.description
-        if override.traits is not None:
-            op.traits = override.traits
-
-        if override.message is None:
-            continue
-
-        message = op.message or DiscoveredMessage()
-        if override.message.payload is not None:
-            payload = schema_generator.generate(override.message.payload, provenance=str(route_handler))
-            message.payload = payload
-            if override.message.content_type is None:
-                message.content_type = _infer_content_type(payload)
-
-        if override.message.name is not None:
-            message.name = override.message.name
-        if override.message.title is not None:
-            message.title = override.message.title
-        if override.message.summary is not None:
-            message.summary = override.message.summary
-        if override.message.description is not None:
-            message.description = override.message.description
-        if override.message.examples is not None:
-            message.examples = normalize_examples(override.message.examples, app=app)
-        elif override.message.payload is not None and not isinstance(override.message.payload, MultiFormatSchema):
-            message.examples = _generate_examples(
-                FieldDefinition.from_annotation(override.message.payload),
-                config=config,
-                app=app,
-                schema_generator=schema_generator,
-            )
-        if override.message.headers is not None:
-            headers = schema_generator.generate(override.message.headers, provenance=str(route_handler))
-            message.headers = headers
-        if override.message.content_type is not None:
-            message.content_type = override.message.content_type
-        if override.message.traits is not None:
-            message.traits = override.message.traits
-
-        op.message = message
-
+        operation = by_action.get(action)
+        if operation is None:
+            operation = DiscoveredOperation(action=action, provenance=str(route_handler))
+            operations.append(operation)
+        for item in fields(OperationDefinition):
+            value = getattr(override, item.name)
+            if item.name != "messages" and value is not None:
+                setattr(operation, item.name, value)
+        if override.messages is not None:
+            inferred = operation.messages[0] if operation.messages else MessageDefinition()
+            operation.messages = [
+                replace(message, payload=message.payload if message.payload is not None else inferred.payload)
+                for message in override.messages
+            ]
     return operations
 
 
@@ -219,32 +180,21 @@ def _infer_listener_operations(
     return_field = cast("FieldDefinition", route_handler._parsed_return_field)
 
     operations: list[DiscoveredOperation] = []
-    receive_payload = schema_generator.generate(data_field, provenance=str(route_handler))
-    receive_examples = _inferred_examples(
-        data_field, OperationAction.RECEIVE, route_handler, config=config, app=app, schema_generator=schema_generator
-    )
     operations.append(
         DiscoveredOperation(
+            provenance=str(route_handler),
             action=OperationAction.RECEIVE,
             operation_id=f"{route_handler.handler_name}_receive",
-            message=DiscoveredMessage(
-                payload=receive_payload, content_type=_infer_content_type(receive_payload), examples=receive_examples
-            ),
+            messages=[MessageDefinition(payload=data_field)],
         )
     )
-
     if not _is_none_return_type(return_field):
-        send_payload = schema_generator.generate(return_field, provenance=str(route_handler))
-        send_examples = _inferred_examples(
-            return_field, OperationAction.SEND, route_handler, config=config, app=app, schema_generator=schema_generator
-        )
         operations.append(
             DiscoveredOperation(
+                provenance=str(route_handler),
                 action=OperationAction.SEND,
                 operation_id=f"{route_handler.handler_name}_send",
-                message=DiscoveredMessage(
-                    payload=send_payload, content_type=_infer_content_type(send_payload), examples=send_examples
-                ),
+                messages=[MessageDefinition(payload=return_field)],
             )
         )
 
@@ -257,15 +207,12 @@ def _infer_stream_operations(
 ) -> list[DiscoveredOperation]:
     return_field = cast("FieldDefinition", route_handler._parsed_return_field)
 
-    payload = schema_generator.generate(return_field, provenance=str(route_handler))
-    examples = _inferred_examples(
-        return_field, OperationAction.SEND, route_handler, config=config, app=app, schema_generator=schema_generator
-    )
     operations = [
         DiscoveredOperation(
+            provenance=str(route_handler),
             action=OperationAction.SEND,
             operation_id=f"{route_handler.handler_name}_send",
-            message=DiscoveredMessage(payload=payload, content_type=_infer_content_type(payload), examples=examples),
+            messages=[MessageDefinition(payload=return_field)],
         )
     ]
     _apply_handler_metadata(route_handler, operations, include_action_suffix=False)
@@ -287,24 +234,30 @@ def _infer_raw_websocket_operations(route_handler: Any) -> list[DiscoveredOperat
     handler_name = getattr(route_handler, "handler_name", "websocket")
     return [
         DiscoveredOperation(
+            provenance=str(route_handler),
             action=OperationAction.RECEIVE,
             operation_id=f"{handler_name}_receive",
             summary="Receive message",
-            message=DiscoveredMessage(
-                name="RawMessage",
-                summary="Raw WebSocket message",
-                description="This endpoint uses raw WebSocket handling. Message format depends on implementation.",
-            ),
+            messages=[
+                MessageDefinition(
+                    name="RawMessage",
+                    summary="Raw WebSocket message",
+                    description="This endpoint uses raw WebSocket handling. Message format depends on implementation.",
+                )
+            ],
         ),
         DiscoveredOperation(
+            provenance=str(route_handler),
             action=OperationAction.SEND,
             operation_id=f"{handler_name}_send",
             summary="Send message",
-            message=DiscoveredMessage(
-                name="RawResponse",
-                summary="Raw WebSocket response",
-                description="This endpoint uses raw WebSocket handling. Response format depends on implementation.",
-            ),
+            messages=[
+                MessageDefinition(
+                    name="RawResponse",
+                    summary="Raw WebSocket response",
+                    description="This endpoint uses raw WebSocket handling. Response format depends on implementation.",
+                )
+            ],
         ),
     ]
 
@@ -326,7 +279,7 @@ def _apply_handler_metadata(
             operation.description = description
         if operation_id is not None:
             if include_action_suffix and len(operations) > 1:
-                operation.operation_id = f"{operation_id}_{operation.action.value}"
+                operation.operation_id = f"{operation_id}_{OperationAction(operation.action).value}"
             else:
                 operation.operation_id = operation_id
 
@@ -346,45 +299,6 @@ def _apply_docstring_descriptions(
     for operation in operations:
         if operation.description is None:
             operation.description = docstring
-
-
-def _inferred_examples(
-    field_definition: FieldDefinition,
-    action: OperationAction,
-    route_handler: Any,
-    *,
-    config: "AsyncAPIConfig",
-    app: "Litestar",
-    schema_generator: "AsyncAPISchemaGenerator",
-) -> list[Any] | None:
-    from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
-
-    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
-    override = metadata.operations.get(action) if isinstance(metadata, AsyncAPIMetadata) else None
-    if (
-        override
-        and override.message
-        and (override.message.examples is not None or override.message.payload is not None)
-    ):
-        return None
-    return _generate_examples(field_definition, config=config, app=app, schema_generator=schema_generator)
-
-
-def _generate_examples(
-    field_definition: FieldDefinition,
-    *,
-    config: "AsyncAPIConfig",
-    app: "Litestar",
-    schema_generator: "AsyncAPISchemaGenerator",
-) -> list[Any] | None:
-    from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
-    from litestar_asyncapi.spec.base import UNSET
-
-    declared = schema_generator.declared_examples(field_definition)
-    if declared is not None:
-        return normalize_examples(declared, app=app)
-    example = generate_example(field_definition, config=config, app=app)
-    return normalize_examples([example], app=app) if example is not UNSET else None
 
 
 def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
@@ -407,20 +321,3 @@ def _is_none_return_type(field_definition: FieldDefinition) -> bool:
         or field_definition.is_subclass_of(NoneType)
         or field_definition.raw is NoneType
     )
-
-
-def _infer_content_type(payload: Schema | Reference | dict[str, Any] | bool) -> str | None:
-    value = payload.to_schema() if isinstance(payload, (Schema, Reference)) else payload
-    if not isinstance(value, dict):
-        return None
-    raw_types = value.get("type")
-    schema_types = raw_types if isinstance(raw_types, list) else [raw_types]
-    if (
-        "$ref" in value
-        or "properties" in value
-        or "items" in value
-        or "object" in schema_types
-        or "array" in schema_types
-    ):
-        return "application/json"
-    return None

@@ -32,5 +32,5 @@ def test_stream_infers_send_operation_from_item_type() -> None:
     channel = extract_websocket_channels(app, schema_generator=gen)[0]
     assert [op.action for op in channel.operations] == [OperationAction.SEND]
     operation = channel.operations[0]
-    assert operation.message is not None
-    assert isinstance(operation.message.payload, dict)
+    assert operation.messages[0] is not None
+    assert operation.messages[0].payload.annotation is StreamItem
