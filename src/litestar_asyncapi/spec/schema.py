@@ -24,7 +24,7 @@ class Schema(BaseSchemaObject):
     required: list[str] | None = None
     additional_properties: "bool | Schema | Reference | None" = None
 
-    items: "Schema | Reference | None" = None
+    items: "Schema | Reference | list[Schema | Reference] | None" = None
     prefix_items: "list[Schema | Reference] | None" = field(default=None, metadata={"alias": "prefixItems"})
     min_items: int | None = None
     max_items: int | None = None

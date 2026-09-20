@@ -107,10 +107,13 @@ def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
 def _path_parameters_to_parameters(
     path_parameters: "dict[str, PathParameterDefinition]", *, schema_generator: "AsyncAPISchemaGenerator"
 ) -> dict[str, Parameter | Reference]:
+    """Convert path parameters into AsyncAPI Parameter objects.
+
+    AsyncAPI 3.0 parameters are simplified and always treated as strings.
+    The original Python type name is recorded in the parameter description for clarity.
+    """
     parameters: dict[str, Parameter | Reference] = {}
     for name, param in path_parameters.items():
-        # AsyncAPI 3.0 parameters are simplified and always treated as strings.
-        # We include the original type in the description for clarity.
         type_name = param.type.__name__ if hasattr(param.type, "__name__") else str(param.type)
         parameters[name] = Parameter(description=f"Path parameter: {name} (type: {type_name})")
     return parameters

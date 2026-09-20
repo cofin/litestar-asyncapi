@@ -104,6 +104,10 @@ def _sanitize_operation_id(value: str) -> str:
 def _ensure_unique_operation_id(
     operation_id: str, *, default_operation_id: str, used_ids: set[str], used_keys: set[str], config: "AsyncAPIConfig"
 ) -> tuple[str, str]:
+    """Ensure operation identity and mapping keys are unique across the document.
+
+    Uses case-insensitive checks for IDs and keys to satisfy strict tooling requirements.
+    """
     base_id = operation_id or default_operation_id
     candidate = base_id
     base_key = _sanitize_operation_id(base_id) or _sanitize_operation_id(default_operation_id)
@@ -111,7 +115,6 @@ def _ensure_unique_operation_id(
 
     while True:
         key = base_key if suffix == 1 else f"{base_key}_{suffix}"
-        # Use case-insensitive check for IDs to satisfy rigid enterprise tooling
         candidate_fold = candidate.casefold()
         key_fold = key.casefold()
 
