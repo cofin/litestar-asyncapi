@@ -1,53 +1,59 @@
-======================
-Renderers & Playground
-======================
+Documentation and interaction
+=============================
 
-``litestar-asyncapi`` includes a flexible render plugin architecture that supports multiple interactive documentation interfaces and serialization formats.
+``DocsConfig`` owns ``path``, ``enabled``, ``guards``, ``dependencies``,
+``renderer``, ``interactive``, ``yaml`` and optional ``render_plugins``.
+AsyncAPI React component 3.2.1 (React 18.3.1) is the default. Scalar 1.69.2 is selectable with
+``DocsConfig(renderer="scalar")``; it omits tuple positions, zero-length bounds
+and boolean payload schemas, and its page displays that limitation. Its Agent
+and remote fonts are disabled. Both views consume the same downloadable document.
+Packaged assets need no CDN or Node server at runtime.
 
-Built-in Render Plugins
-=======================
+``JsonRenderPlugin``, ``YamlRenderPlugin`` and ``AsyncAPIRenderPlugin`` are direct
+exports of Litestar's native renderers/base. Their own defaults remain OpenAPI
+paths (``/openapi.json``, ``/openapi.yaml`` and ``/openapi.yml``) and native JSON/YAML
+media types. ``DocsConfig`` configures AsyncAPI paths and vendor media types for
+you. When constructing them manually, configure those values explicitly:
 
-The library ships with four standard render plugins:
+.. literalinclude:: ../examples/renderers.py
+   :language: python
 
-1. **AsyncAPIUIRenderPlugin**: Renders a standalone AsyncAPI React UI documentation view.
-2. **PlaygroundRenderPlugin**: Renders an interactive WebSocket playground allowing developers to connect, inspect schemas, and send/receive real-time messages.
-3. **JSONRenderPlugin**: Serializes and serves the raw specification at ``/asyncapi/asyncapi.json``.
-4. **YAMLRenderPlugin**: Serializes and serves the raw specification at ``/asyncapi/asyncapi.yaml``.
+The UI adapter inherits the native unslotted renderer base. Its narrowly scoped
+slots-check exception avoids maintaining a duplicate base implementation.
+Supplied renderer objects retain their settings and are not mutated by another
+``DocsConfig``. With custom renderers, set ``interactive=True`` on a React UI
+instance explicitly if interaction is wanted on that instance.
 
-Configuring Renderers
-=====================
+Opt-in WebSocket console
+------------------------
 
-Render plugins are configured via the ``render_plugins`` list on ``AsyncAPIConfig``:
+``DocsConfig(interactive=True)`` adds the named React console at ``/playground``
+under the docs path. The default React page also gains interaction; Scalar links
+to the console. ``AsyncAPIUIRenderPlugin(renderer="scalar", interactive=True)``
+is rejected because Scalar does not provide this interaction.
 
-.. code-block:: python
+The console uses ``asyncapi-ws-plugin`` 0.1.0 with URL editing disabled. It never
+auto-connects. **Validation is advisory: Send transmits entered text even when
+malformed or schema-invalid.** The server must enforce validation and authorization.
+There is no custom strict mode, validator, transport, sampler or header proxy.
 
-    from litestar import Litestar
-    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
-    from litestar_asyncapi.plugins import (
-        AsyncAPIUIRenderPlugin,
-        JSONRenderPlugin,
-        PlaygroundRenderPlugin,
-        YAMLRenderPlugin,
-    )
+Only verified JSON text object/array contracts expose interaction. Binary frames,
+plain text, JSON-string roots and unconstrained/ambiguous roots are documented but
+not interactive. One unsupported message, including a reply choice, disables
+interaction for the whole operation. Supply explicit tuple examples: the upstream
+sampler does not reliably seed positional tuples. Inbound logs use upstream
+classification and diagnostics; they are not server-side validation evidence.
 
-    config = AsyncAPIConfig(
-        title="Realtime Service",
-        render_plugins=[
-            PlaygroundRenderPlugin(path="/playground"),
-            AsyncAPIUIRenderPlugin(path="/docs"),
-            JSONRenderPlugin(path="/spec.json"),
-            YAMLRenderPlugin(path="/spec.yaml"),
-        ],
-    )
+Explicit ws/wss servers and parameter values are required. Parameters can provide
+a default, first example or first enum value. Missing servers expose no connection
+control; unresolved values disable Connect. Browser tests exercised real ws frames,
+query authentication and WSS URL resolution; they did not establish a live TLS
+connection. Browsers cannot attach arbitrary authorization headers to WebSockets.
 
-    app = Litestar(plugins=[AsyncAPIPlugin(config=config)])
-
-Interactive WebSocket Playground
-================================
-
-The WebSocket Playground provides an interactive developer console:
-
-- **Connection Management**: Connect, disconnect, and reconnect to discovered WebSocket channels.
-- **Payload Templates**: Auto-generates valid sample JSON payloads based on registered schemas.
-- **Message Log**: Visualizes sent and received frames with millisecond timestamps and syntax highlighting.
-- **XSS Sanitization**: All rendered strings and message bodies are strictly sanitized to prevent cross-site scripting vulnerabilities.
+The upstream plugin owns bounded logs and shared connections. Collapsing schema
+details leaves shared send/receive sockets open. Full renderer/plugin unmount and
+page departure dispose sockets. A persisted browser back/forward restoration reloads
+the documentation. Connection errors preserve downloads; successful reconnection
+clears the current alert. Restrictive CSP is not relaxed automatically: script
+failures retain a readable fallback, and blocked connections can take the native
+10-second connection timeout to report failure.

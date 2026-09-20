@@ -24,3 +24,10 @@ Decorators
    :members:
    :undoc-members:
    :show-inheritance:
+
+Typed definitions
+=================
+
+.. automodule:: litestar_asyncapi.asyncapi.datastructures
+   :members: ChannelDefinition, MessageDefinition, OperationDefinition
+   :show-inheritance:

@@ -1,68 +1,60 @@
-==================
-Security & Servers
-==================
+Security, servers and mounted docs
+==================================
 
-AsyncAPI 3.0 allows defining deployment servers, protocols, and security schemes that govern access to event channels.
+A ``Server`` separates ``protocol`` (``ws`` or ``wss``), ``host`` (including an
+optional port), and ``pathname`` (deployment prefix). The channel ``address`` is
+its destination beneath that prefix. For example, ``host="localhost:8000"``,
+``pathname="/service"`` and ``address="/events"`` resolve to
+``ws://localhost:8000/service/events``. Supply the prefix once. Request hosts do
+not synthesize server declarations.
 
-Configuring Servers
-===================
+Security schemes belong in ``Components.security_schemes``. Servers and
+operations reference them with ``Reference("#/components/securitySchemes/name")``.
+Declarations document requirements; they do not install runtime authentication.
+Query API keys use ``type="httpApiKey"`` with ``in_="query"``. Arbitrary headers
+cannot be added by a browser WebSocket; no proxy is provided.
 
-Servers represent target hosts where the application channels are available. Configure servers via ``AsyncAPIConfig.servers``:
+Explicit broker, traits and replies
+-----------------------------------
 
-.. code-block:: python
+This executable app describes a broker contract and supports headless export.
+It intentionally creates no broker transport or subscription:
 
-    from litestar_asyncapi import AsyncAPIConfig
-    from litestar_asyncapi.spec import Server
+.. literalinclude:: ../examples/contracts.py
+   :language: python
 
-    config = AsyncAPIConfig(
-        title="Production Gateway",
-        servers={
-            "production": Server(
-                host="api.example.com",
-                protocol="wss",
-                pathname="/ws",
-                description="Production secure WebSocket gateway",
-            ),
-            "staging": Server(
-                host="staging-api.example.com",
-                protocol="wss",
-                pathname="/ws",
-                description="Staging WebSocket environment",
-            ),
-        },
-    )
+Reply messages must belong to their reply channel. Local references are checked
+against allowed AsyncAPI locations; external references are preserved without
+fetching. Explicit components cannot silently replace native generated schemas.
 
-Security Schemes
-================
+Guarded, mounted documentation
+------------------------------
 
-Security schemes describe authentication and authorization mechanisms required to connect to servers or channels.
+Native docs guards apply to UI, JSON, YAML, console and assets. These protect the
+documentation routes, not the sockets described by the schema:
 
-Common schemes include:
-- **API Key**: Query parameter, header, or cookie key.
-- **HTTP**: Basic authentication or Bearer tokens (JWT).
-- **OAuth 2.0**: Scoped authorization flows.
+.. literalinclude:: ../examples/mounted_docs.py
+   :language: python
 
-.. code-block:: python
+The example's demonstration token is not a production authentication system.
+Request ``/service/asyncapi/`` with ``Authorization: demo-token``. A native Router
+prefix and a correctly supplied ASGI ``root_path`` are included by native URL
+reversal. For example, ``root_path="/gateway"`` adds that external prefix to links.
+Litestar 2.24's arbitrary ASGI mount does not itself accumulate that root path;
+such an integration must provide the correct accumulated scope. The plugin does
+not reconstruct URLs from ``raw_path`` or provide a second URL resolver.
 
-    from litestar_asyncapi import AsyncAPIConfig
-    from litestar_asyncapi.spec import SecurityScheme
+Headless export
+---------------
 
-    security_schemes = {
-        "apiKeyAuth": SecurityScheme(
-            type="apiKey",
-            name="X-API-KEY",
-            in_="header",
-            description="API key passed via connection headers",
-        ),
-        "bearerAuth": SecurityScheme(
-            type="http",
-            scheme="bearer",
-            bearer_format="JWT",
-            description="JWT bearer token in authorization header",
-        ),
-    }
+CLI app loading is Litestar's native mechanism. These commands work with the
+contract example's disabled docs routes:
 
-    config = AsyncAPIConfig(
-        title="Secured WebSocket API",
-        security_schemes=security_schemes,
-    )
+.. code-block:: bash
+
+   uv run litestar --app docs.examples.contracts:app asyncapi export
+   uv run litestar --app docs.examples.contracts:app asyncapi export --format yaml --output asyncapi.yaml
+
+Output defaults to stdout. Existing files require ``--overwrite``; errors use
+stderr and a nonzero exit. JSON/YAML exports use application encoders and explicit
+configured servers. Use the upstream AsyncAPI CLI for conversion and code generation.

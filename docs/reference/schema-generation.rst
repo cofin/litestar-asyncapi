@@ -1,20 +1,12 @@
+Schema generation
 =================
-Schema Generation
-=================
 
-Schema generator and plugin interfaces.
+The public adapter delegates type inspection to Litestar. Its native private
+integration is isolated in the package compatibility boundary.
 
-.. automodule:: litestar_asyncapi.asyncapi.schema_generation.generator
+.. automodule:: litestar_asyncapi.asyncapi.schema_generation.schema
    :members:
-   :undoc-members:
    :show-inheritance:
 
-.. automodule:: litestar_asyncapi.asyncapi.schema_generation.registry
+.. automodule:: litestar_asyncapi.asyncapi.schema_generation.dialect
    :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: litestar_asyncapi.asyncapi.schema_generation.plugins
-   :members:
-   :undoc-members:
-   :show-inheritance:

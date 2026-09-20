@@ -1,45 +1,28 @@
-===============
-Channels Plugin
-===============
+ChannelsPlugin
+==============
 
-Litestar provides a built-in ``ChannelsPlugin`` for scalable publish/subscribe messaging across memory, Redis, or Postgres backends. ``litestar-asyncapi`` includes native discovery for ChannelsPlugin configurations.
+Only actual generated WebSocket routes are discovered. Set
+``create_ws_route_handlers=True`` to expose them. Their operation is ``send``:
+the application publishes messages to subscribers; incoming frames are discarded
+by the generated route. Text, bytes and JSON values are possible, so discovery
+does not invent a universal object/JSON payload.
 
-Automatic Discovery
-===================
+With ``create_ws_route_handlers=False``, internal subscriptions produce no phantom
+network channels. Dynamic subscriptions are not broker contracts. Deduplication
+uses native handler identity so a user socket at another address is not hidden.
 
-When both ``ChannelsPlugin`` and ``AsyncAPIPlugin`` are registered on the application, the AsyncAPI generator inspects the channels configuration:
+The example retains an HTTP publishing route and a separate typed echo listener:
 
-.. code-block:: python
+.. literalinclude:: ../examples/channels_plugin/app.py
+   :language: python
 
-    from litestar import Litestar
-    from litestar.channels import ChannelsPlugin
-    from litestar.channels.backends.memory import MemoryChannelsBackend
-    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
+After starting it, publish with:
 
-    channels_plugin = ChannelsPlugin(
-        backend=MemoryChannelsBackend(),
-        channels=["notifications", "system.alerts", "chat.{room_id:str}"],
-    )
+.. code-block:: bash
 
-    app = Litestar(
-        plugins=[
-            channels_plugin,
-            AsyncAPIPlugin(config=AsyncAPIConfig(title="PubSub Service")),
-        ],
-    )
+   curl -X POST http://localhost:8000/publish/news -H 'Content-Type: application/json' -d '{"message":"hello"}'
 
-Channel Extraction Behavior
-===========================
-
-The ``ChannelsExtractor`` evaluates channel definitions using two approaches:
-
-1. **Route Handlers Enabled (``create_ws_route_handlers=True``)**:
-   When Litestar generates WebSocket route handlers for the declared channels, the WebSocket extractor discovers them directly from the route tree, capturing exact path parameters and request decorators.
-
-2. **Internal Channels Mapping (``create_ws_route_handlers=False``)**:
-   When explicit WebSocket routes are omitted, the channels extractor maps the declared channels list into AsyncAPI channel entities and receive operations, capturing pub/sub destinations that are published internally.
-
-Deduplication
-=============
-
-If a channel is discovered through both a WebSocket route handler and the ChannelsPlugin channel list, ``litestar-asyncapi`` deduplicates the channel address to ensure a singular, unified channel definition in the resulting specification.
+The generated subscriber's uncertain wire format is documentation-only in the
+console. A client can subscribe directly to its generated route. For an external
+broker contract use explicit ``ChannelDefinition`` entries, as in
+:doc:`security-and-servers`; declaring one does not implement a broker client.

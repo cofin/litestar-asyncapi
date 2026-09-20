@@ -1,99 +1,22 @@
+WebSocket handlers
 ==================
-WebSocket Handlers
-==================
 
-Litestar provides three primary paradigms for WebSocket handling. ``litestar-asyncapi`` automatically inspects each handler style to generate channel addresses, parameters, and operation messages.
+Listeners use Litestar's parameter named ``data``. Its annotation describes
+incoming messages (``receive``); the return annotation describes outgoing
+messages (``send``). Native DTO transfer schemas and application serializers are
+respected. See the :ref:`websocket-listener` example.
 
-WebSocket Listeners
-===================
+Streams produce outgoing ``send`` messages. Native streams send strings as text,
+bytes as binary, and other supported values as JSON. Logical schema and frame
+carrier are distinct; ``x-websocket-mode`` is this library's extension, not a
+standard WebSocket binding field. See :ref:`websocket-stream`.
 
-The ``@websocket_listener`` decorator creates a high-level handler that receives deserialized data and optionally returns a response message.
+Raw sockets manually choose how to read and write. Supply explicit decorators,
+payloads, content types and descriptions as in :ref:`decorator-overrides`.
+Undecorated raw handlers are omitted unless
+``include_raw_websocket_routes=True``; opting in documents uncertainty with an
+unconstrained payload and warning. Raw socket docstrings are not automatically
+applied to explicit operations; provide their description directly.
 
-.. code-block:: python
-
-    from dataclasses import dataclass
-    from litestar import websocket_listener
-
-
-    @dataclass
-    class PingPayload:
-        sequence: int
-
-
-    @dataclass
-    class PongPayload:
-        sequence: int
-        acknowledged: bool
-
-
-    @websocket_listener("/ws/ping")
-    async def ping_handler(data: PingPayload) -> PongPayload:
-        return PongPayload(sequence=data.sequence, acknowledged=True)
-
-In this example, the extractor generates:
-- Channel: ``/ws/ping``
-- Send Operation: Accepts ``PingPayload`` schema from client.
-- Receive Operation: Emits ``PongPayload`` schema to client.
-
-WebSocket Streams
-=================
-
-The ``@websocket_stream`` decorator defines a handler returning an asynchronous generator or stream of messages.
-
-.. code-block:: python
-
-    from collections.abc import AsyncGenerator
-    from dataclasses import dataclass
-    from litestar import websocket_stream
-
-
-    @dataclass
-    class PriceUpdate:
-        symbol: str
-        price: float
-
-
-    @websocket_stream("/ws/prices/{symbol:str}")
-    async def price_stream(symbol: str) -> AsyncGenerator[PriceUpdate, None]:
-        while True:
-            yield PriceUpdate(symbol=symbol, price=100.0)
-
-For streams, the extractor documents:
-- Channel: ``/ws/prices/{symbol}`` with a typed string path parameter ``symbol``.
-- Receive Operation: Emits a continuous sequence of ``PriceUpdate`` messages.
-
-Raw WebSocket Handlers
-======================
-
-Low-level ``@websocket`` handlers take a ``WebSocket`` connection object directly. Because raw handlers perform manual socket reads and writes, you can use AsyncAPI decorators to supply explicit schema metadata:
-
-.. code-block:: python
-
-    from litestar import WebSocket, websocket
-    from litestar_asyncapi import asyncapi_operation
-
-
-    @websocket("/ws/raw")
-    @asyncapi_operation(
-        summary="Raw WebSocket Tunnel",
-        description="Handles raw binary and JSON frames over WebSocket",
-    )
-    async def raw_handler(socket: WebSocket) -> None:
-        await socket.accept()
-        data = await socket.receive_text()
-        await socket.send_text(f"echo: {data}")
-        await socket.close()
-
-Excluding Handlers from Documentation
-=====================================
-
-To exclude specific handlers or routers from the generated AsyncAPI specification, set ``include_in_schema=False`` on the route handler or parent router:
-
-.. code-block:: python
-
-    from litestar import websocket_listener
-
-
-    @websocket_listener("/ws/internal", include_in_schema=False)
-    async def internal_handler(data: str) -> str:
-        return data
+Native ``include_in_schema=False`` on a handler or parent layer excludes it.
+No SSE or arbitrary broker-consumer inference is implemented.

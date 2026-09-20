@@ -1,53 +1,30 @@
-=======================
-Concepts & Architecture
-=======================
+Concepts and lifecycle
+======================
 
-AsyncAPI 3.0 provides a machine-readable specification for event-driven and message-based APIs. This page describes how ``litestar-asyncapi`` models and generates AsyncAPI entities from Litestar applications.
+AsyncAPI describes the application. A listener's incoming ``data`` is a
+``receive`` operation; its returned value is a ``send`` operation. A stream
+produces ``send`` operations. Client-facing console labels invert that viewpoint.
 
-Document Structure
-==================
+A channel's key identifies the document entry; its ``address`` is the actual
+communication destination. ``OperationDefinition.operation_id`` becomes the
+key in ``operations`` and is not emitted as an ``operationId`` field. Each
+operation references messages belonging to its selected channel.
 
-An AsyncAPI 3.0 document comprises five main sections:
+Finalized Litestar routes determine discovery. Native layered
+``include_in_schema`` options apply. Compatible discoveries merge only when
+route identity agrees; ambiguous definitions produce diagnostics with provenance.
+Explicit configured channels replace inferred contracts at the same address.
+Identifiers are stable and operation identity is case-insensitively unique.
 
-1. **Info**: Application metadata, version, license, and contact details.
-2. **Servers**: Connection targets (e.g. WebSocket hosts and protocols) with optional security schemes.
-3. **Channels**: Named message paths (e.g. ``/ws/notifications`` or ``chat.{room_id}``) defining addressable communication destinations.
-4. **Operations**: Actions that clients or servers perform over channels, partitioned into ``send`` (client sends to server) and ``receive`` (client receives from server).
-5. **Components**: Reusable definitions including schemas, messages, server bindings, and security schemes.
+Generation stays lazy until an accessor, HTTP request or CLI export asks for a
+document. A fresh native Litestar schema registry and the app's schema plugins
+supply model schemas. The adapter converts their supported JSON Schema constructs
+to Draft07, and assembly resolves local AsyncAPI references without fetching
+external resources. Literal ``$ref`` keys inside examples are data.
 
-Operation Direction Semantics
-=============================
-
-AsyncAPI 3.0 defines operation action from the perspective of the application consumer (the client):
-
-- **Send Operation (action="send")**: The client sends a message to the application over the channel. In Litestar, this corresponds to an incoming message parameter received by a WebSocket handler.
-- **Receive Operation (action="receive")**: The client receives a message sent by the application over the channel. In Litestar, this corresponds to a message returned or streamed by a WebSocket handler.
-
-Lifecycle & Generation Pipeline
-===============================
-
-The ``AsyncAPIPlugin`` integrates with Litestar during application startup:
-
-.. mermaid::
-
-    flowchart TD
-        A[Litestar App Init] --> B[AsyncAPIPlugin.on_app_init]
-        B --> C[Create Docs Router /asyncapi/]
-        B --> D[Register Schema Generator]
-        A --> E[First Request or CLI Export]
-        E --> F[AsyncAPIGenerator.generate_document]
-        F --> G[Route Tree Traversal: Extract Handlers]
-        F --> H[ChannelsPlugin Traversal: Extract Pub/Sub]
-        G --> I[Schema Registry: Map Types to JSON Schema]
-        H --> I
-        I --> J[Assemble AsyncAPI 3.0 Document]
-        J --> K[Cache Spec & Render UI/JSON/YAML]
-
-Schema Registry & Component Reuse
-=================================
-
-The ``SchemaRegistry`` coordinates type inspection across multiple model systems:
-
-- When a data type (e.g. a Msgspec Struct or Pydantic model) is encountered in a handler signature, ``SchemaRegistry`` generates a JSON Schema definition.
-- Complex objects are stored in ``components.schemas`` and referenced via JSON Schema pointers (``$ref: "#/components/schemas/<Name>"``).
-- This ensures schemas are deduplicated across channels and operations.
+``AsyncAPIPlugin`` binds to one application even with ``use_cache=False``.
+Create one instance per app. ``clear_cache()`` invalidates generated values but
+retains that ownership. ``get_asyncapi()`` and ``get_asyncapi_schema()`` return
+defensive copies; ``get_asyncapi_json()`` returns immutable cached bytes.
+Application encoders normalize JSON, YAML and documentation from one canonical
+representation. Request hostnames never become cached server declarations.

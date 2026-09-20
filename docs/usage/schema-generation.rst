@@ -1,68 +1,52 @@
+Schema generation
 =================
-Schema Generation
-=================
 
-``litestar-asyncapi`` includes an extensible, multi-plugin schema generation engine supporting Python's most popular data modeling libraries.
+The adapter uses Litestar's native ``SchemaCreator``, ``FieldDefinition`` and a
+fresh registry with ``app.plugins.openapi``. It supports the model systems enabled
+in the installed Litestar application, including dataclasses, msgspec, Pydantic,
+attrs and TypedDict. Install their native optional integrations when needed.
+There is no separate AsyncAPI type-plugin registry.
 
-Supported Type Systems
-======================
+A native schema plugin also works with ``openapi_config=None``:
 
-The schema engine automatically detects and generates JSON Schema representations for the following model paradigms:
+.. literalinclude:: ../examples/native_schema.py
+   :language: python
 
-- **Msgspec**: Struct definitions, tagged unions, and constraints.
-- **Pydantic**: Pydantic v2 and v1 BaseModel models, Field annotations, and validators.
-- **Attrs**: ``@define`` and ``@attrs`` decorated classes.
-- **Dataclasses**: Standard library ``@dataclass`` decorated classes.
-- **TypedDict**: Standard library ``typing.TypedDict`` definitions.
-- **Primitive Types**: Standard Python types (``int``, ``float``, ``str``, ``bool``, ``datetime``, ``UUID``).
+The example declares a custom wire string and encoder. A schema plugin describes
+a type; it does not install runtime decoding or validation.
 
-Msgspec Struct Example
-======================
+Tuple and schema dialect
+------------------------
 
-Msgspec structs offer high serialization performance and detailed constraint support:
+AsyncAPI 3.0/3.1's inline schema dialect is Draft07-compatible. Fixed
+``tuple[int, str]`` exports ``items: [{type: integer}, {type: string}]`` with
+``minItems: 2`` and ``maxItems: 2``. ``tuple[()]`` has ``maxItems: 0``; bare tuples
+and variadic tuples remain unbounded. Native ``prefixItems`` is an internal
+representation, not the exported wire keyword. The dialect converter does not
+infer cardinality merely from arbitrary ``prefixItems`` input.
 
-.. code-block:: python
+Unsupported modern semantics such as dynamic references fail with a schema path.
+Explicit ``MultiFormatSchema`` is preserved as an explicit format boundary.
+Supported Draft07 wrappers can be rendered by React without changing downloads.
+The pinned official schema/parser gate rejects some otherwise valid direct boolean
+payloads; use ``MultiFormatSchema("application/schema+json;version=draft-07", False)``
+for a conforming boolean payload. Scalar still omits that payload in its display.
 
-    import msgspec
-    from litestar import websocket_listener
+Native tuple cardinality, msgspec array-like wire order, recursive references,
+model aliases, DTO transfer shapes and explicit null values have focused adapter
+corrections. Local forward annotations use the application's
+``signature_namespace``; unresolved annotations raise a provenance-rich error.
+Bare native ``Schema(default=None)`` or ``Schema(const=None)`` cannot express
+whether null was explicitly supplied; field defaults and ``schema_extra`` can.
+AsyncAPI's own ``Schema(default=None)`` does preserve null.
 
+Examples
+--------
 
-    class UserProfile(msgspec.Struct):
-        user_id: str
-        display_name: str
-        email: str
-        reputation: int = 0
-
-
-    @websocket_listener("/ws/profile")
-    async def profile_handler(data: UserProfile) -> UserProfile:
-        return data
-
-Pydantic Model Example
-======================
-
-Pydantic models integrate with field validators and metadata:
-
-.. code-block:: python
-
-    from litestar import websocket_listener
-    from pydantic import BaseModel, Field
-
-
-    class AlertNotification(BaseModel):
-        severity: str = Field(..., pattern="^(info|warning|critical)$")
-        message: str
-        timestamp: float
-
-
-    @websocket_listener("/ws/alerts")
-    async def alert_handler(data: AlertNotification) -> None:
-        pass
-
-Tuple and Sequence Handling
-===========================
-
-In accordance with AsyncAPI 3.0 and JSON Schema Draft 2020-12:
-
-- **Fixed-length tuples** (e.g. ``tuple[int, str]``) generate ``prefixItems`` arrays with ``minItems`` and ``maxItems`` constraints to preserve positional typing.
-- **Variable-length sequences** (e.g. ``list[str]`` or ``tuple[str, ...]``) generate standard ``items`` array definitions.
+Precedence is explicit message examples, then declared model/schema examples,
+then optional native generation with ``create_examples=True``. Empty lists and
+nulls remain intentional. Generated values pass through application encoders;
+unsupported or unchecked constrained values are omitted with a warning.
+Automatic DTO examples are omitted when a reliable native wire value is unavailable.
+Use explicit examples for reproducible docs and positional tuple console seeds.
+There is no ``random_seed`` or custom factory selector configuration.

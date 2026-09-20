@@ -2,7 +2,7 @@
 Specification Models
 ====================
 
-AsyncAPI 3.0 specification dataclass models.
+AsyncAPI 3.0/3.1 specification dataclass models.
 
 .. automodule:: litestar_asyncapi.spec.asyncapi
    :members:

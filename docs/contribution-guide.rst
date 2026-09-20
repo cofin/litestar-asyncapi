@@ -68,7 +68,27 @@ Every PR must pass our CI matrix before merge:
 
 - **prek / ruff**: Formatting and linting according to Litestar preview rules.
 - **mypy & pyright**: Strict type verification scoped to ``src/litestar_asyncapi``.
-- **slotscheck**: Validation of ``__slots__`` on all library classes.
+- **slotscheck**: Validation of slotted library classes, with narrow exclusions for adapters inheriting native unslotted Litestar render classes.
 - **zizmor**: GitHub Actions workflow security static analysis.
 - **pytest**: 100% passing tests across supported Python versions.
 - **docs-audit**: Zero structural documentation errors or orphaned pages.
+
+Packaged frontend and distribution
+==================================
+
+Node 22 is a development/build dependency, not an installed Python requirement.
+Use the locked npm dependencies and native targets:
+
+.. code-block:: bash
+
+   npm ci
+   make js-test validate-asyncapi browser-test
+   make build
+   make installed-test PYTHON_VERSION=3.12
+   make browser-test-installed
+   make docs docs-linkcheck validate-examples validate-pep723 docs-audit
+
+The release workflow publishes the same wheel that passed installed Python and
+browser checks. JSON/YAML export and normal package imports do not require Node.
+The official document gate and separate Draft07 instance checks have distinct
+responsibilities: parser acceptance alone does not validate example payloads.

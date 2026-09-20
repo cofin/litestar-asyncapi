@@ -8,7 +8,6 @@
 # litestar-asyncapi = { path = "../../.." }
 # ///
 import json
-from dataclasses import dataclass
 from html import escape
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs
@@ -22,21 +21,7 @@ from litestar_asyncapi.spec import OperationAction
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-__all__ = ("HtmlFragment", "HtmxMessage", "htmx_socket", "playground")
-
-
-@dataclass
-class HtmxMessage:
-    """Message payload from HTMX form submission."""
-
-    message: str
-
-
-@dataclass
-class HtmlFragment:
-    """HTML fragment response for HTMX swap."""
-
-    html: str
+__all__ = ("htmx_socket", "playground")
 
 
 @asyncapi_operation(
@@ -45,8 +30,12 @@ class HtmlFragment:
     summary="HTMX WebSocket chat endpoint",
     description="Receives text messages and responds with HTML fragments for HTMX swap.",
 )
-@asyncapi_message(action="receive", payload=HtmxMessage, name="HtmxMessage", summary="Client message")
-@asyncapi_message(action="send", payload=HtmlFragment, name="HtmlFragment", summary="HTML fragment response")
+@asyncapi_message(
+    action="receive", payload=str, name="HtmxMessage", content_type="text/plain", summary="JSON or form-encoded text"
+)
+@asyncapi_message(
+    action="send", payload=str, name="HtmlFragment", content_type="text/html", summary="HTML fragment response"
+)
 @websocket("/ws/htmx")
 async def htmx_socket(socket: "WebSocket") -> None:
     """Handle HTMX WebSocket messages.
@@ -101,8 +90,7 @@ def playground() -> Response[str]:
           <p>Uses HTMX WebSocket extension to send messages and receive HTML fragments.</p>
           <p>
             <a href="/asyncapi/" target="_blank" rel="noreferrer">AsyncAPI UI</a> ·
-            <a href="/asyncapi/asyncapi.json" target="_blank" rel="noreferrer">AsyncAPI JSON</a> ·
-            <a href="/asyncapi/asyncapi.yaml" target="_blank" rel="noreferrer">AsyncAPI YAML</a>
+            <a href="/asyncapi/asyncapi.json" target="_blank" rel="noreferrer">AsyncAPI JSON</a>
           </p>
 
           <div hx-ext="ws" ws-connect="/ws/htmx">

@@ -2,10 +2,10 @@
 
 Every runnable reference example under ``docs/examples/`` must declare its
 dependencies inline via a :pep:`723` ``# /// script`` block so readers can
-launch any variant with ``uv run <path>`` — no clone, no ``uv sync``, no
-extras juggling.
+resolve dependencies from the script metadata. Serving an application still
+requires the native Litestar CLI, as shown in the example guide.
 
-The validator walks the fixed list of entrypoint files, parses each script
+The validator discovers example Python files except package initializers, parses each script
 metadata block as TOML, and asserts:
 
 1. The block exists and is well-formed.
@@ -27,15 +27,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# This will be populated in Phase 3
-EXAMPLES: tuple[Path, ...] = (
-    ROOT / "docs/examples/channels_plugin/app.py",
-    ROOT / "docs/examples/decorator_overrides/app.py",
-    ROOT / "docs/examples/error_handling/app.py",
-    ROOT / "docs/examples/htmx_websocket/app.py",
-    ROOT / "docs/examples/websocket_listener/app.py",
-    ROOT / "docs/examples/websocket_stream/app.py",
-)
+EXAMPLES = tuple(path for path in sorted((ROOT / "docs/examples").rglob("*.py")) if path.name != "__init__.py")
 
 _BLOCK_RE = re.compile(r"(?ms)^# /// script\s*\n(?P<body>(?:^#(?: .*|)\n)+?)^# ///\s*$")
 
