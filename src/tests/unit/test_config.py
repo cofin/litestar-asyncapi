@@ -35,7 +35,7 @@ def test_nested_docs_options_and_document_version() -> None:
     from litestar_asyncapi import DocsConfig
     from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
-    config = AsyncAPIConfig(spec_version="3.0.0", docs=DocsConfig(path="/events", enable_routes=False))
+    config = AsyncAPIConfig(spec_version="3.0.0", docs=DocsConfig(path="/events", enabled=False))
     assert config.docs.path == "/events"
     assert config.docs.renderer == "asyncapi"
     assert config.docs.interactive is False

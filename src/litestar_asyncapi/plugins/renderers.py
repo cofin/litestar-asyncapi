@@ -1,11 +1,12 @@
 import html
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 
 from litestar.enums import MediaType
 from litestar.openapi.plugins import JsonRenderPlugin, OpenAPIRenderPlugin, YamlRenderPlugin
-from litestar.serialization import encode_json
 
+from litestar_asyncapi.docs import bootstrap_html
 from litestar_asyncapi.serialization import normalize_document
 
 if TYPE_CHECKING:
@@ -37,6 +38,9 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
         **kwargs: Any,
     ) -> None:
         super().__init__(path=path, media_type=MediaType.HTML, **kwargs)
+        if any(urlsplit(url).scheme not in {"", "http", "https"} for url in (js_url, css_url)):
+            message = "Documentation asset URLs must use HTTP(S) or relative paths"
+            raise ValueError(message)
         self.js_url = js_url
         self.css_url = css_url
         self._config = config or {}
@@ -49,13 +53,9 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
         if isinstance(openapi_schema.get("info"), dict) and isinstance(openapi_schema["info"].get("title"), str):
             title = openapi_schema["info"]["title"]
 
-        schema_json = encode_json(openapi_schema).decode("utf-8").replace("</", "<\\/")
-        config_json = (
-            encode_json(normalize_document(self._config, getattr(getattr(request, "app", None), "type_encoders", None)))
-            .decode("utf-8")
-            .replace("</", "<\\/")
+        bootstrap = bootstrap_html(
+            request, entry="asyncapi", options=normalize_document(self._config, request.app.type_encoders)
         )
-
         escaped_title = html.escape(title, quote=True)
 
         html_content = f"""
@@ -66,17 +66,13 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
             {self.favicon}
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link rel="stylesheet" href="{self.css_url}" />
-            <script src="{self.js_url}" crossorigin></script>
+            <link rel="stylesheet" href="{html.escape(self.css_url, quote=True)}" />
+            <script src="{html.escape(self.js_url, quote=True)}" crossorigin></script>
             {self.style}
           </head>
           <body>
             <div id="asyncapi"></div>
-            <script>
-              const schema = {schema_json};
-              const config = {config_json};
-              AsyncApiStandalone.render({{ schema, config }}, document.getElementById("asyncapi"));
-            </script>
+            {bootstrap}
           </body>
         </html>
         """
@@ -134,9 +130,7 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
 
         escaped_title = html.escape(title, quote=True)
 
-        channels = openapi_schema.get("channels", {})
-        channels_json = encode_json(channels).decode("utf-8").replace("</", "<\\/")
-
+        bootstrap = bootstrap_html(request, entry="playground", options={"enableValidation": self.enable_validation})
         if self.theme == "dark":
             bg_color = "#1a1a2e"
             text_color = "#e2e8f0"
@@ -151,8 +145,6 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
             input_bg = "#f1f5f9"
             border_color = "#e2e8f0"
             log_bg = "#0b1021"
-
-        validation_enabled = "true" if self.enable_validation else "false"
 
         html_content = f"""
         <!DOCTYPE html>
@@ -242,12 +234,6 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
             <main class="container">
               <h1>{escaped_title} - WebSocket Playground</h1>
 
-              <div class="nav-links">
-                <a href="./">AsyncAPI UI</a>
-                <a href="./asyncapi.json">JSON</a>
-                <a href="./asyncapi.yaml">YAML</a>
-              </div>
-
               <div class="card">
                 <h2><span id="status" class="status disconnected"></span>Connection</h2>
                 <div class="controls">
@@ -286,185 +272,7 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
               </div>
             </main>
 
-            <script>
-              const channels = {channels_json};
-              const enableValidation = {validation_enabled};
-
-              function escapeHtml(unsafe) {{
-                return unsafe
-                  .replace(/&/g, "&amp;")
-                  .replace(/</g, "&lt;")
-                  .replace(/>/g, "&gt;")
-                  .replace(/"/g, "&quot;")
-                  .replace(/'/g, "&#039;");
-              }}
-
-              // DOM elements
-              const channelSelect = document.getElementById("channel-select");
-              const channelInfo = document.getElementById("channel-info");
-              const statusIndicator = document.getElementById("status");
-              const messageInput = document.getElementById("message-input");
-              const validationError = document.getElementById("validation-error");
-              const logEl = document.getElementById("log");
-              const filterSelect = document.getElementById("filter-select");
-
-              // State
-              let ws = null;
-              let messageHistory = [];
-
-              // Populate channel selector
-              Object.keys(channels).forEach(path => {{
-                const opt = document.createElement("option");
-                opt.value = path;
-                opt.textContent = path;
-                channelSelect.appendChild(opt);
-              }});
-
-              // Update channel info when selection changes
-              channelSelect.addEventListener("change", () => {{
-                const path = channelSelect.value;
-                if (path && channels[path]) {{
-                  const ch = channels[path];
-                  let info = `<strong>Path:</strong> ${{escapeHtml(path)}}`;
-                  if (ch.description) {{
-                    info += `<br><strong>Description:</strong> ${{escapeHtml(ch.description)}}`;
-                  }}
-                  if (ch.messages) {{
-                    info += `<br><strong>Messages:</strong> ${{escapeHtml(Object.keys(ch.messages).join(", "))}}`;
-                  }}
-                  channelInfo.innerHTML = info;
-                  channelInfo.style.display = "block";
-                }} else {{
-                  channelInfo.style.display = "none";
-                }}
-              }});
-
-              // Status updates
-              function setStatus(status) {{
-                statusIndicator.className = "status " + status;
-              }}
-
-              // Logging
-              function log(message, type = "info") {{
-                const time = new Date().toLocaleTimeString();
-                const entry = {{ time, message, type }};
-                messageHistory.push(entry);
-                renderLog();
-              }}
-
-              function renderLog() {{
-                const filter = filterSelect.value;
-                logEl.innerHTML = "";
-                messageHistory.forEach(entry => {{
-                  if (filter === "all" || filter === entry.type || (filter === "sent" && entry.type === "sent") || (filter === "received" && entry.type === "received")) {{
-                    const line = document.createElement("div");
-                    line.className = entry.type;
-                    line.innerHTML = `<span class="timestamp">${{escapeHtml(entry.time)}}</span>${{escapeHtml(entry.message)}}`;
-                    logEl.appendChild(line);
-                  }}
-                }});
-                logEl.scrollTop = logEl.scrollHeight;
-              }}
-
-              filterSelect.addEventListener("change", renderLog);
-
-              // Validation
-              function validateJson(text) {{
-                if (!enableValidation) return {{ valid: true }};
-                try {{
-                  JSON.parse(text);
-                  return {{ valid: true }};
-                }} catch (e) {{
-                  return {{ valid: false, error: e.message }};
-                }}
-              }}
-
-              messageInput.addEventListener("input", () => {{
-                const result = validateJson(messageInput.value);
-                validationError.textContent = result.valid ? "" : result.error;
-              }});
-
-              // WebSocket connection
-              function wsUrl(path) {{
-                const scheme = location.protocol === "https:" ? "wss" : "ws";
-                return `${{scheme}}://${{location.host}}${{path}}`;
-              }}
-
-              document.getElementById("connect-btn").addEventListener("click", () => {{
-                const path = channelSelect.value;
-                if (!path) {{
-                  log("Please select a channel first", "error");
-                  return;
-                }}
-                if (ws && ws.readyState <= 1) {{
-                  log("Already connected or connecting", "info");
-                  return;
-                }}
-
-                setStatus("connecting");
-                log(`Connecting to ${{path}}...`, "info");
-
-                ws = new WebSocket(wsUrl(path));
-                ws.onopen = () => {{
-                  setStatus("connected");
-                  log(`Connected to ${{path}}`, "info");
-                }};
-                ws.onmessage = (e) => {{
-                  log(`${{e.data}}`, "received");
-                }};
-                ws.onclose = () => {{
-                  setStatus("disconnected");
-                  log("Disconnected", "info");
-                  ws = null;
-                }};
-                ws.onerror = () => {{
-                  log("WebSocket error", "error");
-                }};
-              }});
-
-              document.getElementById("disconnect-btn").addEventListener("click", () => {{
-                if (ws) {{
-                  ws.close();
-                }}
-              }});
-
-              // Send message
-              document.getElementById("send-btn").addEventListener("click", () => {{
-                if (!ws || ws.readyState !== WebSocket.OPEN) {{
-                  log("Not connected", "error");
-                  return;
-                }}
-                const text = messageInput.value.trim();
-                const result = validateJson(text);
-                if (!result.valid) {{
-                  log("Invalid JSON: " + result.error, "error");
-                  return;
-                }}
-                ws.send(text);
-                log(text, "sent");
-              }});
-
-              document.getElementById("clear-input-btn").addEventListener("click", () => {{
-                messageInput.value = '{{"type": "message", "data": ""}}';
-                validationError.textContent = "";
-              }});
-
-              document.getElementById("clear-log-btn").addEventListener("click", () => {{
-                messageHistory = [];
-                renderLog();
-              }});
-
-              document.getElementById("export-btn").addEventListener("click", () => {{
-                const data = JSON.stringify(messageHistory, null, 2);
-                const blob = new Blob([data], {{ type: "application/json" }});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "websocket-history.json";
-                a.click();
-                URL.revokeObjectURL(url);
-              }});
-            </script>
+            {bootstrap}
           </body>
         </html>
         """

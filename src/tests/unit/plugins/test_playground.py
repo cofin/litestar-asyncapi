@@ -1,7 +1,5 @@
 """Tests for AsyncAPIPlaygroundRenderPlugin."""
 
-from unittest.mock import MagicMock
-
 import pytest
 
 pytestmark = pytest.mark.anyio
@@ -58,95 +56,31 @@ def test_playground_theme_option() -> None:
     assert dark_plugin.theme == "dark"
 
 
-def test_playground_renders_html() -> None:
-    """Playground should render valid HTML."""
+def test_playground_html_uses_fetched_schema_and_inert_options() -> None:
+    import json
+    import re
+
+    from litestar import Litestar
+    from litestar.testing import TestClient
+
+    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
     from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
 
-    plugin = AsyncAPIPlaygroundRenderPlugin()
-
-    mock_request = MagicMock()
-    schema = {
-        "asyncapi": "3.0.0",
-        "info": {"title": "Test API", "version": "1.0.0"},
-        "channels": {"/ws/test": {"description": "Test channel"}},
-    }
-
-    result = plugin.render(mock_request, schema)
-
-    assert isinstance(result, bytes)
-    html = result.decode("utf-8")
-    assert "<!DOCTYPE html>" in html
-    assert "Test API - Playground" in html
-
-
-def test_playground_includes_channels() -> None:
-    """Playground should list all channels from spec."""
-    from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
-
-    plugin = AsyncAPIPlaygroundRenderPlugin()
-
-    mock_request = MagicMock()
-    schema = {
-        "asyncapi": "3.0.0",
-        "info": {"title": "Test", "version": "1.0.0"},
-        "channels": {"/ws/one": {"description": "First channel"}, "/ws/two": {"description": "Second channel"}},
-    }
-
-    result = plugin.render(mock_request, schema)
-    html = result.decode("utf-8")
-
-    assert "/ws/one" in html
-    assert "/ws/two" in html
-
-
-def test_playground_escapes_title() -> None:
-    """Playground should HTML escape the title to prevent XSS."""
-    from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
-
-    plugin = AsyncAPIPlaygroundRenderPlugin()
-
-    mock_request = MagicMock()
-    schema = {
-        "asyncapi": "3.0.0",
-        "info": {"title": "<script>alert('xss')</script>", "version": "1.0.0"},
-        "channels": {},
-    }
-
-    result = plugin.render(mock_request, schema)
-    html = result.decode("utf-8")
-
-    assert "<script>alert('xss')</script>" not in html
-    assert "&lt;script&gt;" in html
-
-
-def test_playground_dark_theme() -> None:
-    """Playground should render dark theme colors."""
-    from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
-
-    plugin = AsyncAPIPlaygroundRenderPlugin(theme="dark")
-
-    mock_request = MagicMock()
-    schema = {"asyncapi": "3.0.0", "info": {"title": "Test", "version": "1.0.0"}, "channels": {}}
-
-    result = plugin.render(mock_request, schema)
-    html = result.decode("utf-8")
-
-    assert "#1a1a2e" in html  # Dark theme background color
-
-
-def test_playground_validation_disabled_in_js() -> None:
-    """Playground should set enableValidation to false when disabled."""
-    from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
-
-    plugin = AsyncAPIPlaygroundRenderPlugin(enable_validation=False)
-
-    mock_request = MagicMock()
-    schema = {"asyncapi": "3.0.0", "info": {"title": "Test", "version": "1.0.0"}, "channels": {}}
-
-    result = plugin.render(mock_request, schema)
-    html = result.decode("utf-8")
-
-    assert "const enableValidation = false" in html
+    renderer = AsyncAPIPlaygroundRenderPlugin(theme="dark", enable_validation=False)
+    app = Litestar(
+        [], plugins=[AsyncAPIPlugin(AsyncAPIConfig(title="Test API", docs=DocsConfig(render_plugins=[renderer])))]
+    )
+    with TestClient(app) as client:
+        response = client.get("/asyncapi/playground")
+        assert response.status_code == 200
+        assert "Test API - Playground" in response.text
+        assert "#1a1a2e" in response.text
+        match = re.search(r'<script id="asyncapi-config" type="application/json">(.*?)</script>', response.text)
+        assert match is not None
+        config = json.loads(match[1])
+        assert config["options"]["enableValidation"] is False
+        assert client.get(config["schemaUrl"]).json()["info"]["title"] == "Test API"
+        assert client.get(config["entryUrl"]).status_code == 200
 
 
 def test_playground_has_path_method() -> None:

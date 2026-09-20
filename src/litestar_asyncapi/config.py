@@ -1,11 +1,15 @@
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, cast
+
+from litestar.utils.path import normalize_path
 
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
 from litestar_asyncapi.spec import Components, MessageTrait, OperationTrait, Reference, Server
 
 if TYPE_CHECKING:
     from litestar.enums import MediaType
+    from litestar.types import Dependencies, Guard
 
     from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
 
@@ -32,24 +36,50 @@ class DocsConfig:
     """Documentation routes and optional interactive UI settings."""
 
     path: str = "/asyncapi"
-    enable_routes: bool = True
+    enabled: bool = True
+    guards: Sequence["Guard"] = ()
+    dependencies: "Dependencies | None" = None
     renderer: Literal["asyncapi", "scalar"] = "asyncapi"
     interactive: bool = False
     console: bool = False
     yaml: bool = False
-    render_plugins: list["AsyncAPIRenderPlugin"] = field(default_factory=_default_render_plugins)
+    render_plugins: list["AsyncAPIRenderPlugin"] | None = None
 
     def __post_init__(self) -> None:
-        if self.yaml:
-            from litestar_asyncapi.plugins import YamlRenderPlugin
+        from litestar_asyncapi.docs import renderer_name
+        from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
 
-            if not any(isinstance(plugin, YamlRenderPlugin) for plugin in self.render_plugins):
-                self.render_plugins.append(
-                    YamlRenderPlugin(
-                        path=("/asyncapi.yaml", "/asyncapi.yml"),
-                        media_type=cast("MediaType", "application/vnd.asyncapi+yaml"),
-                    )
+        plugins = list(self.render_plugins) if self.render_plugins is not None else _default_render_plugins()
+        if not any(isinstance(plugin, JsonRenderPlugin) for plugin in plugins):
+            plugins.append(
+                JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json"))
+            )
+        if self.yaml and not any(isinstance(plugin, YamlRenderPlugin) for plugin in plugins):
+            plugins.append(
+                YamlRenderPlugin(
+                    path=("/asyncapi.yaml", "/asyncapi.yml"),
+                    media_type=cast("MediaType", "application/vnd.asyncapi+yaml"),
                 )
+            )
+        if (self.interactive or self.console) and not any(
+            isinstance(plugin, AsyncAPIPlaygroundRenderPlugin) for plugin in plugins
+        ):
+            plugins.append(AsyncAPIPlaygroundRenderPlugin())
+        paths: set[str] = set()
+        names: set[str] = set()
+        for plugin in plugins:
+            name = renderer_name(plugin)
+            if name in names:
+                message = f"Duplicate documentation renderer name: {name}"
+                raise ValueError(message)
+            names.add(name)
+            for path in plugin.paths:
+                normalized = normalize_path(path)
+                if normalized in paths or normalized == "/assets" or normalized.startswith("/assets/"):
+                    message = f"Duplicate documentation route path: {normalized}"
+                    raise ValueError(message)
+                paths.add(normalized)
+        self.render_plugins = plugins
 
 
 @dataclass(slots=True)

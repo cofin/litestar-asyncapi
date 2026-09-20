@@ -45,9 +45,10 @@ def test_json_yaml_and_ui_share_app_encoder_normalization() -> None:
         json_value = client.get("/asyncapi/asyncapi.json").json()
         yaml_value = yaml.safe_load(client.get("/asyncapi/asyncapi.yaml").text)
         html_value = client.get("/asyncapi/").text
-    match = re.search(r"const schema = (.*);", html_value)
+    match = re.search(r'<script id="asyncapi-config" type="application/json">(.*?)</script>', html_value)
     assert match is not None
-    assert json.loads(match[1]) == yaml_value == json_value == plugin.get_asyncapi_schema(app)
+    assert json.loads(match[1])["schemaUrl"].endswith("/asyncapi/asyncapi.json")
+    assert yaml_value == json_value == plugin.get_asyncapi_schema(app)
     assert json_value["components"]["schemas"]["Literal"]["example"] == {
         "token": {"encoded": "custom"},
         "decimal": "1.25",

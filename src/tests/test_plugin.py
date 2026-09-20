@@ -54,7 +54,7 @@ def test_nested_docs_route_configuration(enabled: bool) -> None:
 
     from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
 
-    plugin = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(path="/events", enable_routes=enabled, console=True)))
+    plugin = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(path="/events", enabled=enabled, console=True)))
     with TestClient(Litestar([], plugins=[plugin])) as client:
         assert client.get("/events/asyncapi.json").status_code == (200 if enabled else 404)
         assert client.get("/events/playground").status_code == (200 if enabled else 404)

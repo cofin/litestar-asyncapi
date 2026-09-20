@@ -8,8 +8,10 @@ from litestar.plugins import InitPluginProtocol
 from litestar.response import Response
 from litestar.router import Router
 from litestar.serialization import encode_json
+from litestar.static_files import create_static_files_router
 from litestar.status_codes import HTTP_404_NOT_FOUND
 
+from litestar_asyncapi.docs import asset_directory, renderer_name
 from litestar_asyncapi.serialization import normalize_document
 
 if TYPE_CHECKING:
@@ -125,19 +127,37 @@ class AsyncAPIPlugin(InitPluginProtocol):
         Returns:
             A Litestar router that serves all configured render plugin paths.
         """
-        router = Router(self.config.docs.path, route_handlers=[], include_in_schema=False, dto=None, return_dto=None)
-
-        plugins: list[AsyncAPIRenderPlugin] = list(self.config.docs.render_plugins)
-        if self.config.docs.interactive or self.config.docs.console:
-            from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin
-
-            if not any(isinstance(plugin, AsyncAPIPlaygroundRenderPlugin) for plugin in plugins):
-                plugins.append(AsyncAPIPlaygroundRenderPlugin())
+        router = Router(
+            self.config.docs.path,
+            route_handlers=[],
+            include_in_schema=False,
+            dto=None,
+            return_dto=None,
+            guards=list(self.config.docs.guards),
+            dependencies=self.config.docs.dependencies,
+        )
+        plugins = self.config.docs.render_plugins or []
+        names = {"assets": "asyncapi:assets"}
+        for plugin in plugins:
+            name = renderer_name(plugin)
+            key = name.removeprefix("asyncapi:")
+            if key == "AsyncAPIUIRenderPlugin":
+                key = "ui"
+            elif key == "AsyncAPIPlaygroundRenderPlugin":
+                key = "playground"
+            names[key] = name
+        router.register(create_static_files_router("/assets", directories=[asset_directory()], name=names["assets"]))
 
         def create_handler(plugin: "AsyncAPIRenderPlugin") -> "HTTPRouteHandler":
             paths = list(plugin.paths)
 
-            @get(paths, media_type=plugin.media_type, sync_to_thread=False)
+            @get(
+                paths,
+                name=renderer_name(plugin),
+                opt={"asyncapi_routes": names},
+                media_type=plugin.media_type,
+                sync_to_thread=False,
+            )
             def _handler(request: Any) -> bytes:
                 return plugin.render(request, self.get_asyncapi_schema(request.app))
 
@@ -172,6 +192,6 @@ class AsyncAPIPlugin(InitPluginProtocol):
         Returns:
             The updated application configuration.
         """
-        if self.config.docs.enable_routes:
+        if self.config.docs.enabled:
             app_config.route_handlers.append(self.create_docs_router())
         return app_config
