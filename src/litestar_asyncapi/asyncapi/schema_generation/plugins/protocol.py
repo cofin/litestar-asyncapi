@@ -6,6 +6,8 @@ if TYPE_CHECKING:
     from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
     from litestar_asyncapi.spec import Reference, Schema
 
+__all__ = ("AsyncAPISchemaPluginProtocol",)
+
 
 class AsyncAPISchemaPluginProtocol(Protocol):
     """Protocol for schema generator plugins."""

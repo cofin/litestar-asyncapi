@@ -93,9 +93,48 @@ lock:                                               ## Rebuild lockfiles from sc
 
 .PHONY: build
 build:                                             ## Build the project
-	@echo "${INFO} Building package..."
+	@echo "${INFO} Building package... 📦"
 	@uv build
-	@echo "${OK} Package build complete"
+	@echo "${OK} Package build complete 📦"
+
+.PHONY: release
+release:                                           ## Bump version and create release tag (bump=major|minor|patch)
+	@if [ -z "$(bump)" ]; then \
+		echo "${ERROR} Usage: make release bump=major|minor|patch"; \
+		exit 1; \
+	fi
+	@echo "${INFO} Preparing for release... 📦"
+	@make docs
+	@make clean
+	@make build
+	@uv run bump-my-version bump $(bump)
+	@uv lock --upgrade-package litestar-asyncapi >/dev/null 2>&1
+	@echo "${OK} Release complete 🎉"
+
+.PHONY: pre-release
+pre-release:                                       ## Start a pre-release: make pre-release version=0.2.0-alpha.1
+	@if [ -z "$(version)" ]; then \
+		echo "${ERROR} Usage: make pre-release version=X.Y.Z-alpha.N"; \
+		echo ""; \
+		echo "Pre-release workflow:"; \
+		echo "  1. Start alpha:     make pre-release version=0.2.0-alpha.1"; \
+		echo "  2. Next alpha:      make pre-release version=0.2.0-alpha.2"; \
+		echo "  3. Move to beta:    make pre-release version=0.2.0-beta.1"; \
+		echo "  4. Move to rc:      make pre-release version=0.2.0-rc.1"; \
+		echo "  5. Final release:   make release bump=pre (from rc) OR bump=patch/minor (from stable)"; \
+		exit 1; \
+	fi
+	@echo "${INFO} Preparing pre-release $(version)... 🧪"
+	@make clean
+	@make build
+	@uv run bump-my-version bump --new-version $(version) pre
+	@uv lock --upgrade-package litestar-asyncapi >/dev/null 2>&1
+	@echo "${OK} Pre-release $(version) complete 🧪"
+	@echo ""
+	@echo "${INFO} Next steps:"
+	@echo "  1. Push: git push origin HEAD"
+	@echo "  2. Create a GitHub pre-release: gh release create v$(version) --prerelease --title 'v$(version)'"
+	@echo "  3. This will publish to PyPI with pre-release tags"
 
 # =============================================================================
 # Documentation
@@ -103,21 +142,31 @@ build:                                             ## Build the project
 
 .PHONY: docs
 docs:                                             ## Build documentation
-	@echo "${INFO} Building docs..."
+	@echo "${INFO} Building docs... 📚"
 	@uv run sphinx-build -b html docs docs/_build/html
-	@echo "${OK} Docs build complete"
+	@echo "${OK} Docs build complete 📚"
 
 .PHONY: docs-linkcheck
 docs-linkcheck:                                   ## Check documentation links
-	@echo "${INFO} Checking docs links..."
+	@echo "${INFO} Checking docs links... 📚"
 	@uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
-	@echo "${OK} Docs linkcheck complete"
+	@echo "${OK} Docs linkcheck complete 📚"
 
 .PHONY: docs-clean
 docs-clean:                                       ## Clean documentation artifacts
-	@echo "${INFO} Cleaning docs artifacts..."
+	@echo "${INFO} Cleaning docs artifacts... 📚"
 	@rm -rf docs/_build docs-build >/dev/null 2>&1
-	@echo "${OK} Docs artifacts cleaned"
+	@echo "${OK} Docs artifacts cleaned 📚"
+
+.PHONY: docs-audit
+docs-audit:                                       ## Audit documentation structure and terminology
+	@echo "${INFO} Auditing docs... 📚"
+	@if [ -f tools/docs_audit.py ]; then \
+		uv run python tools/docs_audit.py; \
+	else \
+		echo "${INFO} tools/docs_audit.py not found, skipping"; \
+	fi
+	@echo "${OK} Docs audit complete 📚"
 
 # =============================================================================
 # Validation Targets
@@ -125,31 +174,15 @@ docs-clean:                                       ## Clean documentation artifac
 
 .PHONY: validate-examples
 validate-examples:                                  ## Validate docs/examples marker blocks
-	@echo "${INFO} Validating doc example markers..."
+	@echo "${INFO} Validating doc example markers... 🔍"
 	@uv run python tools/ci/validate_doc_markers.py
-	@echo "${OK} Doc example markers valid"
+	@echo "${OK} Doc example markers valid ✨"
 
 .PHONY: validate-pep723
 validate-pep723:                                    ## Validate PEP 723 blocks in runnable examples
-	@echo "${INFO} Validating PEP 723 script blocks..."
+	@echo "${INFO} Validating PEP 723 script blocks... 🔍"
 	@uv run python tools/ci/validate_pep723_blocks.py
-	@echo "${OK} PEP 723 blocks valid"
-
-# =============================================================================
-# Release
-# =============================================================================
-
-.PHONY: release
-release:                                            ## Bump version for a release (bump=major|minor|patch|pre)
-	@if [ -z "$(bump)" ]; then \
-		echo "${ERROR} Usage: make release bump=major|minor|patch|pre"; \
-		exit 1; \
-	fi
-	@echo "${INFO} Preparing release bump ($(bump))..."
-	@$(MAKE) clean
-	@uv run bump-my-version bump $(bump)
-	@$(MAKE) build
-	@echo "${OK} Release version bumped successfully"
+	@echo "${OK} PEP 723 blocks valid ✨"
 
 # =============================================================================
 # Cleaning and Maintenance
@@ -157,7 +190,7 @@ release:                                            ## Bump version for a releas
 
 .PHONY: clean
 clean:                                              ## Cleanup temporary build artifacts
-	@echo "${INFO} Cleaning working directory..."
+	@echo "${INFO} Cleaning working directory... 🧹"
 	@rm -rf .pytest_cache .ruff_cache .hypothesis build/ dist/ .eggs/ .coverage coverage.xml coverage.json htmlcov/ .pytest_cache src/tests/.pytest_cache src/tests/**/.pytest_cache .mypy_cache >/dev/null 2>&1
 	@find . -name '*.egg-info' -exec rm -rf {} + >/dev/null 2>&1
 	@find . -type f -name '*.egg' -exec rm -f {} + >/dev/null 2>&1
@@ -166,7 +199,7 @@ clean:                                              ## Cleanup temporary build a
 	@find . -name '*~' -exec rm -f {} + >/dev/null 2>&1
 	@find . -name '__pycache__' -exec rm -rf {} + >/dev/null 2>&1
 	@find . -name '.ipynb_checkpoints' -exec rm -rf {} + >/dev/null 2>&1
-	@echo "${OK} Working directory cleaned"
+	@echo "${OK} Working directory cleaned ✨"
 
 # =============================================================================
 # Testing and Quality Checks
@@ -174,20 +207,20 @@ clean:                                              ## Cleanup temporary build a
 
 .PHONY: test
 test:                                              ## Run the tests
-	@echo "${INFO} Running test cases..."
+	@echo "${INFO} Running test cases... 🧪"
 	@uv run pytest src/tests
-	@echo "${OK} Tests complete"
+	@echo "${OK} Tests complete 🧪"
 
 .PHONY: test-all
 test-all: test                                     ## Run all tests
 
 .PHONY: coverage
 coverage:                                          ## Run tests with coverage report
-	@echo "${INFO} Running tests with coverage..."
+	@echo "${INFO} Running tests with coverage... 🧪"
 	@uv run pytest src/tests --cov -n auto
 	@uv run coverage html >/dev/null 2>&1
 	@uv run coverage xml >/dev/null 2>&1
-	@echo "${OK} Coverage report generated"
+	@echo "${OK} Coverage report generated 🧪"
 
 # -----------------------------------------------------------------------------
 # Type Checking
@@ -195,21 +228,21 @@ coverage:                                          ## Run tests with coverage re
 
 .PHONY: mypy
 mypy:                                              ## Run mypy
-	@echo "${INFO} Running mypy..."
-	@uv run mypy src
-	@echo "${OK} Mypy checks passed"
+	@echo "${INFO} Running mypy... 🔍"
+	@uv run mypy
+	@echo "${OK} Mypy checks passed ✨"
 
 .PHONY: mypy-nocache
 mypy-nocache:                                      ## Run Mypy without cache
-	@echo "${INFO} Running mypy without cache..."
+	@echo "${INFO} Running mypy without cache... 🔍"
 	@uv run mypy
-	@echo "${OK} Mypy checks passed"
+	@echo "${OK} Mypy checks passed ✨"
 
 .PHONY: pyright
 pyright:                                           ## Run pyright
-	@echo "${INFO} Running pyright..."
+	@echo "${INFO} Running pyright... 🔍"
 	@uv run pyright
-	@echo "${OK} Pyright checks passed"
+	@echo "${OK} Pyright checks passed ✨"
 
 .PHONY: type-check
 type-check: mypy pyright                           ## Run all type checking
@@ -218,27 +251,47 @@ type-check: mypy pyright                           ## Run all type checking
 # Linting and Formatting
 # -----------------------------------------------------------------------------
 
+WORKING_TREE_FILES = $$(git ls-files --cached --others --exclude-standard 2>/dev/null)
+
+.PHONY: prek
+prek:                                               ## Run prek hooks
+	@echo "${INFO} Running prek checks... 🔍"
+	@files="${WORKING_TREE_FILES}"; \
+	if [ -n "$$files" ]; then \
+		uvx prek run --show-diff-on-failure --color=always --files $$files; \
+	else \
+		uvx prek run --show-diff-on-failure --color=always --all-files; \
+	fi
+	@echo "${OK} prek checks passed ✨"
+
 .PHONY: pre-commit
-pre-commit:                                        ## Run pre-commit hooks
-	@echo "${INFO} Running pre-commit checks..."
-	@uv run pre-commit run --all-files
-	@echo "${OK} Pre-commit checks passed"
+pre-commit: prek                                   ## Run prek hooks (alias for pre-commit)
+
+.PHONY: zizmor
+zizmor:                                             ## Run zizmor workflow security scanner
+	@echo "${INFO} Running zizmor workflow security checks... 🛡️"
+	@if [ -d ".github/workflows" ]; then \
+		uvx zizmor .github/workflows; \
+	else \
+		echo "${WARN} No .github/workflows directory found"; \
+	fi
+	@echo "${OK} zizmor workflow checks passed ✨"
 
 .PHONY: slotscheck
 slotscheck:                                        ## Run slotscheck
-	@echo "${INFO} Running slots check..."
+	@echo "${INFO} Running slots check... 🔍"
 	@uv run slotscheck src/litestar_asyncapi/
-	@echo "${OK} Slots check passed"
+	@echo "${OK} Slots check passed ✨"
 
 .PHONY: fix
 fix:                                               ## Fix linting issues
-	@echo "${INFO} Fixing linting issues..."
-	@uv run ruff check --fix --unsafe-fixes src/
-	@uv run ruff format src/
-	@echo "${OK} Linting issues fixed"
+	@echo "${INFO} Fixing linting issues... 🔍"
+	@uv run ruff check --fix --unsafe-fixes .
+	@uv run ruff format .
+	@echo "${OK} Linting issues fixed ✨"
 
 .PHONY: lint
-lint: pre-commit type-check slotscheck             ## Run all linting checks
+lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run all linting checks
 
 .PHONY: check-all
 check-all: lint test-all coverage                  ## Run all checks (lint, test, coverage)

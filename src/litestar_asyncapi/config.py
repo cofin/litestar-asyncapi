@@ -6,6 +6,8 @@ from litestar_asyncapi.spec import MessageTrait, OperationTrait, Reference, Serv
 if TYPE_CHECKING:
     from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
 
+__all__ = ("AsyncAPIConfig",)
+
 
 def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
     from litestar_asyncapi.plugins import (
