@@ -295,3 +295,7 @@ lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run
 
 .PHONY: check-all
 check-all: lint test-all coverage                  ## Run all checks (lint, test, coverage)
+
+.PHONY: validate-asyncapi
+validate-asyncapi:                                 ## Validate offline AsyncAPI contracts and Draft07 payloads
+	@npm run validate:asyncapi

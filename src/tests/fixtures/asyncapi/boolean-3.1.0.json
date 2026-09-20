@@ -1,0 +1,20 @@
+{
+  "asyncapi": "3.1.0",
+  "info": {
+    "title": "Boolean schema",
+    "version": "1.0.0"
+  },
+  "channels": {
+    "never": {
+      "address": "/never",
+      "messages": {
+        "never": {
+          "payload": {
+            "schemaFormat": "application/schema+json;version=draft-07",
+            "schema": false
+          }
+        }
+      }
+    }
+  }
+}
