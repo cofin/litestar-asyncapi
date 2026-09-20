@@ -63,7 +63,7 @@ def test_docs_guards_cover_schema_ui_playground_and_assets() -> None:
             "/asyncapi.yaml",
             "/playground",
             "/assets/bootstrap.js",
-            "/assets/playground.js",
+            "/assets/ui/manifest.json",
         ):
             assert client.get("/asyncapi" + path).status_code == 401
             assert client.get("/asyncapi" + path, headers={"authorization": "test-token"}).status_code == 200

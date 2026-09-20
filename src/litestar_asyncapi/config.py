@@ -16,11 +16,13 @@ if TYPE_CHECKING:
 __all__ = ("AsyncAPIConfig", "DocsConfig")
 
 
-def _default_render_plugins(renderer: Literal["asyncapi", "scalar"] = "asyncapi") -> list["AsyncAPIRenderPlugin"]:
+def _default_render_plugins(
+    renderer: Literal["asyncapi", "scalar"] = "asyncapi", interactive: bool = False
+) -> list["AsyncAPIRenderPlugin"]:
     from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin
 
     return [
-        AsyncAPIUIRenderPlugin(renderer=renderer),
+        AsyncAPIUIRenderPlugin(renderer=renderer, interactive=interactive and renderer == "asyncapi"),
         JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json")),
     ]
 
@@ -41,16 +43,17 @@ class DocsConfig:
     dependencies: "Dependencies | None" = None
     renderer: Literal["asyncapi", "scalar"] = "asyncapi"
     interactive: bool = False
-    console: bool = False
     yaml: bool = False
     render_plugins: list["AsyncAPIRenderPlugin"] | None = None
 
     def __post_init__(self) -> None:
         from litestar_asyncapi.docs import renderer_name
-        from litestar_asyncapi.plugins import AsyncAPIPlaygroundRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
+        from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
 
         plugins = (
-            list(self.render_plugins) if self.render_plugins is not None else _default_render_plugins(self.renderer)
+            list(self.render_plugins)
+            if self.render_plugins is not None
+            else _default_render_plugins(self.renderer, self.interactive)
         )
         if not any(isinstance(plugin, JsonRenderPlugin) for plugin in plugins):
             plugins.append(
@@ -63,10 +66,10 @@ class DocsConfig:
                     media_type=cast("MediaType", "application/vnd.asyncapi+yaml"),
                 )
             )
-        if (self.interactive or self.console) and not any(
-            isinstance(plugin, AsyncAPIPlaygroundRenderPlugin) for plugin in plugins
+        if self.interactive and not any(
+            isinstance(plugin, AsyncAPIUIRenderPlugin) and plugin.role == "playground" for plugin in plugins
         ):
-            plugins.append(AsyncAPIPlaygroundRenderPlugin())
+            plugins.append(AsyncAPIUIRenderPlugin(path="/playground", interactive=True, role="playground"))
         paths: set[str] = set()
         names: set[str] = set()
         for plugin in plugins:

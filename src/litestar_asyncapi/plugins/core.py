@@ -144,8 +144,6 @@ class AsyncAPIPlugin(InitPluginProtocol):
             key = name.removeprefix("asyncapi:")
             if key == "AsyncAPIUIRenderPlugin":
                 key = "ui"
-            elif key == "AsyncAPIPlaygroundRenderPlugin":
-                key = "playground"
             names[key] = name
         router.register(create_static_files_router("/assets", directories=[asset_directory()], name=names["assets"]))
 

@@ -43,9 +43,7 @@ def test_external_bootstrap_and_playground_report_errors_without_autoconnect() -
         page = client.get("/asyncapi/playground").text
         assert "new WebSocket" not in page
         assert 'type="application/json"' in page
-        script = client.get("/asyncapi/assets/playground.js").text
         bootstrap = client.get("/asyncapi/assets/bootstrap.js").text
-        assert 'addEventListener("click"' in script
-        assert "Configure an explicit ws/wss server" in script
-        assert "location.host" not in script
+        assert "Configure an explicit ws/wss server" in page
+        assert "location.host" not in bootstrap
         assert 'status.setAttribute("role", "alert")' in bootstrap

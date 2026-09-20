@@ -2,10 +2,10 @@
 
 import os
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import uvicorn
-from litestar import Litestar, asgi
+from litestar import Litestar, WebSocket, asgi, get, websocket
 from litestar.types import Receive, Scope, Send
 
 from litestar_asyncapi import (
@@ -17,7 +17,7 @@ from litestar_asyncapi import (
     OperationDefinition,
 )
 from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin
-from litestar_asyncapi.spec import MultiFormatSchema, Server
+from litestar_asyncapi.spec import MultiFormatSchema, Parameter, Server, ServerVariable
 
 __all__ = ("Node", "config", "create_app")
 
@@ -77,6 +77,76 @@ def config(renderer: Literal["asyncapi", "scalar"], version: Literal["3.0.0", "3
     )
 
 
+probe: dict[str, Any] = {"frames": [], "connections": 0, "closed": 0, "urls": []}
+
+
+@websocket("/echo/{room:str}")
+async def echo(socket: WebSocket, room: str) -> None:
+    if room == "secure" and socket.query_params.get("token") != "secret-query":
+        await socket.close(code=1008)
+        return
+    await socket.accept()
+    probe["connections"] += 1
+    probe["urls"].append(str(socket.url))
+    try:
+        while True:
+            event = await socket.receive()
+            if event["type"] == "websocket.disconnect":
+                break
+            text = event.get("text")
+            probe["frames"].append(text)
+            await socket.send_text(text)
+    finally:
+        probe["closed"] += 1
+
+
+@get("/probe", sync_to_thread=False)
+def read_probe() -> dict[str, Any]:
+    return probe
+
+
+def interactive_config() -> AsyncAPIConfig:
+    return AsyncAPIConfig(
+        title="Interactive contracts",
+        docs=DocsConfig(path="/interactive", interactive=True),
+        servers={
+            "echo": Server(host="127.0.0.1:{port}", protocol="ws", variables={"port": ServerVariable(default="8917")})
+        },
+        channels=[
+            ChannelDefinition(
+                key="logicalEvents",
+                address="/echo/{room}",
+                parameters={"room": Parameter(default="room")},
+                operations=[
+                    OperationDefinition(
+                        action="receive",
+                        messages=[
+                            MessageDefinition(
+                                name="ObjectMessage",
+                                content_type="application/json",
+                                payload={
+                                    "type": "object",
+                                    "properties": {"value": {"type": "string"}},
+                                    "required": ["value"],
+                                },
+                                examples=[{"value": "valid"}],
+                            )
+                        ],
+                    ),
+                    OperationDefinition(
+                        action="send",
+                        messages=[
+                            MessageDefinition(
+                                name="EchoMessage", content_type="application/json", payload={"type": "object"}
+                            )
+                        ],
+                    ),
+                ],
+            )
+        ],
+    )
+
+
 def create_app() -> Litestar:
     routes = []
     for renderer in ("asyncapi", "scalar", "mounted/docs"):
@@ -102,7 +172,11 @@ def create_app() -> Litestar:
                 return handler
 
             routes.append(mount(inner, path))
-    return Litestar(routes)
+    mounted = interactive_config()
+    mounted.docs = DocsConfig(path="/docs", renderer="scalar", interactive=True)
+    mounted.servers["echo"].pathname = "/socket-app"
+    routes.append(mount(Litestar([echo], plugins=[AsyncAPIPlugin(mounted)]), "/socket-app"))
+    return Litestar([*routes, echo, read_probe], plugins=[AsyncAPIPlugin(interactive_config())])
 
 
 if __name__ == "__main__":

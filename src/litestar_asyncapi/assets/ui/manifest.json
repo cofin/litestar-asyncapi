@@ -140,16 +140,35 @@
       "_preload-helper-CnY6jOj8.js"
     ]
   },
+  "_types-C1MFtSqH.js": {
+    "file": "assets/types-C1MFtSqH.js",
+    "name": "types",
+    "imports": [
+      "_preload-helper-CnY6jOj8.js"
+    ]
+  },
+  "frontend/interactive.ts": {
+    "file": "assets/interactive-TQrGKbE3.js",
+    "name": "interactive",
+    "src": "frontend/interactive.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_types-C1MFtSqH.js"
+    ]
+  },
   "frontend/react.ts": {
-    "file": "assets/react-B4CtNO0T.js",
+    "file": "assets/react-D9woOG0R.js",
     "name": "react",
     "src": "frontend/react.ts",
     "isEntry": true,
     "imports": [
-      "_preload-helper-CnY6jOj8.js"
+      "_preload-helper-CnY6jOj8.js",
+      "_types-C1MFtSqH.js"
     ],
     "dynamicImports": [
-      "frontend/react.ts"
+      "frontend/react.ts",
+      "frontend/interactive.ts"
     ],
     "css": [
       "assets/react-Dd5XIGmt.css"

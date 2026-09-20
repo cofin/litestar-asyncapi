@@ -3,7 +3,6 @@ from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition, Message
 from litestar_asyncapi.config import AsyncAPIConfig, DocsConfig
 from litestar_asyncapi.decorators import asyncapi_message, asyncapi_operation
 from litestar_asyncapi.plugins import (
-    AsyncAPIPlaygroundRenderPlugin,
     AsyncAPIPlugin,
     AsyncAPIRenderPlugin,
     AsyncAPIUIRenderPlugin,
@@ -13,7 +12,6 @@ from litestar_asyncapi.plugins import (
 
 __all__ = (
     "AsyncAPIConfig",
-    "AsyncAPIPlaygroundRenderPlugin",
     "AsyncAPIPlugin",
     "AsyncAPIRenderPlugin",
     "AsyncAPIUIRenderPlugin",

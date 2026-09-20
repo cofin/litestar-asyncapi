@@ -333,8 +333,8 @@ module = ["pygments.*", "faker.*"]
 
 [tool.slotscheck]
 strict-imports = false
-# The two UI adapters inherit Litestar's native, unslotted renderer base.
-exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding|litestar_asyncapi\\.plugins\\.renderers:(AsyncAPIUIRenderPlugin|AsyncAPIPlaygroundRenderPlugin)"
+# The UI adapter inherits Litestar's native, unslotted renderer base.
+exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding|litestar_asyncapi\\.plugins\\.renderers:AsyncAPIUIRenderPlugin"
 
 [tool.codespell]
 ignore-words-list = ["asyncapi"]

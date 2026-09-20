@@ -18,6 +18,8 @@ __all__ = ("asset_directory", "bootstrap_html", "renderer_name")
 
 def renderer_name(plugin: "OpenAPIRenderPlugin") -> str:
     """Return the stable documentation route name for a renderer."""
+    if getattr(plugin, "role", None) == "playground":
+        return "asyncapi:playground"
     if isinstance(plugin, JsonRenderPlugin):
         return "asyncapi:json"
     if isinstance(plugin, YamlRenderPlugin):
@@ -43,8 +45,6 @@ def bootstrap_html(request: "Request[Any, Any, Any]", *, entry: str, options: di
     names = request.route_handler.opt["asyncapi_routes"]
     links = {key: request.url_for(name) for key, name in names.items() if key != "assets"}
     config = {"schemaUrl": links["json"], "entry": entry, "options": options}
-    if entry == "playground":
-        config["entryUrl"] = request.url_for(names["assets"], file_path="playground.js")
     styles = ""
     if entry in {"react", "scalar"}:
         try:
