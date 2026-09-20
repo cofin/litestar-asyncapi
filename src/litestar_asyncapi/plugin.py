@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from litestar_asyncapi.spec import AsyncAPI
 
 
-def _handle_docs_path_not_found(path: str = "/") -> Response:
+def _handle_docs_path_not_found(path: str = "/") -> Response[Any]:
     if path.endswith((".json", ".yaml", ".yml")):
         raise NotFoundException
 

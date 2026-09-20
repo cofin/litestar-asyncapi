@@ -158,7 +158,7 @@ def _default_factory_for_model(annotation: Any) -> Any | None:
 
 def _basic_example_for_annotation(annotation: Any) -> Any | None:
     if is_optional_union(annotation):
-        non_none = make_non_optional_union(annotation)
+        non_none: Any = make_non_optional_union(annotation)
         return _basic_example_for_annotation(non_none)
 
     if is_union(annotation):

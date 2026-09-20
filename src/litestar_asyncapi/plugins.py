@@ -48,7 +48,7 @@ class AsyncAPIRenderPlugin(ABC):
         self.style = style
 
     @staticmethod
-    def render_json(request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render_json(request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
         """Render the AsyncAPI schema as JSON.
 
         Returns:
@@ -58,7 +58,7 @@ class AsyncAPIRenderPlugin(ABC):
         return encode_json(asyncapi_schema, serializer=serializer)
 
     @abstractmethod
-    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
         """Render the output."""
         raise NotImplementedError
 
@@ -85,7 +85,7 @@ class JsonRenderPlugin(AsyncAPIRenderPlugin):
     ) -> None:
         super().__init__(path=path, media_type=media_type, **kwargs)
 
-    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
         return self.render_json(request, asyncapi_schema)
 
 
@@ -103,7 +103,7 @@ class YamlRenderPlugin(AsyncAPIRenderPlugin):
     ) -> None:
         super().__init__(path=path, media_type=media_type, **kwargs)
 
-    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
         builtins = msgspec.to_builtins(
             asyncapi_schema, enc_hook=get_serializer(request.route_handler.resolve_type_encoders())
         )
@@ -129,7 +129,7 @@ class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
         self.css_url = css_url
         self._config = config or {}
 
-    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
         title = "AsyncAPI"
         if isinstance(asyncapi_schema.get("info"), dict) and isinstance(asyncapi_schema["info"].get("title"), str):
             title = asyncapi_schema["info"]["title"]
@@ -196,7 +196,7 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
         self.enable_validation = enable_validation
         self.theme = theme
 
-    def render(self, request: "Request", asyncapi_schema: dict[str, Any]) -> bytes:
+    def render(self, request: "Request[Any, Any, Any]", asyncapi_schema: dict[str, Any]) -> bytes:
         """Render the interactive playground HTML.
 
         Args:
@@ -212,11 +212,9 @@ class AsyncAPIPlaygroundRenderPlugin(AsyncAPIRenderPlugin):
 
         escaped_title = html.escape(title, quote=True)
 
-        # Extract channels for the selector
         channels = asyncapi_schema.get("channels", {})
         channels_json = json.dumps(channels, ensure_ascii=False).replace("</", "<\\/")
 
-        # Determine theme colors
         if self.theme == "dark":
             bg_color = "#1a1a2e"
             text_color = "#e2e8f0"

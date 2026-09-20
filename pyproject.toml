@@ -193,6 +193,17 @@ filename = "pyproject.toml"
 replace = 'version = "{new_version}"'
 search = 'version = "{current_version}"'
 
+[[tool.bumpversion.files]]
+filename = "uv.lock"
+replace = """
+name = "litestar-asyncapi"
+version = "{new_version}"
+"""
+search = """
+name = "litestar-asyncapi"
+version = "{current_version}"
+"""
+
 # Ruff configuration
 [tool.ruff]
 extend-exclude = ["docs/_build"]
@@ -293,6 +304,12 @@ ban-relative-imports = "all"
   "T201",
 ]
 
+# Pyright configuration
+[tool.pyright]
+include = ["src/litestar_asyncapi"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+
 # Mypy configuration
 [tool.mypy]
 check_untyped_defs = true
@@ -300,6 +317,7 @@ disallow_any_generics = true
 disallow_incomplete_defs = true
 disallow_untyped_decorators = true
 disallow_untyped_defs = true
+files = ["src/litestar_asyncapi"]
 implicit_reexport = false
 plugins = ["pydantic.mypy"]
 show_error_codes = true
@@ -318,10 +336,11 @@ warn_untyped_fields = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
-module = ["pygments.*", "docutils.*", "faker.*"]
+module = ["pygments.*", "faker.*"]
 
 [tool.slotscheck]
 strict-imports = false
+exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding"
 
 [tool.codespell]
 ignore-words-list = ["asyncapi"]

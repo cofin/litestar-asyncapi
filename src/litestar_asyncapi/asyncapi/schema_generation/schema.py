@@ -155,7 +155,7 @@ class AsyncAPISchemaGenerator:
     def _generate_union_schema(self, field_definition: FieldDefinition) -> Schema | Reference:
         annotation = field_definition.annotation
         is_optional = is_optional_union(annotation)
-        non_optional_annotation = make_non_optional_union(annotation)
+        non_optional_annotation: Any = make_non_optional_union(annotation)
 
         if get_origin(non_optional_annotation) in {Union, UnionType}:
             union_args = get_args(non_optional_annotation)
