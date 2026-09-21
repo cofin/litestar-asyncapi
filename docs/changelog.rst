@@ -4,7 +4,7 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-0.5.0
+0.2.0
 =====
 
 This release redesigns the plugin around native Litestar components and packaged upstream rendering. See :doc:`migration` for imports, configuration mappings and wire changes.
@@ -26,12 +26,7 @@ This release redesigns the plugin around native Litestar components and packaged
 * Add headless JSON/YAML export and installed-wheel validation across Python
   3.10–3.14 with Litestar 2.24 as the supported minimum.
 
-0.4.1
+0.1.0
 =====
 
-- Modernize infrastructure and documentation to align with Litestar 2026 standards.
-- Introduced AsyncAPI 3.0 specification models.
-- Security hardening for interactive UIs.
-- Hardening of operation ID generation.
-- Expanded test coverage to 92%.
-- Runtime versioning and improved project metadata.
+- Initial release with AsyncAPI support for Litestar applications.
