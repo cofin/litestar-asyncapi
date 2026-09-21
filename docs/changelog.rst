@@ -4,11 +4,10 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-Unreleased: native Litestar redesign
-====================================
+0.5.0
+=====
 
-This release makes clean API breaks. See :doc:`migration` for imports,
-configuration mappings and wire changes.
+This release redesigns the plugin around native Litestar components and packaged upstream rendering. See :doc:`migration` for imports, configuration mappings and wire changes.
 
 * Default to AsyncAPI 3.1, retain explicit 3.0, and correct Draft07 tuple output,
   examples, security references, null preservation and operation map keys.
@@ -21,6 +20,9 @@ configuration mappings and wire changes.
   1.69.2. Scalar remains opt-in due to demonstrated schema-display gaps.
 * Replace the bespoke playground with optional upstream asyncapi-ws-plugin 0.1.0
   interaction. Validation is advisory; intentionally invalid input can be sent.
+* Relocate UI sources and frontend tests to ``tools/frontend/``, keeping the repository root clean.
+* Isolate Playwright output artifacts into ``.tmp/test-results``.
+* Uncap the Litestar version constraint to ``litestar>=2.24.0`` without a major-version ceiling.
 * Add headless JSON/YAML export and installed-wheel validation across Python
   3.10–3.14 with Litestar 2.24 as the supported minimum.
 
