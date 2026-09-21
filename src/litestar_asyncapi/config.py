@@ -1,24 +1,93 @@
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, cast
 
-from litestar_asyncapi.spec import MessageTrait, OperationTrait, Reference, Server
+from litestar.utils.path import normalize_path
+
+from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
+from litestar_asyncapi.spec import Components, MessageTrait, OperationTrait, Reference, Server
 
 if TYPE_CHECKING:
+    from litestar.enums import MediaType
+    from litestar.types import Dependencies, Guard
+
     from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
 
-
-def _default_render_plugins() -> list["AsyncAPIRenderPlugin"]:
-    from litestar_asyncapi.plugins import (
-        AsyncAPIPlaygroundRenderPlugin,
-        AsyncAPIUIRenderPlugin,
-        JsonRenderPlugin,
-        YamlRenderPlugin,
-    )
-
-    return [AsyncAPIUIRenderPlugin(), JsonRenderPlugin(), YamlRenderPlugin(), AsyncAPIPlaygroundRenderPlugin()]
+__all__ = ("AsyncAPIConfig", "DocsConfig")
 
 
-@dataclass
+def _default_render_plugins(
+    renderer: Literal["asyncapi", "scalar"] = "asyncapi", interactive: bool = False
+) -> list["AsyncAPIRenderPlugin"]:
+    from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin
+
+    return [
+        AsyncAPIUIRenderPlugin(renderer=renderer, interactive=interactive and renderer == "asyncapi"),
+        JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json")),
+    ]
+
+
+def _validate_create_examples(value: object) -> None:
+    if not isinstance(value, bool):
+        message = "create_examples must be a bool; provide explicit message examples instead of custom factories"
+        raise TypeError(message)
+
+
+@dataclass(slots=True)
+class DocsConfig:
+    """Documentation routes and optional interactive UI settings."""
+
+    path: str = "/asyncapi"
+    enabled: bool = True
+    guards: Sequence["Guard"] = ()
+    dependencies: "Dependencies | None" = None
+    renderer: Literal["asyncapi", "scalar"] = "asyncapi"
+    interactive: bool = False
+    yaml: bool = False
+    render_plugins: list["AsyncAPIRenderPlugin"] | None = None
+
+    def __post_init__(self) -> None:
+        from litestar_asyncapi.docs import renderer_name
+        from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
+
+        plugins = (
+            list(self.render_plugins)
+            if self.render_plugins is not None
+            else _default_render_plugins(self.renderer, self.interactive)
+        )
+        if not any(isinstance(plugin, JsonRenderPlugin) for plugin in plugins):
+            plugins.append(
+                JsonRenderPlugin(path="/asyncapi.json", media_type=cast("MediaType", "application/vnd.asyncapi+json"))
+            )
+        if self.yaml and not any(isinstance(plugin, YamlRenderPlugin) for plugin in plugins):
+            plugins.append(
+                YamlRenderPlugin(
+                    path=("/asyncapi.yaml", "/asyncapi.yml"),
+                    media_type=cast("MediaType", "application/vnd.asyncapi+yaml"),
+                )
+            )
+        if self.interactive and not any(
+            isinstance(plugin, AsyncAPIUIRenderPlugin) and plugin.role == "playground" for plugin in plugins
+        ):
+            plugins.append(AsyncAPIUIRenderPlugin(path="/playground", interactive=True, role="playground"))
+        paths: set[str] = set()
+        names: set[str] = set()
+        for plugin in plugins:
+            name = renderer_name(plugin)
+            if name in names:
+                message = f"Duplicate documentation renderer name: {name}"
+                raise ValueError(message)
+            names.add(name)
+            for path in plugin.paths:
+                normalized = normalize_path(path)
+                if normalized in paths or normalized == "/assets" or normalized.startswith("/assets/"):
+                    message = f"Duplicate documentation route path: {normalized}"
+                    raise ValueError(message)
+                paths.add(normalized)
+        self.render_plugins = plugins
+
+
+@dataclass(slots=True)
 class AsyncAPIConfig:
     """Configuration for the AsyncAPI plugin.
 
@@ -32,51 +101,55 @@ class AsyncAPIConfig:
     """The version of the API."""
     description: str | None = None
     """An optional description of the API."""
-    default_content_type: str = "application/json"
+    default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False
     """Whether to use handler docstrings for operation descriptions."""
-    create_examples: bool | object | dict[type[Any], object] = False
+    create_examples: bool = False
     """Whether to auto-generate examples for message payloads."""
-    random_seed: int | None = None
-    """Optional random seed for deterministic example generation."""
+
+    strict_uniqueness: bool = False
+    """Whether to raise an exception on operationId collision instead of suffixing."""
 
     include_websocket_routes: bool = True
     """Whether to include websocket routes discovered from the application."""
 
+    include_raw_websocket_routes: bool = False
+    """Include uncertain raw socket contracts with a warning when no explicit metadata exists."""
+
     include_channels_plugin: bool = True
     """Whether to include ChannelsPlugin channels (best-effort)."""
 
-    servers: dict[str, Server | dict[str, Any]] = field(default_factory=dict)
+    servers: dict[str, Server | Reference | dict[str, Any]] = field(default_factory=dict)
     """Server definitions for the AsyncAPI document."""
 
     use_cache: bool = True
     """Whether plugin methods should cache built documents for subsequent calls."""
 
-    path: str = "/asyncapi"
-    """Base path for the docs router."""
+    components: Components = field(default_factory=Components)
 
-    render_plugins: list["AsyncAPIRenderPlugin"] = field(default_factory=_default_render_plugins)
-    """Render plugins used to serve JSON/YAML/UI endpoints."""
+    spec_version: Literal["3.0.0", "3.1.0"] = "3.1.0"
+    channels: list[ChannelDefinition] = field(default_factory=list)
+    docs: "DocsConfig" = field(default_factory=DocsConfig)
 
-    enable_routes: bool = True
-    """Whether to register the docs router during app initialization."""
-
-    operation_traits: dict[str, OperationTrait | dict[str, Any]] = field(default_factory=dict)
+    operation_traits: dict[str, OperationTrait | Reference | dict[str, Any]] = field(default_factory=dict)
     """Reusable operation traits registered under `components.operationTraits`."""
 
-    message_traits: dict[str, MessageTrait | dict[str, Any]] = field(default_factory=dict)
+    message_traits: dict[str, MessageTrait | Reference | dict[str, Any]] = field(default_factory=dict)
     """Reusable message traits registered under `components.messageTraits`."""
 
-    def to_servers(self) -> dict[str, Server]:
+    def __post_init__(self) -> None:
+        _validate_create_examples(self.create_examples)
+
+    def to_servers(self) -> dict[str, Server | Reference]:
         """Return a mapping of server definitions.
 
         Returns:
             A mapping of server name to :class:`~litestar_asyncapi.spec.Server`.
         """
-        servers: dict[str, Server] = {}
+        servers: dict[str, Server | Reference] = {}
         for name, value in self.servers.items():
-            if isinstance(value, Server):
+            if isinstance(value, (Server, Reference)):
                 servers[name] = value
             else:
                 servers[name] = Server(**value)
@@ -90,7 +163,7 @@ class AsyncAPIConfig:
         """
         traits: dict[str, OperationTrait | Reference] = {}
         for name, value in self.operation_traits.items():
-            if isinstance(value, OperationTrait):
+            if isinstance(value, (OperationTrait, Reference)):
                 traits[name] = value
             else:
                 traits[name] = OperationTrait(**value)
@@ -104,7 +177,7 @@ class AsyncAPIConfig:
         """
         traits: dict[str, MessageTrait | Reference] = {}
         for name, value in self.message_traits.items():
-            if isinstance(value, MessageTrait):
+            if isinstance(value, (MessageTrait, Reference)):
                 traits[name] = value
             else:
                 traits[name] = MessageTrait(**value)

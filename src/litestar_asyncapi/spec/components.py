@@ -1,17 +1,20 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from litestar_asyncapi.spec.base import BaseSchemaObject
 
 if TYPE_CHECKING:
     from litestar_asyncapi.spec.channel import Channel, Parameter
     from litestar_asyncapi.spec.correlation_id import CorrelationId
+    from litestar_asyncapi.spec.external_docs import ExternalDocumentation
     from litestar_asyncapi.spec.message import Message, MessageTrait
     from litestar_asyncapi.spec.operation import Operation, OperationTrait
     from litestar_asyncapi.spec.reference import Reference
-    from litestar_asyncapi.spec.schema import Schema
+    from litestar_asyncapi.spec.reply import Reply, ReplyAddress
+    from litestar_asyncapi.spec.schema import MultiFormatSchema, Schema
     from litestar_asyncapi.spec.security_scheme import SecurityScheme
-    from litestar_asyncapi.spec.server import Server
+    from litestar_asyncapi.spec.server import Server, ServerVariable
+    from litestar_asyncapi.spec.tag import Tag
 
 __all__ = ("Components",)
 
@@ -20,7 +23,7 @@ __all__ = ("Components",)
 class Components(BaseSchemaObject):
     """AsyncAPI reusable components container."""
 
-    schemas: "dict[str, Schema | Reference]" = field(default_factory=dict)
+    schemas: "dict[str, Schema | Reference | MultiFormatSchema | bool | dict[str, Any]]" = field(default_factory=dict)
     messages: "dict[str, Message | Reference]" = field(default_factory=dict)
     message_traits: "dict[str, MessageTrait | Reference]" = field(default_factory=dict)
     security_schemes: "dict[str, SecurityScheme | Reference]" = field(default_factory=dict)
@@ -30,3 +33,13 @@ class Components(BaseSchemaObject):
     operation_traits: "dict[str, OperationTrait | Reference]" = field(default_factory=dict)
     channels: "dict[str, Channel | Reference]" = field(default_factory=dict)
     servers: "dict[str, Server | Reference]" = field(default_factory=dict)
+    replies: "dict[str, Reply | Reference]" = field(default_factory=dict)
+    reply_addresses: "dict[str, ReplyAddress | Reference]" = field(default_factory=dict)
+    server_variables: "dict[str, ServerVariable | Reference]" = field(default_factory=dict)
+    tags: "dict[str, Tag | Reference]" = field(default_factory=dict)
+    external_docs: "dict[str, ExternalDocumentation | Reference]" = field(default_factory=dict)
+    server_bindings: "dict[str, dict[str, Any] | Reference]" = field(default_factory=dict)
+    channel_bindings: "dict[str, dict[str, Any] | Reference]" = field(default_factory=dict)
+    operation_bindings: "dict[str, dict[str, Any] | Reference]" = field(default_factory=dict)
+    message_bindings: "dict[str, dict[str, Any] | Reference]" = field(default_factory=dict)
+    extensions: dict[str, Any] = field(default_factory=dict)

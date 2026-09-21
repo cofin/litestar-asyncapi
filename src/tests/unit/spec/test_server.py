@@ -7,9 +7,7 @@ pytestmark = pytest.mark.anyio
 
 def test_server_serialization() -> None:
     server = Server(
-        host="localhost:8000",
-        protocol="ws",
-        variables={"env": ServerVariable(default="dev", enum=["dev", "prod"])},
+        host="localhost:8000", protocol="ws", variables={"env": ServerVariable(default="dev", enum=["dev", "prod"])}
     )
 
     schema = server.to_schema()

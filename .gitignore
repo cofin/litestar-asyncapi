@@ -1,39 +1,83 @@
-# Byte-compiled / optimized / DLL files
+# Virtual environments and local Python installations
+.venv/
+venv/
+env/
+.python-version
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python bytecode and tool caches
 __pycache__/
 *.py[cod]
 *$py.class
-
-# folders
-.auto_pytabs_cache/
-.hypothesis/
+.cache/
 .mypy_cache/
 .pytest_cache/
-.venv/
-*.egg-info/
+.pyright/
+.ruff_cache/
+.tox/
+.nox/
+.hypothesis/
+.auto_pytabs_cache/
+.dmypy.json
+
+# Test and coverage output
+.coverage
+.coverage.*
+coverage.json
+coverage.xml
+htmlcov/
+junit.xml
+
+# Build and packaging output
 build/
 dist/
-results/
-site/
-target/
+*.egg
+*.egg-info/
+.eggs/
+
+# Documentation output
+docs/_build/
+docs-build/
+
+# Editors and operating systems
 .idea/
 .vscode/
-.cursor/
-.direnv/
-htmlcov/
+*.code-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-# files
-**/*.so
-**/*.sqlite
-**/*.sqlite*
-*.iml
-.coverage
-.dmypy.json
-.python-version
-.ruff_cache
-/docs/_build/
-coverage.*
-setup.py
-.todos
-.tmp
+# Local Flow, Beads, Dolt, and agent harness state
+AGENTS.md
+.agents/
+.beads/
+.dolt/
+.codex/
+.claude/
+.gemini/
+.opencode/
+opencode.json
 
-specs/archive
+# Local scratch and logs
+.tmp/
+tmp/
+*.log
+benchmarks/
+
+# Keep the reproducible uv lockfile tracked
+!uv.lock
+
+# Development-only JavaScript dependencies
+node_modules/
+
+# Browser test artifacts
+test-results/
+playwright-report/

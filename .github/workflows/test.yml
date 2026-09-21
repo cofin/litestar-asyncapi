@@ -6,6 +6,9 @@ on:
       python-version:
         required: true
         type: string
+      litestar-boundary:
+        required: true
+        type: string
       coverage:
         required: false
         type: boolean
@@ -19,38 +22,51 @@ on:
         type: number
         default: 60
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ${{ inputs.os }}
     timeout-minutes: ${{ inputs.timeout }}
+    env:
+      PYTHON_VERSION: ${{ inputs.python-version }}
+      LITESTAR_BOUNDARY: ${{ inputs.litestar-boundary }}
     defaults:
       run:
         shell: bash
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v8.3.2
+        with:
+          enable-cache: true
 
       - name: Set up Python
-        run: uv python install ${{ inputs.python-version }}
+        run: uv python install "$PYTHON_VERSION"
 
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
+      - name: Download the tested distribution
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: tested-distribution
+          path: dist
 
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PWD/src" >> $GITHUB_ENV
+      - name: Test installed wheel with minimum and newest compatible Litestar
+        run: make installed-test
 
-      - name: Test
-        if: ${{ !inputs.coverage }}
-        run: uv run pytest src/tests -n 2
-
-      - name: Test with coverage
+      - name: Install locked coverage dependencies
         if: ${{ inputs.coverage }}
-        run: uv run pytest src/tests --cov=litestar_asyncapi --cov-report=xml -n 2
+        run: uv sync --frozen --all-groups --python "$PYTHON_VERSION"
 
-      - uses: actions/upload-artifact@v7
+      - name: Test with locked coverage
+        if: ${{ inputs.coverage }}
+        run: uv run --no-sync pytest src/tests --cov=litestar_asyncapi --cov-report=xml -n auto
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ inputs.coverage }}
         with:
           name: coverage-xml

@@ -1,226 +1,85 @@
-from dataclasses import asdict, is_dataclass
-from enum import Enum
-from typing import TYPE_CHECKING, Any, get_args, get_origin
+import warnings
+from typing import TYPE_CHECKING, Any
 
+from litestar import Litestar
 from litestar.params import KwargDefinition
+from litestar.serialization import decode_json, encode_json, get_serializer
 from litestar.types import Empty
 from litestar.typing import FieldDefinition
+from polyfactory.exceptions import ParameterException
 
-from litestar_asyncapi.asyncapi.schema_generation.utils import is_union, split_optional_union
+from litestar_asyncapi._compat import native_example_value
+from litestar_asyncapi.spec import MessageExample
+from litestar_asyncapi.spec.base import UNSET
 
 if TYPE_CHECKING:
     from litestar_asyncapi import AsyncAPIConfig
 
-__all__ = ("generate_example",)
+__all__ = ("generate_example", "normalize_examples")
 
 
-def generate_example(field_definition: FieldDefinition, *, config: "AsyncAPIConfig") -> Any | None:
-    """Generate an example value for a field definition.
+def normalize_examples(values: list[Any], *, app: Litestar) -> list[MessageExample]:
+    """Normalize explicit values while preserving typed Message Example metadata."""
+    result = []
+    serializer = get_serializer(app.type_encoders)
+    for value in values:
+        if isinstance(value, MessageExample):
+            result.append(
+                MessageExample(
+                    payload=decode_json(encode_json(value.payload, serializer=serializer))
+                    if value.payload is not UNSET
+                    else UNSET,
+                    headers=decode_json(encode_json(value.headers, serializer=serializer))
+                    if value.headers is not None
+                    else None,
+                    name=value.name,
+                    summary=value.summary,
+                )
+            )
+        else:
+            result.append(MessageExample(payload=decode_json(encode_json(value, serializer=serializer))))
+    return result
 
-    Args:
-        field_definition: Field definition to generate an example for.
-        config: AsyncAPI configuration controlling example generation.
 
-    Returns:
-        An example value or ``None`` if no example can be generated.
-    """
+def _check_constraints(kwarg: Any) -> None:
+    constraints = (
+        "min_length",
+        "max_length",
+        "pattern",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "multiple_of",
+        "min_items",
+        "max_items",
+    )
+    if isinstance(kwarg, KwargDefinition) and (
+        any(getattr(kwarg, name, None) is not None for name in constraints) or kwarg.schema_extra
+    ):
+        message = "native example generation does not enforce direct Parameter constraints; supply an explicit example"
+        raise ValueError(message)
 
+
+def generate_example(
+    field_definition: FieldDefinition, *, config: "AsyncAPIConfig", app: Litestar | None = None
+) -> Any:
+    """Generate one wire value, or UNSET when automatic generation is disabled or fails."""
     if not config.create_examples:
-        return None
-
-    kwarg_definition = field_definition.kwarg_definition
-    if isinstance(kwarg_definition, KwargDefinition):
-        if kwarg_definition.const and kwarg_definition.default is not Empty:
-            return kwarg_definition.default
-        if kwarg_definition.default is not Empty:
-            return kwarg_definition.default
-        if kwarg_definition.enum:
-            return next(iter(kwarg_definition.enum))
-
-    annotation = field_definition.raw or field_definition.annotation
-    if annotation is None:
-        return None
-
-    example = _example_from_factory(annotation, config=config)
-    if example is not None:
-        return _normalize_example_value(example)
-
-    return _basic_example_for_annotation(annotation)
-
-
-def _example_from_factory(annotation: Any, *, config: "AsyncAPIConfig") -> Any | None:
-    factory_config = config.create_examples
-    if isinstance(factory_config, dict):
-        for key, factory in factory_config.items():
-            if annotation is key:
-                return _build_with_factory(factory, annotation, config=config)
-            if isinstance(annotation, type) and isinstance(key, type) and issubclass(annotation, key):
-                return _build_with_factory(factory, annotation, config=config)
-        return None
-
-    if factory_config is True:
-        factory = _default_factory_for_model(annotation)
-        if factory is None:
-            return None
-        return _build_with_factory(factory, annotation, config=config)
-
-    return _build_with_factory(factory_config, annotation, config=config)
-
-
-def _build_with_factory(factory: Any, annotation: Any, *, config: "AsyncAPIConfig") -> Any | None:
-    if factory is None or factory is False:
-        return None
-
-    if hasattr(factory, "create_factory"):
-        try:
-            factory = factory.create_factory(annotation)
-        except (TypeError, ValueError):
-            return None
-
-    if hasattr(factory, "seed_random") and config.random_seed is not None:
-        factory.seed_random(config.random_seed)
-
-    if hasattr(factory, "build"):
-        try:
-            return factory.build()
-        except (TypeError, ValueError):
-            return None
-
-    return None
-
-
-def _default_factory_for_model(annotation: Any) -> Any | None:
-    dataclass_factory = None
-    typed_dict_factory = None
-    msgspec_factory = None
-    pydantic_factory = None
-
+        return UNSET
+    app = app if app is not None else Litestar([])
     try:
-        from polyfactory.factories.dataclass_factory import DataclassFactory
-
-        dataclass_factory = DataclassFactory
-    except ImportError:
-        dataclass_factory = None
-
-    try:
-        from polyfactory.factories.typed_dict_factory import TypedDictFactory
-
-        typed_dict_factory = TypedDictFactory
-    except ImportError:
-        typed_dict_factory = None
-
-    try:
-        from polyfactory.factories.msgspec_factory import MsgspecFactory
-
-        msgspec_factory = MsgspecFactory
-    except ImportError:
-        msgspec_factory = None
-
-    try:
-        from polyfactory.factories.pydantic_factory import ModelFactory
-
-        pydantic_factory = ModelFactory
-    except ImportError:
-        pydantic_factory = None
-
-    if dataclass_factory is not None and is_dataclass(annotation):
-        return dataclass_factory
-
-    if typed_dict_factory is not None and _is_typed_dict(annotation):
-        return typed_dict_factory
-
-    if msgspec_factory is not None:
-        try:
-            import msgspec
-        except ImportError:
-            msgspec = None  # type: ignore[assignment]
-
-        if msgspec is not None and isinstance(annotation, type) and issubclass(annotation, msgspec.Struct):
-            return msgspec_factory
-
-    if pydantic_factory is not None:
-        try:
-            import pydantic
-        except ImportError:
-            pydantic = None  # type: ignore[assignment]
-
-        pydantic_base_model = getattr(pydantic, "BaseModel", None) if pydantic is not None else None
-
-        if (
-            pydantic_base_model is not None
-            and isinstance(annotation, type)
-            and issubclass(annotation, pydantic_base_model)
-        ):
-            return pydantic_factory
-
-    return None
-
-
-def _basic_example_for_annotation(annotation: Any) -> Any | None:
-    if is_union(annotation):
-        non_none, _ = split_optional_union(annotation)
-        if non_none:
-            return _basic_example_for_annotation(non_none[0])
-        return None
-
-    origin = get_origin(annotation)
-    if origin in {list, tuple, set}:
-        args = get_args(annotation)
-        item = _basic_example_for_annotation(args[0]) if args else None
-        return [item]
-
-    if origin is dict:
-        args = get_args(annotation)
-        value = _basic_example_for_annotation(args[1]) if len(args) > 1 else None
-        return {"key": value}
-
-    if isinstance(annotation, type) and issubclass(annotation, Enum):
-        members = list(annotation)
-        return members[0].value if members else None
-
-    if annotation is str:
-        return "string"
-    if annotation is int:
-        return 0
-    if annotation is float:
-        return 0.0
-    if annotation is bool:
-        return False
-    if annotation is bytes:
-        return "bytes"
-
-    if annotation is type(None):
-        return None
-
-    if origin is None and isinstance(annotation, type) and is_dataclass(annotation):
-        return None
-
-    return None
-
-
-def _normalize_example_value(value: Any) -> Any:
-    if is_dataclass(value) and not isinstance(value, type):
-        return asdict(value)
-
-    if isinstance(value, type):
-        return value
-
-    if hasattr(value, "model_dump"):
-        return value.model_dump()
-
-    if hasattr(value, "dict"):
-        return value.dict()
-
-    try:
-        import msgspec
-    except ImportError:
-        msgspec = None  # type: ignore[assignment]
-
-    if msgspec is not None and isinstance(value, msgspec.Struct):
-        return msgspec.to_builtins(value)
-
-    return value
-
-
-def _is_typed_dict(annotation: Any) -> bool:
-    return isinstance(annotation, type) and issubclass(annotation, dict) and hasattr(annotation, "__total__")
+        kwarg = field_definition.kwarg_definition
+        if isinstance(kwarg, KwargDefinition) and kwarg.default is not Empty:
+            candidate = kwarg.default
+        elif field_definition.default is not Empty:
+            candidate = field_definition.default
+        elif isinstance(kwarg, KwargDefinition) and kwarg.enum:
+            candidate = kwarg.enum[0]
+        else:
+            _check_constraints(kwarg)
+            candidate = native_example_value(field_definition)
+        return decode_json(encode_json(candidate, serializer=get_serializer(app.type_encoders)))
+    except (ParameterException, TypeError, ValueError, RecursionError, NameError) as error:
+        warnings.warn(f"Omitting automatic AsyncAPI example for {field_definition.annotation!r}: {error}", stacklevel=2)
+        return UNSET

@@ -26,7 +26,7 @@ def test_plugin_generates_operations_from_decorator_only_plain_websocket() -> No
     app = Litestar(route_handlers=[handler], plugins=[plugin])
     schema = plugin.get_asyncapi_schema(app)
 
-    assert schema["asyncapi"] == "3.0.0"
+    assert schema["asyncapi"] == "3.1.0"
     assert "channels" in schema and "/ws" in schema["channels"]
     assert "operations" in schema
     actions = {op["action"] for op in schema["operations"].values()}

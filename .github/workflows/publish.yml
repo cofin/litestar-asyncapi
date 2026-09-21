@@ -5,27 +5,26 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
+  distribution:
+    uses: $/.github/workflows/distribution.yml
+
   pypi:
+    needs: distribution
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     environment: pypi
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Install dependencies
-        run: uv sync --all-extras
-
-      - name: Build package
-        run: uv build
+      - name: Download the tested distribution
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: tested-distribution
+          path: dist
 
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1

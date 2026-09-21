@@ -1,50 +1,53 @@
 # litestar-asyncapi
 
-AsyncAPI support for Litestar applications. This plugin generates AsyncAPI 3.0 documents for WebSocket routes and (best-effort) ChannelsPlugin channels, and provides JSON/YAML/UI renderers.
-
-## Usage
+Generate AsyncAPI 3.1 documents from Litestar WebSocket routes and serve packaged documentation. Requires Python 3.10–3.14 and Litestar `>=2.24,<3`. AsyncAPI 3.0 remains available with `spec_version="3.0.0"`.
 
 ```python
-from litestar import Litestar
-from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
+from dataclasses import dataclass
 
-config = AsyncAPIConfig(
-    use_handler_docstrings=True,
-    create_examples=True,
-    random_seed=1,
+from litestar import Litestar, websocket_listener
+from litestar.dto import DataclassDTO
+from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
+from litestar_asyncapi.spec import Server
+
+
+@dataclass
+class Message:
+    text: str
+
+
+@websocket_listener("/chat", dto=DataclassDTO[Message])
+async def chat(data: Message) -> Message:
+    return data
+
+
+app = Litestar(
+    [chat],
+    plugins=[AsyncAPIPlugin(AsyncAPIConfig(
+        title="Chat", version="1.0.0",
+        docs=DocsConfig(interactive=True),
+        servers={"local": Server(host="localhost:8000", protocol="ws")},
+    ))],
 )
-
-app = Litestar(plugins=[AsyncAPIPlugin(config=config)])
 ```
 
-By default, the plugin serves docs at `/asyncapi/` with JSON at `/asyncapi/asyncapi.json` and YAML at `/asyncapi/asyncapi.yaml`.
+Save as `app.py` and run `uv run litestar --app app:app run`. Open `/asyncapi/` for React documentation and `/asyncapi/asyncapi.json` for JSON. YAML is opt-in with `DocsConfig(yaml=True)`. Python consumers need no Node installation.
 
-When enabled, docstrings and handler metadata (summary, description, operation_id) are used to enrich AsyncAPI operations, and example payloads are generated for message schemas. AsyncAPI decorators still take precedence over inferred metadata.
+Operations describe the application: incoming messages are `receive`, outgoing messages are `send`. Native Litestar schema generation supplies model schemas; fixed tuples export Draft07 positional `items` with exact length bounds.
 
-## Documentation
+Interaction defaults to off. The example enables the upstream WebSocket console: **validation is advisory; Send transmits entered text even when invalid**. Supported JSON text object/array contracts can connect to explicit servers. Binary, plain-text, JSON-string and ambiguous contracts remain documentation-only. The application must enforce its own validation and authorization.
 
-Build the docs locally:
+AsyncAPI React component 3.2.1 (React 18.3.1) is the default renderer. `DocsConfig(renderer="scalar")` selects Scalar 1.69.2, which omits tuple positions, zero-length bounds and boolean schemas. With `interactive=True`, Scalar links to the shared React console at `/asyncapi/playground`.
 
-```bash
-make docs
+Export without starting a server:
+
+```sh
+uv run litestar --app app:app asyncapi export
+uv run litestar --app app:app asyncapi export --format yaml --output asyncapi.yaml
 ```
 
-Link check:
+Existing files require `--overwrite`. Export also works with `DocsConfig(enabled=False)`.
 
-```bash
-make docs-linkcheck
-```
+See the [migration guide](docs/migration.rst), [runnable examples](docs/examples/README.md), and [usage guides](docs/usage/index.rst). Build documentation with `make docs`.
 
-The HTML output is written to `docs/_build/html`. The GitHub Pages deployment is handled by the docs workflow.
-
-## CI and Release
-
-- CI runs linting, type checks, and test matrix across supported Python versions.
-- The release workflow is `publish.yml` (workflow name: `pypi`) and publishes to PyPI on GitHub release.
-
-## Notes
-
-- Operation IDs are generated deterministically and are unique across the document.
-- Channel message references are emitted under each channel, with operations referencing those messages.
-- Component key overrides are sanitized to valid schema component names.
-- Channel parameter schemas are filtered to AsyncAPI v3-compatible fields.
+Development uses `make lint`, `make test`, `make validate-asyncapi`, and the locked Node 22 frontend toolchain. CI tests installed wheels across supported Python versions. Release workflows publish the tested wheel and its accompanying source distribution.

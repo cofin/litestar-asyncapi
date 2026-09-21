@@ -9,7 +9,6 @@ def test_operation_serialization() -> None:
     operation = Operation(
         action=OperationAction.SEND,
         channel=Reference("#/channels/chat"),
-        operation_id="sendChat",
         messages=[Message(name="Chat", payload=Schema(type=SchemaType.OBJECT))],
     )
 

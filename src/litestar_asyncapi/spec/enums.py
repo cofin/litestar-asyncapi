@@ -1,11 +1,6 @@
 from enum import Enum
 
-__all__ = (
-    "OperationAction",
-    "SchemaFormat",
-    "SchemaType",
-    "SecuritySchemeType",
-)
+__all__ = ("OperationAction", "SchemaFormat", "SchemaType", "SecuritySchemeType")
 
 
 class OperationAction(str, Enum):
@@ -54,3 +49,7 @@ class SecuritySchemeType(str, Enum):
     SYMMETRIC_ENCRYPTION = "symmetricEncryption"
     ASYMMETRIC_ENCRYPTION = "asymmetricEncryption"
     HTTP_API_KEY = "httpApiKey"
+    SASL_PLAIN = "plain"
+    SASL_SCRAM_SHA256 = "scramSha256"
+    SASL_SCRAM_SHA512 = "scramSha512"
+    SASL_GSSAPI = "gssapi"

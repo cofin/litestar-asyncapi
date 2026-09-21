@@ -1,0 +1,165 @@
+{
+  "asyncapi": "3.1.0",
+  "info": {
+    "title": "WebSocket contracts",
+    "version": "1.0.0"
+  },
+  "servers": {
+    "local": {
+      "host": "localhost:8000",
+      "protocol": "ws"
+    }
+  },
+  "channels": {
+    "events": {
+      "address": "/events/{room}",
+      "parameters": {
+        "room": {
+          "description": "Room name",
+          "default": "general"
+        }
+      },
+      "servers": [
+        {
+          "$ref": "#/servers/local"
+        }
+      ],
+      "bindings": {
+        "ws": {
+          "method": "GET",
+          "bindingVersion": "0.1.0"
+        }
+      },
+      "messages": {
+        "text": {
+          "name": "Text",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "text"
+            ]
+          },
+          "examples": [
+            {
+              "payload": {
+                "text": null,
+                "$ref": "https://example.invalid/literal",
+                "nested": {
+                  "$ref": "file:///literal/data"
+                }
+              }
+            }
+          ],
+          "traits": [
+            {
+              "$ref": "#/components/messageTraits/common"
+            }
+          ]
+        },
+        "tuple": {
+          "name": "Tuple",
+          "payload": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "examples": [
+            {
+              "payload": [
+                "message",
+                1
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "replies": {
+      "address": "/replies",
+      "messages": {
+        "reply": {
+          "payload": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "listen": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/events"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/events/messages/text"
+        },
+        {
+          "$ref": "#/channels/events/messages/tuple"
+        }
+      ],
+      "traits": [
+        {
+          "$ref": "#/components/operationTraits/common"
+        }
+      ],
+      "security": [
+        {
+          "$ref": "#/components/securitySchemes/password"
+        }
+      ],
+      "reply": {
+        "channel": {
+          "$ref": "#/channels/replies"
+        },
+        "messages": [
+          {
+            "$ref": "#/channels/replies/messages/reply"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "password": {
+        "type": "userPassword"
+      }
+    },
+    "messageTraits": {
+      "common": {
+        "contentType": "application/json",
+        "headers": {
+          "type": "object",
+          "properties": {
+            "requestId": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "operationTraits": {
+      "common": {
+        "summary": "Receive application messages"
+      }
+    }
+  }
+}

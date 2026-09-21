@@ -16,7 +16,7 @@ def test_full_document_schema_generation() -> None:
     from litestar_asyncapi import AsyncAPIConfig
 
     schema = AsyncAPIGenerator(app=app, config=AsyncAPIConfig(title="My API", version="0.1.0")).build_schema()
-    assert schema["asyncapi"] == "3.0.0"
+    assert schema["asyncapi"] == "3.1.0"
     assert schema["info"]["title"] == "My API"
     assert schema.get("channels")
     assert schema.get("operations")

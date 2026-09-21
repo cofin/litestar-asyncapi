@@ -41,11 +41,11 @@ def test_decorator_only_plain_websocket_creates_operations() -> None:
     receive = by_action[OperationAction.RECEIVE]
     assert receive.operation_id == "recv"
     assert receive.summary == "inbound"
-    assert receive.message is not None
-    assert receive.message.name == "Inbound"
+    assert receive.messages[0] is not None
+    assert receive.messages[0].name == "Inbound"
 
     send = by_action[OperationAction.SEND]
     assert send.operation_id == "send"
     assert send.summary == "outbound"
-    assert send.message is not None
-    assert send.message.name == "Outbound"
+    assert send.messages[0] is not None
+    assert send.messages[0].name == "Outbound"

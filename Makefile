@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
 
 # =============================================================================
 # Configuration and Environment Variables
@@ -8,6 +9,14 @@ SHELL := /bin/bash
 .ONESHELL:
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
+PYTHON_VERSION ?= 3.10
+UV_SYNC_ARGS ?= --all-extras --dev
+
+# Detect Rodete and configure index URLs for Python tools
+ifneq ($(shell grep -s -q "rodete" /etc/os-release && echo "yes"),)
+export PIP_INDEX_URL=https://pypi.org/simple
+export UV_INDEX_URL=https://pypi.org/simple
+endif
 
 # -----------------------------------------------------------------------------
 # Display Formatting and Colors
@@ -34,23 +43,30 @@ help:                                               ## Display this help text fo
 # Installation and Environment Setup
 # =============================================================================
 
+.PHONY: setup-env
+setup-env:                                          ## Configure local environment (e.g. Rodete)
+	@./tools/scripts/setup-env.sh
+
 .PHONY: install-uv
 install-uv:                                         ## Install latest version of uv
-	@echo "${INFO} Installing uv..."
+	@echo "${INFO} Installing uv... ⚡"
 	@curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
-	@echo "${OK} UV installed successfully"
+	@echo "${OK} UV installed successfully 🎉"
 
 .PHONY: install
-install: clean                                      ## Install the project, dependencies, and pre-commit for local development
-	@echo "${INFO} Starting fresh installation..."
-	@uv sync --all-extras --dev
-	@echo "${OK} Installation complete!"
+install: destroy clean setup-env                    ## Install all locked development dependencies
+	@echo "${INFO} Starting fresh installation... ⚡"
+	@uv python pin $(PYTHON_VERSION) >/dev/null 2>&1
+	@uv venv >/dev/null 2>&1
+	@uv sync $(UV_SYNC_ARGS)
+	@echo "${OK} Installation complete! 🎉"
 
 .PHONY: destroy
-destroy:                                            ## Destroy the virtual environment
-	@echo "${INFO} Destroying virtual environment..."
+destroy:                                            ## Destroy virtual environment and clean caches
+	@echo "${INFO} Destroying virtual environment... 🗑️"
+	@uvx prek clean >/dev/null 2>&1 || true
 	@rm -rf .venv
-	@echo "${OK} Virtual environment destroyed"
+	@echo "${OK} Virtual environment destroyed 🗑️"
 
 # =============================================================================
 # Dependency Management
@@ -58,27 +74,68 @@ destroy:                                            ## Destroy the virtual envir
 
 .PHONY: upgrade
 upgrade:                                            ## Upgrade all dependencies to latest stable versions
-	@echo "${INFO} Updating all dependencies..."
+	@echo "${INFO} Updating all dependencies... 🔄"
 	@uv lock --upgrade
-	@echo "${OK} Dependencies updated"
-	@uv run pre-commit autoupdate
-	@echo "${OK} Updated Pre-commit hooks"
+	@echo "${OK} Dependencies updated 🔄"
+	@uvx prek autoupdate --cooldown-days 7
+	@echo "${OK} Updated prek hooks (7-day cooldown) 🔄"
+	@uv lock >/dev/null 2>&1
 
 .PHONY: lock
-lock:                                              ## Rebuild lockfiles from scratch
-	@echo "${INFO} Rebuilding lockfiles..."
-	@uv lock --upgrade
-	@echo "${OK} Lockfiles updated"
+lock:                                               ## Rebuild lockfiles from scratch
+	@echo "${INFO} Rebuilding lockfiles... 🔄"
+	@uv lock --upgrade >/dev/null 2>&1
+	@echo "${OK} Lockfiles updated 🔄"
 
 # =============================================================================
 # Build and Release
 # =============================================================================
 
 .PHONY: build
-build:                                             ## Build the project
-	@echo "${INFO} Building package..."
+build: js-build                                    ## Build the project
+	@echo "${INFO} Building package... 📦"
 	@uv build
-	@echo "${OK} Package build complete"
+	@uv run python tools/frontend/tests/distribution.py
+	@echo "${OK} Package build complete 📦"
+
+.PHONY: release
+release:                                           ## Bump version and create release tag (bump=major|minor|patch)
+	@if [ -z "$(bump)" ]; then \
+		echo "${ERROR} Usage: make release bump=major|minor|patch"; \
+		exit 1; \
+	fi
+	@echo "${INFO} Preparing for release... 📦"
+	@make docs
+	@make clean
+	@make build
+	@uv run bump-my-version bump $(bump)
+	@uv lock --upgrade-package litestar-asyncapi >/dev/null 2>&1
+	@echo "${OK} Release complete 🎉"
+
+.PHONY: pre-release
+pre-release:                                       ## Start a pre-release: make pre-release version=0.2.0-alpha.1
+	@if [ -z "$(version)" ]; then \
+		echo "${ERROR} Usage: make pre-release version=X.Y.Z-alpha.N"; \
+		echo ""; \
+		echo "Pre-release workflow:"; \
+		echo "  1. Start alpha:     make pre-release version=0.2.0-alpha.1"; \
+		echo "  2. Next alpha:      make pre-release version=0.2.0-alpha.2"; \
+		echo "  3. Move to beta:    make pre-release version=0.2.0-beta.1"; \
+		echo "  4. Move to rc:      make pre-release version=0.2.0-rc.1"; \
+		echo "  5. Final release:   make release bump=pre (from rc) OR bump=patch/minor (from stable)"; \
+		exit 1; \
+	fi
+	@echo "${INFO} Preparing pre-release $(version)... 🧪"
+	@make clean
+	@make build
+	@uv run bump-my-version bump --new-version $(version) pre
+	@uv lock --upgrade-package litestar-asyncapi >/dev/null 2>&1
+	@echo "${OK} Pre-release $(version) complete 🧪"
+	@echo ""
+	@echo "${INFO} Next steps:"
+	@echo "  1. Push: git push origin HEAD"
+	@echo "  2. Create a GitHub pre-release: gh release create v$(version) --prerelease --title 'v$(version)'"
+	@echo "  3. This will publish to PyPI with pre-release tags"
 
 # =============================================================================
 # Documentation
@@ -86,21 +143,47 @@ build:                                             ## Build the project
 
 .PHONY: docs
 docs:                                             ## Build documentation
-	@echo "${INFO} Building docs..."
+	@echo "${INFO} Building docs... 📚"
 	@uv run sphinx-build -b html docs docs/_build/html
-	@echo "${OK} Docs build complete"
+	@echo "${OK} Docs build complete 📚"
 
 .PHONY: docs-linkcheck
 docs-linkcheck:                                   ## Check documentation links
-	@echo "${INFO} Checking docs links..."
+	@echo "${INFO} Checking docs links... 📚"
 	@uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
-	@echo "${OK} Docs linkcheck complete"
+	@echo "${OK} Docs linkcheck complete 📚"
 
 .PHONY: docs-clean
 docs-clean:                                       ## Clean documentation artifacts
-	@echo "${INFO} Cleaning docs artifacts..."
+	@echo "${INFO} Cleaning docs artifacts... 📚"
 	@rm -rf docs/_build docs-build >/dev/null 2>&1
-	@echo "${OK} Docs artifacts cleaned"
+	@echo "${OK} Docs artifacts cleaned 📚"
+
+.PHONY: docs-audit
+docs-audit:                                       ## Audit documentation structure and terminology
+	@echo "${INFO} Auditing docs... 📚"
+	@if [ -f tools/docs_audit.py ]; then \
+		uv run python tools/docs_audit.py; \
+	else \
+		echo "${INFO} tools/docs_audit.py not found, skipping"; \
+	fi
+	@echo "${OK} Docs audit complete 📚"
+
+# =============================================================================
+# Validation Targets
+# =============================================================================
+
+.PHONY: validate-examples
+validate-examples:                                  ## Validate docs/examples marker blocks
+	@echo "${INFO} Validating doc example markers... 🔍"
+	@uv run python tools/ci/validate_doc_markers.py
+	@echo "${OK} Doc example markers valid ✨"
+
+.PHONY: validate-pep723
+validate-pep723:                                    ## Validate PEP 723 blocks in runnable examples
+	@echo "${INFO} Validating PEP 723 script blocks... 🔍"
+	@uv run python tools/ci/validate_pep723_blocks.py
+	@echo "${OK} PEP 723 blocks valid ✨"
 
 # =============================================================================
 # Cleaning and Maintenance
@@ -108,8 +191,8 @@ docs-clean:                                       ## Clean documentation artifac
 
 .PHONY: clean
 clean:                                              ## Cleanup temporary build artifacts
-	@echo "${INFO} Cleaning working directory..."
-	@rm -rf .pytest_cache .ruff_cache .hypothesis build/ dist/ .eggs/ .coverage coverage.xml coverage.json htmlcov/ .pytest_cache src/tests/.pytest_cache src/tests/**/.pytest_cache .mypy_cache >/dev/null 2>&1
+	@echo "${INFO} Cleaning working directory... 🧹"
+	@rm -rf .pytest_cache .ruff_cache .hypothesis build/ dist/ .eggs/ .coverage coverage.xml coverage.json htmlcov/ .pytest_cache src/tests/.pytest_cache src/tests/**/.pytest_cache .mypy_cache test-results playwright-report .tmp >/dev/null 2>&1
 	@find . -name '*.egg-info' -exec rm -rf {} + >/dev/null 2>&1
 	@find . -type f -name '*.egg' -exec rm -f {} + >/dev/null 2>&1
 	@find . -name '*.pyc' -exec rm -f {} + >/dev/null 2>&1
@@ -117,7 +200,7 @@ clean:                                              ## Cleanup temporary build a
 	@find . -name '*~' -exec rm -f {} + >/dev/null 2>&1
 	@find . -name '__pycache__' -exec rm -rf {} + >/dev/null 2>&1
 	@find . -name '.ipynb_checkpoints' -exec rm -rf {} + >/dev/null 2>&1
-	@echo "${OK} Working directory cleaned"
+	@echo "${OK} Working directory cleaned ✨"
 
 # =============================================================================
 # Testing and Quality Checks
@@ -125,20 +208,20 @@ clean:                                              ## Cleanup temporary build a
 
 .PHONY: test
 test:                                              ## Run the tests
-	@echo "${INFO} Running test cases..."
+	@echo "${INFO} Running test cases... 🧪"
 	@uv run pytest src/tests
-	@echo "${OK} Tests complete"
+	@echo "${OK} Tests complete 🧪"
 
 .PHONY: test-all
 test-all: test                                     ## Run all tests
 
 .PHONY: coverage
 coverage:                                          ## Run tests with coverage report
-	@echo "${INFO} Running tests with coverage..."
+	@echo "${INFO} Running tests with coverage... 🧪"
 	@uv run pytest src/tests --cov -n auto
 	@uv run coverage html >/dev/null 2>&1
 	@uv run coverage xml >/dev/null 2>&1
-	@echo "${OK} Coverage report generated"
+	@echo "${OK} Coverage report generated 🧪"
 
 # -----------------------------------------------------------------------------
 # Type Checking
@@ -146,21 +229,21 @@ coverage:                                          ## Run tests with coverage re
 
 .PHONY: mypy
 mypy:                                              ## Run mypy
-	@echo "${INFO} Running mypy..."
-	@uv run dmypy run
-	@echo "${OK} Mypy checks passed"
+	@echo "${INFO} Running mypy... 🔍"
+	@uv run mypy
+	@echo "${OK} Mypy checks passed ✨"
 
 .PHONY: mypy-nocache
 mypy-nocache:                                      ## Run Mypy without cache
-	@echo "${INFO} Running mypy without cache..."
+	@echo "${INFO} Running mypy without cache... 🔍"
 	@uv run mypy
-	@echo "${OK} Mypy checks passed"
+	@echo "${OK} Mypy checks passed ✨"
 
 .PHONY: pyright
 pyright:                                           ## Run pyright
-	@echo "${INFO} Running pyright..."
+	@echo "${INFO} Running pyright... 🔍"
 	@uv run pyright
-	@echo "${OK} Pyright checks passed"
+	@echo "${OK} Pyright checks passed ✨"
 
 .PHONY: type-check
 type-check: mypy pyright                           ## Run all type checking
@@ -169,27 +252,104 @@ type-check: mypy pyright                           ## Run all type checking
 # Linting and Formatting
 # -----------------------------------------------------------------------------
 
+WORKING_TREE_FILES = $$(git ls-files --cached --others --exclude-standard 2>/dev/null)
+
+.PHONY: prek
+prek:                                               ## Run prek hooks
+	@echo "${INFO} Running prek checks... 🔍"
+	@files="${WORKING_TREE_FILES}"; \
+	if [ -n "$$files" ]; then \
+		uvx prek run --show-diff-on-failure --color=always --files $$files; \
+	else \
+		uvx prek run --show-diff-on-failure --color=always --all-files; \
+	fi
+	@echo "${OK} prek checks passed ✨"
+
 .PHONY: pre-commit
-pre-commit:                                        ## Run pre-commit hooks
-	@echo "${INFO} Running pre-commit checks..."
-	@uv run pre-commit run --all-files
-	@echo "${OK} Pre-commit checks passed"
+pre-commit: prek                                   ## Run prek hooks (alias for pre-commit)
+
+.PHONY: zizmor
+zizmor:                                             ## Run zizmor workflow security scanner
+	@echo "${INFO} Running zizmor workflow security checks... 🛡️"
+	@if [ -d ".github/workflows" ]; then \
+		uvx zizmor .github/workflows; \
+	else \
+		echo "${WARN} No .github/workflows directory found"; \
+	fi
+	@echo "${OK} zizmor workflow checks passed ✨"
 
 .PHONY: slotscheck
 slotscheck:                                        ## Run slotscheck
-	@echo "${INFO} Running slots check..."
+	@echo "${INFO} Running slots check... 🔍"
 	@uv run slotscheck src/litestar_asyncapi/
-	@echo "${OK} Slots check passed"
+	@echo "${OK} Slots check passed ✨"
 
 .PHONY: fix
 fix:                                               ## Fix linting issues
-	@echo "${INFO} Fixing linting issues..."
-	@uv run ruff check --fix --unsafe-fixes src/
-	@uv run ruff format src/
-	@echo "${OK} Linting issues fixed"
+	@echo "${INFO} Fixing linting issues... 🔍"
+	@uv run ruff check --fix --unsafe-fixes .
+	@uv run ruff format .
+	@echo "${OK} Linting issues fixed ✨"
 
 .PHONY: lint
-lint: pre-commit type-check slotscheck             ## Run all linting checks
+lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run all linting checks
 
 .PHONY: check-all
 check-all: lint test-all coverage                  ## Run all checks (lint, test, coverage)
+
+.PHONY: validate-asyncapi
+validate-asyncapi: export-asyncapi-fixture          ## Validate offline AsyncAPI contracts and Draft07 payloads
+	@npm run validate:asyncapi
+	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json
+
+.PHONY: export-asyncapi-fixture
+export-asyncapi-fixture:                           ## Export a headless application contract for the official gate
+	@mkdir -p .tmp
+	@uv run litestar --app-dir src --app tests.fixtures.apps.cli:app asyncapi export --output .tmp/asyncapi-fixture.json --overwrite
+
+.PHONY: js-build js-test browser-test
+js-build:                                          ## Build packaged browser assets
+	@npm run build
+
+js-test:                                           ## Test rendering-view transformations
+	@npm test
+
+browser-test:                                      ## Test packaged documentation in Chromium
+	@npm run test:browser
+
+WHEEL ?= $(wildcard dist/*.whl)
+LITESTAR_BOUNDARY ?= minimum
+
+.PHONY: js-install installed-test browser-test-installed
+js-install:                                        ## Install the exact frontend lockfile
+	@npm ci
+
+installed-test:                                    ## Test a built wheel outside the checkout on PYTHON_VERSION
+	@set -eu; \
+	wheel="$$(realpath "$(WHEEL)")"; \
+	workdir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$workdir"' EXIT; \
+	cp -R src/tests "$$workdir/tests"; \
+	cp pyproject.toml "$$workdir/pyproject.toml"; \
+	uv export --frozen --only-group tests --no-emit-project --no-hashes --output-file "$$workdir/requirements.txt" >/dev/null; \
+	uv venv --python "$(PYTHON_VERSION)" "$$workdir/.venv"; \
+	framework='litestar==2.24.0'; \
+	if [ "$(LITESTAR_BOUNDARY)" = latest ]; then framework='litestar>=2.24,<3'; fi; \
+	uv pip install --python "$$workdir/.venv/bin/python" "$$wheel" "$$framework"; \
+	(cd "$$workdir" && uv run --no-project --no-sync --python .venv/bin/python python -c 'import sys; from pathlib import Path; from importlib.metadata import version; import litestar_asyncapi; from litestar import Litestar; from litestar_asyncapi import AsyncAPIPlugin; assert Path(litestar_asyncapi.__file__).is_relative_to(sys.prefix); plugin = AsyncAPIPlugin(); assert plugin.get_asyncapi_schema(Litestar(plugins=[plugin]))["asyncapi"] == "3.1.0"; print("Minimal installed wheel:", sys.version, "Litestar", version("litestar"), litestar_asyncapi.__file__)'); \
+	uv pip install --python "$$workdir/.venv/bin/python" -r "$$workdir/requirements.txt" "$$wheel"; \
+	if [ "$(LITESTAR_BOUNDARY)" = latest ]; then uv pip install --python "$$workdir/.venv/bin/python" --upgrade 'litestar[standard,attrs,pydantic]>=2.24'; else uv pip install --python "$$workdir/.venv/bin/python" 'litestar[standard,attrs,pydantic]==2.24.0'; fi; \
+	"$$workdir/.venv/bin/python" -c 'import sys; from importlib.metadata import version; resolved = version("litestar"); assert sys.argv[1] != "minimum" or resolved == "2.24.0"; print("Full test dependency boundary:", sys.argv[1], resolved)' "$(LITESTAR_BOUNDARY)"; \
+	(cd "$$workdir" && uv run --no-project --no-sync --python .venv/bin/python python -m pytest tests --no-cov -q)
+
+browser-test-installed:                            ## Open the built wheel in a real browser outside the checkout
+	@set -eu; \
+	wheel="$$(realpath "$(WHEEL)")"; \
+	workdir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$workdir"' EXIT; \
+	cp tools/frontend/tests/server.py "$$workdir/server.py"; \
+	uv venv --python "$(PYTHON_VERSION)" "$$workdir/.venv"; \
+	uv pip install --python "$$workdir/.venv/bin/python" "$$wheel" uvicorn websockets; \
+	manifest="$$(realpath src/litestar_asyncapi/assets/ui/manifest.json)"; \
+	(cd "$$workdir" && .venv/bin/python -c 'import sys; from pathlib import Path; from hashlib import sha256; import litestar_asyncapi; package = Path(litestar_asyncapi.__file__).parent; assert package.is_relative_to(sys.prefix); assert sha256((package / "assets/ui/manifest.json").read_bytes()).digest() == sha256(Path(sys.argv[1]).read_bytes()).digest(); print("Installed browser package and exact manifest:", package)' "$$manifest"); \
+	ASYNCAPI_BROWSER_SERVER="$$workdir/.venv/bin/python $$workdir/server.py" npm run test:browser

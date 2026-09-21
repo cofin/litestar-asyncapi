@@ -5,7 +5,7 @@ import pytest
 
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
-from litestar_asyncapi.spec import OperationAction, Reference
+from litestar_asyncapi.spec import OperationAction
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -32,5 +32,5 @@ def test_stream_infers_send_operation_from_item_type() -> None:
     channel = extract_websocket_channels(app, schema_generator=gen)[0]
     assert [op.action for op in channel.operations] == [OperationAction.SEND]
     operation = channel.operations[0]
-    assert operation.message is not None
-    assert isinstance(operation.message.payload, Reference)
+    assert operation.messages[0] is not None
+    assert operation.messages[0].payload.annotation is StreamItem

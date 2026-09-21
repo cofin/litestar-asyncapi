@@ -4,7 +4,7 @@ import pytest
 
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
-from litestar_asyncapi.spec import OperationAction, Reference
+from litestar_asyncapi.spec import OperationAction
 
 if TYPE_CHECKING:
     from litestar import WebSocket
@@ -37,10 +37,13 @@ def test_listener_infers_receive_and_send_operations() -> None:
 
     receive = next(op for op in channel.operations if op.action is OperationAction.RECEIVE)
     send = next(op for op in channel.operations if op.action is OperationAction.SEND)
-    assert receive.message is not None and isinstance(receive.message.payload, Reference)
-    assert send.message is not None and isinstance(send.message.payload, Reference)
+    assert receive.messages[0] is not None and receive.messages[0].payload.annotation is InPayload
+    assert send.messages[0] is not None and send.messages[0].payload.annotation is OutPayload
 
-    components = gen.schema_registry.generate_components_schemas()
+    assert gen.components() == {}
+    gen.generate(receive.messages[0].payload)
+    gen.generate(send.messages[0].payload)
+    components = gen.components()
     assert any(k.endswith("InPayload") for k in components)
     assert any(k.endswith("OutPayload") for k in components)
 

@@ -1,15 +1,25 @@
-from typing import TYPE_CHECKING, Any, cast
+import warnings
+from dataclasses import fields, replace
+from typing import TYPE_CHECKING, Any
 
 from litestar.types.builtin_types import NoneType
 from litestar.typing import FieldDefinition
 
+from litestar_asyncapi._compat import (
+    generated_channels_mode,
+    websocket_content_type,
+    websocket_handler_name,
+    websocket_payload,
+    websocket_signature,
+)
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
-    DiscoveredMessage,
     DiscoveredOperation,
     DiscoverySource,
+    MessageDefinition,
+    OperationDefinition,
 )
-from litestar_asyncapi.spec import OperationAction, Parameter, Reference, Schema, SchemaType
+from litestar_asyncapi.spec import OperationAction, Parameter, Reference
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -24,10 +34,7 @@ __all__ = ("extract_websocket_channels",)
 
 
 def extract_websocket_channels(
-    app: "Litestar",
-    *,
-    schema_generator: "AsyncAPISchemaGenerator",
-    config: "AsyncAPIConfig | None" = None,
+    app: "Litestar", *, schema_generator: "AsyncAPISchemaGenerator", config: "AsyncAPIConfig | None" = None
 ) -> list[DiscoveredChannel]:
     """Extract websocket routes from a Litestar application.
 
@@ -46,20 +53,32 @@ def extract_websocket_channels(
 
         config = AsyncAPIConfig()
 
+    if not config.include_websocket_routes:
+        return []
     channels: list[DiscoveredChannel] = []
     for route in app.routes:
         if not isinstance(route, WebSocketRoute):
             continue
 
+        if generated_channels_mode(route.route_handler, app) is not None or not _should_include_handler(
+            route.route_handler
+        ):
+            continue
+
         parameters = _path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
         operations = _infer_operations_from_handler(
-            route.route_handler,
-            schema_generator=schema_generator,
-            config=config,
+            route.route_handler, schema_generator=schema_generator, config=config, app=app
         )
+        if not operations:
+            continue
+        for operation in operations:
+            operation.provenance = f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}"
         channels.append(
             DiscoveredChannel(
+                route_identity=route,
+                key=route.path_format,
                 address=route.path_format,
+                provenance=f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}",
                 source=DiscoverySource.WEBSOCKET,
                 parameters=parameters or None,
                 operations=operations,
@@ -69,13 +88,34 @@ def extract_websocket_channels(
     return channels
 
 
+def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
+    """Determine if a websocket route handler should be included in the AsyncAPI schema.
+
+    Checks the 'include_in_schema' option in the handler's 'opt' dictionary, defaulting to True
+    if not explicitly set (mirroring Litestar's HTTP handler behavior).
+
+    Returns:
+        True if the handler should be included in the schema, False otherwise.
+    """
+    if hasattr(handler, "opt") and isinstance(handler.opt, dict):
+        include_in_schema = handler.opt.get("include_in_schema")
+        if isinstance(include_in_schema, bool):
+            return include_in_schema
+    return True
+
+
 def _path_parameters_to_parameters(
     path_parameters: "dict[str, PathParameterDefinition]", *, schema_generator: "AsyncAPISchemaGenerator"
-) -> dict[str, Parameter]:
-    parameters: dict[str, Parameter] = {}
+) -> dict[str, Parameter | Reference]:
+    """Convert path parameters into AsyncAPI Parameter objects.
+
+    AsyncAPI 3.0 parameters are simplified and always treated as strings.
+    The original Python type name is recorded in the parameter description for clarity.
+    """
+    parameters: dict[str, Parameter | Reference] = {}
     for name, param in path_parameters.items():
-        schema = schema_generator.generate_schema(FieldDefinition.from_annotation(param.type))
-        parameters[name] = Parameter(schema=schema, location="path")
+        type_name = param.type.__name__ if hasattr(param.type, "__name__") else str(param.type)
+        parameters[name] = Parameter(description=f"Path parameter: {name} (type: {type_name})")
     return parameters
 
 
@@ -84,27 +124,56 @@ def _infer_operations_from_handler(
     *,
     schema_generator: "AsyncAPISchemaGenerator",
     config: "AsyncAPIConfig",
+    app: "Litestar",
 ) -> list[DiscoveredOperation]:
-    from litestar.handlers.websocket_handlers.listener import WebsocketListenerRouteHandler
-    from litestar.handlers.websocket_handlers.stream import WebSocketStreamHandler
+    from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
 
-    operations: list[DiscoveredOperation]
-
-    if isinstance(route_handler, WebsocketListenerRouteHandler):
-        operations = _infer_listener_operations(route_handler, schema_generator=schema_generator, config=config)
+    signature = websocket_signature(route_handler)
+    if signature is not None:
+        receive, send, receive_mode, send_mode = signature
+        operations = [
+            DiscoveredOperation(
+                action=action,
+                provenance=websocket_handler_name(route_handler),
+                operation_id=f"{route_handler.handler_name}_{action.value}",
+                messages=[
+                    MessageDefinition(
+                        payload=websocket_payload(route_handler, field, sending=action is OperationAction.SEND),
+                        content_type=websocket_content_type(
+                            route_handler, field, sending=action is OperationAction.SEND
+                        ),
+                        extensions={"x-websocket-mode": mode},
+                    )
+                ],
+            )
+            for action, field, mode in (
+                (OperationAction.RECEIVE, receive, receive_mode),
+                (OperationAction.SEND, send, send_mode),
+            )
+            if field is not None and not (action is OperationAction.SEND and _is_none_return_type(field))
+        ]
+        _apply_handler_metadata(route_handler, operations, include_action_suffix=receive is not None)
         _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
+        return _apply_decorator_overrides(
+            route_handler, operations, schema_generator=schema_generator, config=config, app=app
+        )
 
-    if isinstance(route_handler, WebSocketStreamHandler):
-        operations = _infer_stream_operations(route_handler, schema_generator=schema_generator, config=config)
-        _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(route_handler, operations, schema_generator=schema_generator)
-
+    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+    explicit = isinstance(metadata, AsyncAPIMetadata) and bool(metadata.operations)
+    if not explicit and not config.include_raw_websocket_routes:
+        return []
     operations = _infer_raw_websocket_operations(route_handler)
+    _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
     _apply_docstring_descriptions(route_handler, operations, config=config)
-    return _apply_decorator_overrides(
-        route_handler, operations, schema_generator=schema_generator, replace_placeholders=True
+    operations = _apply_decorator_overrides(
+        route_handler, operations, schema_generator=schema_generator, config=config, app=app, replace_placeholders=True
     )
+    if any(message.payload is None for operation in operations for message in operation.messages or []):
+        warnings.warn(
+            f"AsyncAPI cannot infer the raw WebSocket payload for {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}; emitting an unconstrained message",
+            stacklevel=2,
+        )
+    return operations
 
 
 def _apply_decorator_overrides(
@@ -112,6 +181,8 @@ def _apply_decorator_overrides(
     operations: list[DiscoveredOperation],
     *,
     schema_generator: "AsyncAPISchemaGenerator",
+    config: "AsyncAPIConfig",
+    app: "Litestar",
     replace_placeholders: bool = False,
 ) -> list[DiscoveredOperation]:
     from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
@@ -119,130 +190,29 @@ def _apply_decorator_overrides(
     raw_metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
     if not isinstance(raw_metadata, AsyncAPIMetadata) or not raw_metadata.operations:
         return operations
-
-    # If we have explicit decorators and should replace placeholders, start fresh
     if replace_placeholders:
         operations = []
-
     by_action = {op.action: op for op in operations}
-
     for action, override in raw_metadata.operations.items():
-        op = by_action.get(action)
-        if op is None:
-            op = DiscoveredOperation(action=action)
-            operations.append(op)
-            by_action[action] = op
-
-        if override.operation_id is not None:
-            op.operation_id = override.operation_id
-        if override.title is not None:
-            op.title = override.title
-        if override.summary is not None:
-            op.summary = override.summary
-        if override.description is not None:
-            op.description = override.description
-        if override.traits is not None:
-            op.traits = override.traits
-
-        if override.message is None:
-            continue
-
-        message = op.message or DiscoveredMessage()
-        if override.message.payload is not None:
-            payload = schema_generator.generate_schema(FieldDefinition.from_annotation(override.message.payload))
-            message.payload = payload
-            if override.message.content_type is None:
-                message.content_type = _infer_content_type(payload)
-
-        if override.message.name is not None:
-            message.name = override.message.name
-        if override.message.title is not None:
-            message.title = override.message.title
-        if override.message.summary is not None:
-            message.summary = override.message.summary
-        if override.message.description is not None:
-            message.description = override.message.description
-        if override.message.examples is not None:
-            message.examples = override.message.examples
-        if override.message.headers is not None:
-            headers = schema_generator.generate_schema(FieldDefinition.from_annotation(override.message.headers))
-            message.headers = headers
-        if override.message.content_type is not None:
-            message.content_type = override.message.content_type
-        if override.message.traits is not None:
-            message.traits = override.message.traits
-
-        op.message = message
-
-    return operations
-
-
-def _infer_listener_operations(
-    route_handler: Any,
-    *,
-    schema_generator: "AsyncAPISchemaGenerator",
-    config: "AsyncAPIConfig",
-) -> list[DiscoveredOperation]:
-    # These are set by Litestar during handler registration.
-    data_field = cast("FieldDefinition", route_handler._parsed_data_field)
-    return_field = cast("FieldDefinition", route_handler._parsed_return_field)
-
-    operations: list[DiscoveredOperation] = []
-    receive_payload = schema_generator.generate_schema(data_field)
-    receive_example = _generate_example(data_field, config=config)
-    operations.append(
-        DiscoveredOperation(
-            action=OperationAction.RECEIVE,
-            operation_id=f"{route_handler.handler_name}_receive",
-            message=DiscoveredMessage(
-                payload=receive_payload,
-                content_type=_infer_content_type(receive_payload),
-                examples=[receive_example] if receive_example is not None else None,
-            ),
-        )
-    )
-
-    if not _is_none_return_type(return_field):
-        send_payload = schema_generator.generate_schema(return_field)
-        send_example = _generate_example(return_field, config=config)
-        operations.append(
-            DiscoveredOperation(
-                action=OperationAction.SEND,
-                operation_id=f"{route_handler.handler_name}_send",
-                message=DiscoveredMessage(
-                    payload=send_payload,
-                    content_type=_infer_content_type(send_payload),
-                    examples=[send_example] if send_example is not None else None,
-                ),
-            )
-        )
-
-    _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
-    return operations
-
-
-def _infer_stream_operations(
-    route_handler: Any,
-    *,
-    schema_generator: "AsyncAPISchemaGenerator",
-    config: "AsyncAPIConfig",
-) -> list[DiscoveredOperation]:
-    return_field = cast("FieldDefinition", route_handler._parsed_return_field)
-
-    payload = schema_generator.generate_schema(return_field)
-    example = _generate_example(return_field, config=config)
-    operations = [
-        DiscoveredOperation(
-            action=OperationAction.SEND,
-            operation_id=f"{route_handler.handler_name}_send",
-            message=DiscoveredMessage(
-                payload=payload,
-                content_type=_infer_content_type(payload),
-                examples=[example] if example is not None else None,
-            ),
-        )
-    ]
-    _apply_handler_metadata(route_handler, operations, include_action_suffix=False)
+        operation = by_action.get(action)
+        if operation is None:
+            operation = DiscoveredOperation(action=action, provenance=str(route_handler))
+            operations.append(operation)
+        for item in fields(OperationDefinition):
+            value = getattr(override, item.name)
+            if item.name != "messages" and value is not None:
+                setattr(operation, item.name, value)
+        if override.messages is not None:
+            inferred = operation.messages[0] if operation.messages else MessageDefinition()
+            operation.messages = [
+                replace(
+                    message,
+                    payload=message.payload if message.payload is not None else inferred.payload,
+                    content_type=message.content_type if message.content_type is not None else inferred.content_type,
+                    extensions={**inferred.extensions, **message.extensions},
+                )
+                for message in override.messages
+            ]
     return operations
 
 
@@ -261,24 +231,30 @@ def _infer_raw_websocket_operations(route_handler: Any) -> list[DiscoveredOperat
     handler_name = getattr(route_handler, "handler_name", "websocket")
     return [
         DiscoveredOperation(
+            provenance=str(route_handler),
             action=OperationAction.RECEIVE,
             operation_id=f"{handler_name}_receive",
             summary="Receive message",
-            message=DiscoveredMessage(
-                name="RawMessage",
-                summary="Raw WebSocket message",
-                description="This endpoint uses raw WebSocket handling. Message format depends on implementation.",
-            ),
+            messages=[
+                MessageDefinition(
+                    name="RawMessage",
+                    summary="Raw WebSocket message",
+                    description="This endpoint uses raw WebSocket handling. Message format depends on implementation.",
+                )
+            ],
         ),
         DiscoveredOperation(
+            provenance=str(route_handler),
             action=OperationAction.SEND,
             operation_id=f"{handler_name}_send",
             summary="Send message",
-            message=DiscoveredMessage(
-                name="RawResponse",
-                summary="Raw WebSocket response",
-                description="This endpoint uses raw WebSocket handling. Response format depends on implementation.",
-            ),
+            messages=[
+                MessageDefinition(
+                    name="RawResponse",
+                    summary="Raw WebSocket response",
+                    description="This endpoint uses raw WebSocket handling. Response format depends on implementation.",
+                )
+            ],
         ),
     ]
 
@@ -300,7 +276,7 @@ def _apply_handler_metadata(
             operation.description = description
         if operation_id is not None:
             if include_action_suffix and len(operations) > 1:
-                operation.operation_id = f"{operation_id}_{operation.action.value}"
+                operation.operation_id = f"{operation_id}_{OperationAction(operation.action).value}"
             else:
                 operation.operation_id = operation_id
 
@@ -320,15 +296,6 @@ def _apply_docstring_descriptions(
     for operation in operations:
         if operation.description is None:
             operation.description = docstring
-
-
-def _generate_example(field_definition: FieldDefinition, *, config: "AsyncAPIConfig") -> Any | None:
-    if not config.create_examples:
-        return None
-
-    from litestar_asyncapi.asyncapi.utils.examples import generate_example
-
-    return generate_example(field_definition, config=config)
 
 
 def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
@@ -351,16 +318,3 @@ def _is_none_return_type(field_definition: FieldDefinition) -> bool:
         or field_definition.is_subclass_of(NoneType)
         or field_definition.raw is NoneType
     )
-
-
-def _infer_content_type(payload: Schema | Reference) -> str | None:
-    # Until PRD-005 renderers are implemented, this is best-effort: treat objects/refs as JSON.
-    if isinstance(payload, Reference):
-        return "application/json"
-    if payload.type is None:
-        return None
-    if payload.properties is not None or payload.items is not None:
-        return "application/json"
-    if payload.type in {SchemaType.OBJECT, SchemaType.ARRAY}:
-        return "application/json"
-    return None

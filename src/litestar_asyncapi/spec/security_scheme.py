@@ -17,7 +17,8 @@ class SecurityScheme(BaseSchemaObject):
 
     description: str | None = None
     name: str | None = None
-    in_: str | None = None
+    in_: str | None = field(default=None, metadata={"alias": "in"})
+    scopes: list[str] | None = None
     scheme: str | None = None
     bearer_format: str | None = None
     open_id_connect_url: str | None = None
@@ -26,12 +27,3 @@ class SecurityScheme(BaseSchemaObject):
     flows: dict[str, Any] | None = None
 
     extensions: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def _exclude_fields(self) -> set[str]:
-        return {"extensions"}
-
-    def to_schema(self) -> dict[str, Any]:
-        schema = BaseSchemaObject.to_schema(self)
-        schema.update(self.extensions)
-        return schema

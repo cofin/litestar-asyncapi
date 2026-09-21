@@ -1,26 +1,34 @@
-import pytest
+from litestar import Litestar
+from litestar.testing import TestClient
 
-from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin
-
-pytestmark = pytest.mark.anyio
+from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
 
 
 def test_ui_plugin_renders_html() -> None:
-    plugin = AsyncAPIUIRenderPlugin()
-    schema = {"info": {"title": "Test API"}, "asyncapi": "3.0.0"}
-    content = plugin.render(request=None, asyncapi_schema=schema)  # type: ignore[arg-type]
-
-    text = content.decode("utf-8")
-    assert "<title>Test API</title>" in text
-    assert "AsyncApiStandalone.render" in text
-    assert "unpkg.com/@asyncapi/react-component" in text
+    with TestClient(Litestar([], plugins=[AsyncAPIPlugin(AsyncAPIConfig(title="Test API"))])) as client:
+        response = client.get("/asyncapi/")
+        assert response.status_code == 200
+        assert "Test API" in response.text
+        assert 'type="application/json"' in response.text
+        assert "assets/bootstrap.js" in response.text
 
 
-def test_ui_plugin_escapes_title() -> None:
-    plugin = AsyncAPIUIRenderPlugin()
-    schema = {"info": {"title": "<script>alert(1)</script>"}, "asyncapi": "3.0.0"}
-    content = plugin.render(request=None, asyncapi_schema=schema)  # type: ignore[arg-type]
+def test_default_ui_uses_packaged_assets_without_remote_defaults() -> None:
+    with TestClient(Litestar([], plugins=[AsyncAPIPlugin()])) as client:
+        response = client.get("/asyncapi/")
+        assert "unpkg.com" not in response.text
+        assert "cdn.jsdelivr" not in response.text
+        assert "fonts.googleapis" not in response.text
+        assert "react" in response.text
 
-    text = content.decode("utf-8")
-    assert "<title><script>alert(1)</script></title>" not in text
-    assert "<title>&lt;script&gt;alert(1)&lt;/script&gt;</title>" in text
+
+def test_missing_manifest_preserves_download_and_readable_error(monkeypatch, tmp_path) -> None:
+    from litestar_asyncapi import docs
+
+    monkeypatch.setattr(docs, "asset_directory", lambda: tmp_path)
+    with TestClient(Litestar([], plugins=[AsyncAPIPlugin()])) as client:
+        response = client.get("/asyncapi/")
+        assert response.status_code == 200
+        assert 'role="alert"' in response.text
+        assert "assets are missing" in response.text
+        assert client.get("/asyncapi/asyncapi.json").status_code == 200

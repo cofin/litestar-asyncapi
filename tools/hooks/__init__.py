@@ -1,0 +1,1 @@
+"""Git hook tools package."""
