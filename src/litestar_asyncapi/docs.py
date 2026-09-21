@@ -49,7 +49,7 @@ def bootstrap_html(request: "Request[Any, Any, Any]", *, entry: str, options: di
     if entry in {"react", "scalar"}:
         try:
             manifest = decode_json((asset_directory() / "ui" / "manifest.json").read_bytes())
-            selected = manifest[f"frontend/{entry}.ts"]
+            selected = manifest.get(f"tools/frontend/{entry}.ts") or manifest[f"frontend/{entry}.ts"]
             config["entryUrl"] = request.url_for(names["assets"], file_path="ui/" + selected["file"])
             pending = [selected]
             visited: set[str] = set()

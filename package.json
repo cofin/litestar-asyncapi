@@ -8,7 +8,7 @@
   "scripts": {
     "validate:asyncapi": "node tools/validate_asyncapi.mjs",
     "build": "vite build",
-    "test": "vitest run frontend/tests/*.test.ts",
+    "test": "vitest run tools/frontend/tests/*.test.ts",
     "test:browser": "playwright test"
   },
   "devDependencies": {

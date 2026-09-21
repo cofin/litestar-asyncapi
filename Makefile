@@ -95,7 +95,7 @@ lock:                                               ## Rebuild lockfiles from sc
 build: js-build                                    ## Build the project
 	@echo "${INFO} Building package... 📦"
 	@uv build
-	@uv run python frontend/tests/distribution.py
+	@uv run python tools/frontend/tests/distribution.py
 	@echo "${OK} Package build complete 📦"
 
 .PHONY: release
@@ -192,7 +192,7 @@ validate-pep723:                                    ## Validate PEP 723 blocks i
 .PHONY: clean
 clean:                                              ## Cleanup temporary build artifacts
 	@echo "${INFO} Cleaning working directory... 🧹"
-	@rm -rf .pytest_cache .ruff_cache .hypothesis build/ dist/ .eggs/ .coverage coverage.xml coverage.json htmlcov/ .pytest_cache src/tests/.pytest_cache src/tests/**/.pytest_cache .mypy_cache >/dev/null 2>&1
+	@rm -rf .pytest_cache .ruff_cache .hypothesis build/ dist/ .eggs/ .coverage coverage.xml coverage.json htmlcov/ .pytest_cache src/tests/.pytest_cache src/tests/**/.pytest_cache .mypy_cache test-results playwright-report .tmp >/dev/null 2>&1
 	@find . -name '*.egg-info' -exec rm -rf {} + >/dev/null 2>&1
 	@find . -type f -name '*.egg' -exec rm -f {} + >/dev/null 2>&1
 	@find . -name '*.pyc' -exec rm -f {} + >/dev/null 2>&1
@@ -338,7 +338,7 @@ installed-test:                                    ## Test a built wheel outside
 	uv pip install --python "$$workdir/.venv/bin/python" "$$wheel" "$$framework"; \
 	(cd "$$workdir" && uv run --no-project --no-sync --python .venv/bin/python python -c 'import sys; from pathlib import Path; from importlib.metadata import version; import litestar_asyncapi; from litestar import Litestar; from litestar_asyncapi import AsyncAPIPlugin; assert Path(litestar_asyncapi.__file__).is_relative_to(sys.prefix); plugin = AsyncAPIPlugin(); assert plugin.get_asyncapi_schema(Litestar(plugins=[plugin]))["asyncapi"] == "3.1.0"; print("Minimal installed wheel:", sys.version, "Litestar", version("litestar"), litestar_asyncapi.__file__)'); \
 	uv pip install --python "$$workdir/.venv/bin/python" -r "$$workdir/requirements.txt" "$$wheel"; \
-	if [ "$(LITESTAR_BOUNDARY)" = latest ]; then uv pip install --python "$$workdir/.venv/bin/python" --upgrade 'litestar[standard,attrs,pydantic]>=2.24,<3'; else uv pip install --python "$$workdir/.venv/bin/python" 'litestar[standard,attrs,pydantic]==2.24.0'; fi; \
+	if [ "$(LITESTAR_BOUNDARY)" = latest ]; then uv pip install --python "$$workdir/.venv/bin/python" --upgrade 'litestar[standard,attrs,pydantic]>=2.24'; else uv pip install --python "$$workdir/.venv/bin/python" 'litestar[standard,attrs,pydantic]==2.24.0'; fi; \
 	"$$workdir/.venv/bin/python" -c 'import sys; from importlib.metadata import version; resolved = version("litestar"); assert sys.argv[1] != "minimum" or resolved == "2.24.0"; print("Full test dependency boundary:", sys.argv[1], resolved)' "$(LITESTAR_BOUNDARY)"; \
 	(cd "$$workdir" && uv run --no-project --no-sync --python .venv/bin/python python -m pytest tests --no-cov -q)
 
@@ -347,7 +347,7 @@ browser-test-installed:                            ## Open the built wheel in a 
 	wheel="$$(realpath "$(WHEEL)")"; \
 	workdir="$$(mktemp -d)"; \
 	trap 'rm -rf "$$workdir"' EXIT; \
-	cp frontend/tests/server.py "$$workdir/server.py"; \
+	cp tools/frontend/tests/server.py "$$workdir/server.py"; \
 	uv venv --python "$(PYTHON_VERSION)" "$$workdir/.venv"; \
 	uv pip install --python "$$workdir/.venv/bin/python" "$$wheel" uvicorn websockets; \
 	manifest="$$(realpath src/litestar_asyncapi/assets/ui/manifest.json)"; \

@@ -9,6 +9,6 @@ export default defineConfig({
     emptyOutDir: true,
     manifest: 'manifest.json',
     license: { fileName: 'THIRD-PARTY-LICENSES.md' },
-    rolldownOptions: { preserveEntrySignatures: 'strict', input: { react: 'frontend/react.ts', scalar: 'frontend/scalar.ts' } },
+    rolldownOptions: { preserveEntrySignatures: 'strict', input: { react: 'tools/frontend/react.ts', scalar: 'tools/frontend/scalar.ts' } },
   },
 });

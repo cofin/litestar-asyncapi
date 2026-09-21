@@ -21,7 +21,7 @@ classifiers = [
   "Intended Audience :: Developers",
 ]
 dependencies = [
-  "litestar>=2.24.0,<3"
+  "litestar>=2.24.0"
 ]
 description = "AsyncAPI plugin for Litestar"
 keywords = ["litestar", "asyncapi", "async", "api", "documentation"]
@@ -259,8 +259,8 @@ convention = "google"
 ban-relative-imports = "all"
 
 [tool.ruff.lint.per-file-ignores]
-"frontend/tests/*.py" = ["INP001"]
-"frontend/tests/distribution.py" = ["S101", "T201"]
+"tools/frontend/tests/*.py" = ["INP001"]
+"tools/frontend/tests/distribution.py" = ["S101", "T201"]
 "src/litestar_asyncapi/_compat.py" = ["PLC0415", "SLF001", "S311"]
 "docs/conf.py" = ["A001", "INP001"]
 "docs/**/*.py" = ["A", "B", "D", "ERA", "S"]

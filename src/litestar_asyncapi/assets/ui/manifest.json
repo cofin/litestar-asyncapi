@@ -147,53 +147,6 @@
       "_preload-helper-CnY6jOj8.js"
     ]
   },
-  "frontend/interactive.ts": {
-    "file": "assets/interactive-TQrGKbE3.js",
-    "name": "interactive",
-    "src": "frontend/interactive.ts",
-    "isDynamicEntry": true,
-    "imports": [
-      "_preload-helper-CnY6jOj8.js",
-      "_types-C1MFtSqH.js"
-    ]
-  },
-  "frontend/react.ts": {
-    "file": "assets/react-D9woOG0R.js",
-    "name": "react",
-    "src": "frontend/react.ts",
-    "isEntry": true,
-    "imports": [
-      "_preload-helper-CnY6jOj8.js",
-      "_types-C1MFtSqH.js"
-    ],
-    "dynamicImports": [
-      "frontend/react.ts",
-      "frontend/interactive.ts"
-    ],
-    "css": [
-      "assets/react-Dd5XIGmt.css"
-    ]
-  },
-  "frontend/scalar.ts": {
-    "file": "assets/scalar-QljgO4Eu.js",
-    "name": "scalar",
-    "src": "frontend/scalar.ts",
-    "isEntry": true,
-    "imports": [
-      "_preload-helper-CnY6jOj8.js",
-      "_add-scalar-classes-B1PNjs93.js",
-      "_runtime-core.esm-bundler-CTh8txNY.js",
-      "_client-BCmhQpq7.js"
-    ],
-    "dynamicImports": [
-      "node_modules/@scalar/api-reference/dist/components/AgentScalar/AgentScalarChatInterface.vue.js",
-      "_browser-OGEYGyGx.js",
-      "_modal-SNl8wql_.js"
-    ],
-    "css": [
-      "assets/scalar-B7rUY8pC.css"
-    ]
-  },
   "node_modules/@scalar/api-reference/dist/components/AgentScalar/AgentScalarChatInterface.vue.js": {
     "file": "assets/AgentScalarChatInterface.vue-CUUEluhs.js",
     "name": "AgentScalarChatInterface.vue",
@@ -952,6 +905,53 @@
     "isDynamicEntry": true,
     "imports": [
       "_runtime-core.esm-bundler-CTh8txNY.js"
+    ]
+  },
+  "tools/frontend/interactive.ts": {
+    "file": "assets/interactive-TQrGKbE3.js",
+    "name": "interactive",
+    "src": "tools/frontend/interactive.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_types-C1MFtSqH.js"
+    ]
+  },
+  "tools/frontend/react.ts": {
+    "file": "assets/react-D9woOG0R.js",
+    "name": "react",
+    "src": "tools/frontend/react.ts",
+    "isEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_types-C1MFtSqH.js"
+    ],
+    "dynamicImports": [
+      "tools/frontend/react.ts",
+      "tools/frontend/interactive.ts"
+    ],
+    "css": [
+      "assets/react-Dd5XIGmt.css"
+    ]
+  },
+  "tools/frontend/scalar.ts": {
+    "file": "assets/scalar-QljgO4Eu.js",
+    "name": "scalar",
+    "src": "tools/frontend/scalar.ts",
+    "isEntry": true,
+    "imports": [
+      "_preload-helper-CnY6jOj8.js",
+      "_add-scalar-classes-B1PNjs93.js",
+      "_runtime-core.esm-bundler-CTh8txNY.js",
+      "_client-BCmhQpq7.js"
+    ],
+    "dynamicImports": [
+      "node_modules/@scalar/api-reference/dist/components/AgentScalar/AgentScalarChatInterface.vue.js",
+      "_browser-OGEYGyGx.js",
+      "_modal-SNl8wql_.js"
+    ],
+    "css": [
+      "assets/scalar-B7rUY8pC.css"
     ]
   }
 }

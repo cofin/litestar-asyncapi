@@ -1016,7 +1016,7 @@ tests = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "litestar", specifier = ">=2.24.0,<3" }]
+requires-dist = [{ name = "litestar", specifier = ">=2.24.0" }]
 
 [package.metadata.requires-dev]
 build = [{ name = "bump-my-version" }]
