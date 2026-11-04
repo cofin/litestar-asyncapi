@@ -126,6 +126,9 @@ class AsyncAPIConfig:
     include_channels_plugin: bool = True
     """Whether to include ChannelsPlugin channels (best-effort)."""
 
+    include_sse_routes: bool = True
+    """Whether to include HTTP routes returning ``ServerSentEvent`` as send-only channels."""
+
     servers: dict[str, Server | Reference | dict[str, Any]] = field(default_factory=dict)
     """Server definitions for the AsyncAPI document."""
 

@@ -2,12 +2,13 @@ from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from typing import Literal
 
-from litestar import Litestar, websocket_listener
+from litestar import Litestar, get, websocket_listener
 from litestar.channels.backends.memory import MemoryChannelsBackend
 from litestar.channels.plugin import ChannelsPlugin
 from litestar.handlers.websocket_handlers.stream import websocket_stream
+from litestar.response import ServerSentEvent
 
-from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
+from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig, asyncapi_message
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition, MessageDefinition, OperationDefinition
 
 __all__ = ("app_3_0", "app_3_1")
@@ -32,6 +33,27 @@ async def metrics() -> AsyncGenerator[Metric, None]:
 @websocket_listener("/chat/{room:int}")
 async def chat(data: ChatMessage) -> ChatMessage:
     return data
+
+
+@dataclass
+class Price:
+    symbol: str
+    amount: float
+
+
+async def _events() -> AsyncGenerator[str, None]:
+    yield "ping"
+
+
+@asyncapi_message(action="send", payload=Price, name="price", examples=[Price(symbol="ACME", amount=1.5)])
+@get("/prices/{symbol:str}")
+async def prices(symbol: str) -> ServerSentEvent:
+    return ServerSentEvent(_events())
+
+
+@get("/live/metrics")
+async def metrics_events() -> ServerSentEvent:
+    return ServerSentEvent(_events())
 
 
 def create_app(spec_version: Literal["3.0.0", "3.1.0"]) -> Litestar:
@@ -59,7 +81,7 @@ def create_app(spec_version: Literal["3.0.0", "3.1.0"]) -> Litestar:
     channels = ChannelsPlugin(
         MemoryChannelsBackend(), channels=["news"], create_ws_route_handlers=True, ws_handler_base_path="/ws/"
     )
-    return Litestar(route_handlers=[metrics, chat], plugins=[channels, AsyncAPIPlugin(config)])
+    return Litestar(route_handlers=[metrics, chat, prices, metrics_events], plugins=[channels, AsyncAPIPlugin(config)])
 
 
 app_3_0 = create_app("3.0.0")

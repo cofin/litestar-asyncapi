@@ -20,7 +20,11 @@ from litestar_asyncapi.asyncapi.datastructures import (
     MessageDefinition,
     OperationDefinition,
 )
-from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channels, extract_websocket_channels
+from litestar_asyncapi.asyncapi.extractors import (
+    extract_channels_plugin_channels,
+    extract_sse_channels,
+    extract_websocket_channels,
+)
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
 from litestar_asyncapi.spec import (
@@ -154,6 +158,7 @@ def _discover_channels(
         discovered.extend(extract_websocket_channels(app, schema_generator=schema_generator, config=config))
     if config.include_channels_plugin:
         discovered.extend(extract_channels_plugin_channels(app, schema_generator=schema_generator))
+    discovered.extend(extract_sse_channels(app, schema_generator=schema_generator, config=config))
     explicit: dict[str, tuple[ChannelDefinition, str]] = {}
     for index, channel in enumerate(config.channels):
         source = f"AsyncAPIConfig.channels[{index}] ({channel.key})"

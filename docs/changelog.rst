@@ -15,6 +15,10 @@ Added
   ``bindings`` object: native WebSocket channels get a ``ws`` binding and
   ChannelsPlugin channels get an empty one. Client generators can pick the right
   client from the document alone.
+* HTTP routes that return ``ServerSentEvent`` are discovered as send-only
+  channels with ``contentType: text/event-stream``, an ``http`` binding and
+  ``x-litestar-source: sse``. Type their payload with ``asyncapi_message``, and
+  turn discovery off with ``AsyncAPIConfig(include_sse_routes=False)``.
 * ``ChannelDefinition`` accepts ``description`` and ``extensions``. Explicit
   channels get no automatic transport marker.
 

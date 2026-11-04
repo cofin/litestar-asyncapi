@@ -27,4 +27,35 @@ Each discovered WebSocket channel carries ``x-litestar-source: websocket`` and a
 ChannelsPlugin routes without guessing from the path.
 
 Native ``include_in_schema=False`` on a handler or parent layer excludes it.
-No SSE or arbitrary broker-consumer inference is implemented.
+No arbitrary broker-consumer inference is implemented.
+
+Server-Sent Events
+------------------
+
+HTTP handlers that return ``ServerSentEvent`` are documented as channels with
+one ``send`` operation. Their messages use ``contentType: text/event-stream``,
+the channel carries an ``http`` binding and ``x-litestar-source: sse``.
+``ServerSentEvent`` does not carry an item type, so declare the payload with a
+decorator; without one the payload is unconstrained:
+
+.. code-block:: python
+
+   from litestar import get
+   from litestar.response import ServerSentEvent
+
+   from litestar_asyncapi import asyncapi_message
+
+
+   @asyncapi_message(action="send", payload=Price, name="price")
+   @get("/prices/{symbol:str}")
+   async def prices(symbol: str) -> ServerSentEvent:
+       return ServerSentEvent(price_updates(symbol))
+
+Only AsyncAPI decorators describe the channel; the handler's HTTP ``summary``,
+``description`` and ``operation_id`` stay in the OpenAPI document. A ``receive``
+declaration raises ``ImproperlyConfiguredException``. The channel key is the
+route path. When a WebSocket route shares the path, the key becomes
+``{path}:sse``; when several methods stream events from one path, each gets
+``{path}:sse:{method}``. The address stays the path. ``include_in_schema=False``
+hides a handler, and ``AsyncAPIConfig(include_sse_routes=False)`` turns the
+discovery off.
