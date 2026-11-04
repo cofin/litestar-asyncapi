@@ -257,6 +257,9 @@ convention = "google"
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"__future__.annotations".msg = "Litestar resolves annotations at runtime; postponed evaluation breaks signature and schema resolution."
+
 [tool.ruff.lint.per-file-ignores]
 "tools/frontend/tests/*.py" = ["INP001"]
 "tools/frontend/tests/distribution.py" = ["S101", "T201"]

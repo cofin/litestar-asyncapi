@@ -4,14 +4,6 @@ default_language_version:
   python: "3"
 
 repos:
-  - repo: local
-    hooks:
-      - id: no-future-annotations
-        name: Disallow future annotations in package code
-        entry: python tools/hooks/no_future_annotations.py
-        language: python
-        files: ^src/litestar_asyncapi/.*\.py$
-
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.4.0
     hooks:
