@@ -25,7 +25,13 @@ from litestar_asyncapi.asyncapi.extractors import (
     extract_sse_channels,
     extract_websocket_channels,
 )
-from litestar_asyncapi.asyncapi.openapi import OPENAPI_SOURCE, inherited_info, inherited_security_schemes
+from litestar_asyncapi.asyncapi.openapi import (
+    OPENAPI_SERVERS_SOURCE,
+    OPENAPI_SOURCE,
+    inherited_info,
+    inherited_security_schemes,
+    inherited_servers,
+)
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
 from litestar_asyncapi.spec import (
@@ -77,6 +83,14 @@ class AsyncAPIGenerator:
         )
 
         document.servers.update(self.config.to_servers())
+        derived_servers = (
+            inherited_servers(openapi) if self.config.inherit_openapi and self.config.inherit_openapi_servers else {}
+        )
+        for name, server in derived_servers.items():
+            if name in document.servers and _definition_key(document.servers[name]) != _definition_key(server):
+                message = f"Conflicting server {name!r}: AsyncAPIConfig.servers and {OPENAPI_SERVERS_SOURCE}"
+                raise ImproperlyConfiguredException(message)
+            document.servers[name] = server
 
         document.components = deepcopy(self.config.components)
         if self.config.inherit_openapi:
@@ -89,7 +103,7 @@ class AsyncAPIGenerator:
         _merge_components(document.components.operation_traits, self.config.to_operation_traits(), "operationTraits")
         _merge_components(document.components.message_traits, self.config.to_message_traits(), "messageTraits")
         discovered = _normalize_channels(_discover_channels(self.app, self.config, schema_generator))
-        channels = _populate_channels(document, discovered)
+        channels = _populate_channels(document, discovered, websocket_servers=list(derived_servers))
         _populate_operations(
             document, discovered, channels, config=self.config, schema_generator=schema_generator, app=self.app
         )
@@ -211,17 +225,24 @@ def _discover_channels(
     return discovered
 
 
-def _populate_channels(document: AsyncAPI, discovered: list[DiscoveredChannel]) -> dict[str, Channel]:
+def _populate_channels(
+    document: AsyncAPI, discovered: list[DiscoveredChannel], *, websocket_servers: list[str]
+) -> dict[str, Channel]:
     """Add one inline channel per discovered channel and return them by key.
 
     Discovered channels carry an ``x-litestar-source`` transport marker unless their own extensions set one.
+    WebSocket channels without explicit servers are bound to ``websocket_servers``.
     """
     channels = {
         channel.key: Channel(
             address=channel.address,
             description=channel.description,
             parameters=channel.parameters,
-            servers=channel.servers,
+            servers=(
+                [Reference(ref=f"#/servers/{_json_pointer_escape(name)}") for name in websocket_servers]
+                if channel.servers is None and channel.source is DiscoverySource.WEBSOCKET and websocket_servers
+                else channel.servers
+            ),
             bindings=channel.bindings,
             extensions=(
                 {SOURCE_EXTENSION: SOURCE_MARKERS[channel.source], **channel.extensions}

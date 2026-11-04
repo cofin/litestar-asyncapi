@@ -1,7 +1,9 @@
 from copy import deepcopy
 
 import pytest
-from litestar import Litestar
+from litestar import Litestar, get, websocket_listener
+from litestar.channels.backends.memory import MemoryChannelsBackend
+from litestar.channels.plugin import ChannelsPlugin
 from litestar.exceptions import ImproperlyConfiguredException
 from litestar.openapi import OpenAPIConfig
 from litestar.openapi.spec import (
@@ -13,8 +15,11 @@ from litestar.openapi.spec import (
     OAuthFlows,
     Reference,
     SecurityScheme,
+    Server,
+    ServerVariable,
     Tag,
 )
+from litestar.response import ServerSentEvent
 from litestar.security.jwt import JWTAuth
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
@@ -22,6 +27,7 @@ from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 from litestar_asyncapi.spec import Components as AsyncAPIComponents
 from litestar_asyncapi.spec import Contact as AsyncAPIContact
 from litestar_asyncapi.spec import SecurityScheme as AsyncAPISecurityScheme
+from litestar_asyncapi.spec import Server as AsyncAPIServer
 
 
 def openapi_config(**kwargs: object) -> OpenAPIConfig:
@@ -249,3 +255,80 @@ def test_conflicting_configured_scheme_raises_naming_both_sources() -> None:
         match=r"securitySchemes/auth.*AsyncAPIConfig\.components.*OpenAPIConfig\.components",
     ):
         security_schemes(("auth", SecurityScheme(type="http", scheme="basic")), components=configured)
+
+
+def server_app(*servers: Server) -> Litestar:
+    @websocket_listener("/events")
+    async def events(data: str) -> str:
+        return data
+
+    @get("/stream")
+    async def stream() -> ServerSentEvent:
+        return ServerSentEvent(iter(["tick"]))
+
+    return Litestar(
+        route_handlers=[events, stream],
+        openapi_config=openapi_config(servers=list(servers)),
+        plugins=[ChannelsPlugin(backend=MemoryChannelsBackend(), channels=["news"])],
+    )
+
+
+def test_absolute_openapi_servers_become_websocket_servers_when_enabled() -> None:
+    app = server_app(
+        Server(url="/"),
+        Server(url="https://api.example.com/v1", description="Production"),
+        Server(
+            url="http://{env}.example.com:{port}",
+            variables={"env": ServerVariable(default="dev", enum=["dev", "qa"]), "port": ServerVariable(default="80")},
+        ),
+    )
+
+    document = AsyncAPIGenerator(app, AsyncAPIConfig(inherit_openapi_servers=True)).build_schema()
+
+    assert document["servers"] == {
+        "openapi": {"host": "api.example.com", "protocol": "wss", "pathname": "/v1", "description": "Production"},
+        "openapi_2": {
+            "host": "{env}.example.com:{port}",
+            "protocol": "ws",
+            "variables": {"env": {"default": "dev", "enum": ["dev", "qa"]}, "port": {"default": "80"}},
+        },
+    }
+    assert document["channels"]["/events"]["servers"] == [
+        {"$ref": "#/servers/openapi"},
+        {"$ref": "#/servers/openapi_2"},
+    ]
+    assert "servers" not in document["channels"]["/stream"]
+    assert "servers" not in document["channels"]["news"]
+
+
+def test_openapi_servers_are_not_inherited_by_default() -> None:
+    app = server_app(Server(url="https://api.example.com"))
+
+    document = AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()
+    disabled = AsyncAPIGenerator(
+        app, AsyncAPIConfig(inherit_openapi=False, inherit_openapi_servers=True)
+    ).build_schema()
+
+    assert document["servers"] == disabled["servers"] == {}
+    assert "servers" not in document["channels"]["/events"]
+
+
+def test_relative_openapi_servers_are_skipped() -> None:
+    app = server_app(Server(url="/"), Server(url="/api"), Server(url="ftp://files.example.com"))
+
+    document = AsyncAPIGenerator(app, AsyncAPIConfig(inherit_openapi_servers=True)).build_schema()
+
+    assert document["servers"] == {}
+    assert "servers" not in document["channels"]["/events"]
+
+
+def test_derived_server_name_collision_raises_naming_both_sources() -> None:
+    app = server_app(Server(url="https://api.example.com"))
+    config = AsyncAPIConfig(
+        inherit_openapi_servers=True, servers={"openapi": AsyncAPIServer(host="broker:5672", protocol="amqp")}
+    )
+
+    with pytest.raises(
+        ImproperlyConfiguredException, match=r"server 'openapi'.*AsyncAPIConfig\.servers.*OpenAPIConfig\.servers"
+    ):
+        AsyncAPIGenerator(app, config).build_schema()

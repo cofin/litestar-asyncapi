@@ -29,6 +29,10 @@ All notable changes to this project will be documented in this file.
   and OAuth flows that AsyncAPI cannot express, such as flows with relative
   URLs, are skipped with a warning. Security requirements are not inherited, and
   a configured scheme with the same name but a different definition raises.
+- `AsyncAPIConfig(inherit_openapi_servers=True)` turns absolute OpenAPI server
+  URLs into `ws` and `wss` servers, with their path, description and
+  variables. Only channels discovered from WebSocket routes are bound to them.
+  Relative URLs are skipped. It is off by default.
 - Every discovered channel now says which transport it uses. A channel carries
   `x-litestar-source` set to `websocket` or `channels`, and an explicit
   `bindings` object: native WebSocket channels get a `ws` binding and

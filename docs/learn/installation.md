@@ -60,7 +60,7 @@ The channel key and its `address` are both the route path. The `ws` binding and 
 
 `DocsConfig` controls the documentation routes under `/asyncapi`. The JSON document is served as `application/vnd.asyncapi+json`. `DocsConfig(yaml=True)` adds `/asyncapi/asyncapi.yaml` and `/asyncapi/asyncapi.yml`. The example also sets `interactive=True`, which adds a WebSocket console at `/asyncapi/playground`; it is off by default.
 
-The console connects only to servers that the document declares, which is why the example adds a `ws` server for `localhost:8000`. The plugin never turns the request's host name into a server entry.
+The console connects only to servers that the document declares, which is why the example adds a `ws` server for `localhost:8000`. The plugin never turns the request's host name into a server entry. With `AsyncAPIConfig(inherit_openapi_servers=True)`, absolute server URLs from the OpenAPI config become `ws` or `wss` servers instead; see [Security and servers](../integrations/security-and-servers.md#servers).
 
 Documents use AsyncAPI 3.1 by default. Set `AsyncAPIConfig(spec_version="3.0.0")` to generate AsyncAPI 3.0 instead.
 

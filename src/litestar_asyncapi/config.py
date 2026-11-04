@@ -141,6 +141,13 @@ class AsyncAPIConfig:
 
     Tags and security requirements are never inherited.
     """
+    inherit_openapi_servers: bool = False
+    """Whether absolute ``app.openapi_config`` server URLs become WebSocket servers.
+
+    ``http`` becomes ``ws`` and ``https`` becomes ``wss``; relative URLs are skipped. Derived servers are
+    named ``openapi``, ``openapi_2``, … and bound only to channels discovered from WebSocket routes,
+    so other channels do not appear to be served by them. Requires ``inherit_openapi``.
+    """
     default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False

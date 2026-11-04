@@ -3,7 +3,16 @@ from typing import Any, Literal
 
 from litestar import Litestar, WebSocket, websocket_listener
 from litestar.openapi import OpenAPIConfig
-from litestar.openapi.spec import Components, Contact, License, OAuthFlow, OAuthFlows, SecurityScheme
+from litestar.openapi.spec import (
+    Components,
+    Contact,
+    License,
+    OAuthFlow,
+    OAuthFlows,
+    SecurityScheme,
+    Server,
+    ServerVariable,
+)
 from litestar.security.jwt import JWTAuth
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
@@ -60,8 +69,19 @@ def create_app(spec_version: Literal["3.0.0", "3.1.0"]) -> Litestar:
         license=License(name="MIT", identifier="MIT"),
         terms_of_service="https://example.com/terms",
         components=Components(security_schemes=schemes),
+        servers=[
+            Server(url="/"),
+            Server(url="https://api.example.com/v1", description="Production"),
+            Server(
+                url="http://{environment}.example.com:{port}",
+                variables={
+                    "environment": ServerVariable(default="dev", enum=["dev", "qa"], description="Deployment"),
+                    "port": ServerVariable(default="8000"),
+                },
+            ),
+        ],
     )
-    config = AsyncAPIConfig(spec_version=spec_version, docs=DocsConfig(enabled=False))
+    config = AsyncAPIConfig(spec_version=spec_version, docs=DocsConfig(enabled=False), inherit_openapi_servers=True)
     return Litestar(
         route_handlers=[ping],
         openapi_config=openapi_config,

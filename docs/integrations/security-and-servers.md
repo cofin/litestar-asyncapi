@@ -22,7 +22,9 @@ This application describes a broker it talks to through explicit contracts: a se
 
 ## Servers
 
-A `Server` splits a connection URL into `protocol` (such as `ws`, `wss` or `amqp`), `host` with an optional port, and `pathname` for a deployment prefix. A channel `address` is resolved below that prefix: `host="localhost:8000"`, `pathname="/service"` and `address="/events"` give `ws://localhost:8000/service/events`. Give the prefix once, on the server. Servers appear only when configured; the request's host name never becomes one.
+A `Server` splits a connection URL into `protocol` (such as `ws`, `wss` or `amqp`), `host` with an optional port, and `pathname` for a deployment prefix. A channel `address` is resolved below that prefix: `host="localhost:8000"`, `pathname="/service"` and `address="/events"` give `ws://localhost:8000/service/events`. Give the prefix once, on the server. Servers appear only when configured or derived from OpenAPI; the request's host name never becomes one.
+
+`AsyncAPIConfig(inherit_openapi_servers=True)` derives servers from the application's `OpenAPIConfig.servers`. Absolute `http` URLs become `ws` servers and `https` URLs `wss` servers, keeping the path, description and variables. Relative URLs, including Litestar's default `/`, are skipped. The derived servers are named `openapi`, `openapi_2`, and so on, and only channels discovered from WebSocket routes list them, because a channel without `servers` belongs to every server. It is off by default because WebSocket routes may be served from another host.
 
 ## Security schemes
 

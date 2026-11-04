@@ -15,17 +15,35 @@ from litestar.openapi.spec import License as OpenAPILicense
 from litestar.openapi.spec import OAuthFlow, OAuthFlows
 from litestar.openapi.spec import SecurityScheme as OpenAPISecurityScheme
 
-from litestar_asyncapi.spec import Contact, ExternalDocumentation, Info, License, SecurityScheme, SecuritySchemeType
+from litestar_asyncapi.spec import (
+    Contact,
+    ExternalDocumentation,
+    Info,
+    License,
+    SecurityScheme,
+    SecuritySchemeType,
+    Server,
+    ServerVariable,
+)
 
 if TYPE_CHECKING:
     from litestar.openapi import OpenAPIConfig
 
     from litestar_asyncapi.config import AsyncAPIConfig
 
-__all__ = ("OPENAPI_SOURCE", "inherited_info", "inherited_security_schemes")
+__all__ = (
+    "OPENAPI_SERVERS_SOURCE",
+    "OPENAPI_SOURCE",
+    "inherited_info",
+    "inherited_security_schemes",
+    "inherited_servers",
+)
 
 OPENAPI_SOURCE = "OpenAPIConfig.components (inherited)"
 """Source named in errors about inherited components."""
+OPENAPI_SERVERS_SOURCE = "OpenAPIConfig.servers (inherited)"
+"""Source named in errors about inherited servers."""
+WEBSOCKET_PROTOCOLS = {"http": "ws", "https": "wss"}
 
 DEFAULT_TITLE = "AsyncAPI"
 DEFAULT_VERSION = "1.0.0"
@@ -166,3 +184,37 @@ def _oauth_flows(name: str, flows: OAuthFlows) -> dict[str, Any]:
 def _is_absolute(url: str) -> bool:
     parts = urlsplit(url)
     return bool(parts.scheme and parts.netloc)
+
+
+def inherited_servers(openapi: "OpenAPIConfig | None") -> dict[str, Server]:
+    """Return WebSocket servers derived from absolute OpenAPI server URLs.
+
+    ``http`` URLs become ``ws`` servers and ``https`` URLs ``wss`` servers, keeping the host, path,
+    description and variables. Relative URLs and other schemes are skipped, so no host is invented.
+
+    Args:
+        openapi: The application's OpenAPI configuration, or ``None``.
+
+    Returns:
+        Servers named ``openapi``, ``openapi_2``, … in OpenAPI order.
+    """
+    servers: dict[str, Server] = {}
+    for server in openapi.servers if openapi is not None else []:
+        parts = urlsplit(server.url)
+        protocol = WEBSOCKET_PROTOCOLS.get(parts.scheme)
+        if protocol is None or not parts.netloc:
+            continue
+        name = "openapi" if not servers else f"openapi_{len(servers) + 1}"
+        servers[name] = Server(
+            host=parts.netloc,
+            protocol=protocol,
+            pathname=parts.path or None,
+            description=server.description,
+            variables={
+                key: ServerVariable(default=variable.default, enum=variable.enum, description=variable.description)
+                for key, variable in server.variables.items()
+            }
+            if server.variables
+            else None,
+        )
+    return servers
