@@ -31,6 +31,9 @@ Fixed
 * A payload given as a type name resolved through the application's
   ``signature_namespace`` now gets a generated example. Previously the example
   was omitted with an "Unsupported type" warning.
+* A ``None`` default on an optional field such as ``int | None = None`` is now
+  exported only on the field itself. Its non-null members, including shared
+  enum components, no longer carry a contradictory ``default: null``.
 
 0.2.0
 =====

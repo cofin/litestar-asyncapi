@@ -1,5 +1,5 @@
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from inspect import getclosurevars, unwrap
 from random import Random
@@ -22,6 +22,7 @@ from litestar.openapi.spec import Reference, Schema
 from litestar.openapi.spec.base import BaseSchemaObject
 from litestar.openapi.spec.enums import OpenAPIType
 from litestar.params import KwargDefinition
+from litestar.types import Empty
 from litestar.typing import FieldDefinition
 from polyfactory.factories.base import BaseFactory
 
@@ -96,6 +97,12 @@ class _SchemaCreator(SchemaCreator):
         schema.min_items = max(len(args), schema.min_items if schema.min_items is not None else len(args))
         schema.max_items = min(len(args), schema.max_items if schema.max_items is not None else len(args))
         return result
+
+    def for_optional_field(self, field_definition: FieldDefinition) -> Schema:
+        """Keep an explicit null default on the optional field itself, not on its non-null members."""
+        if field_definition.default is None:
+            field_definition = replace(field_definition, default=Empty)
+        return super().for_optional_field(field_definition)
 
     def for_plugin(self, field_definition: FieldDefinition, plugin: Any) -> Schema | Reference:
         """Reuse native field schemas while correcting msgspec's array wire layout."""

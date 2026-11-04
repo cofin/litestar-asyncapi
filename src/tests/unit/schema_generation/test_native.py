@@ -256,6 +256,22 @@ def test_explicit_field_default_null_differs_from_absent_default() -> None:
     assert properties["optional"]["default"] is None
 
 
+def test_null_default_is_recorded_only_on_the_optional_field() -> None:
+    @dataclass
+    class Nullable:
+        value: int | None = None
+        choice: int | str | None = None
+        counted: int | None = 3
+
+    generator = AsyncAPISchemaGenerator()
+    generator.generate(Nullable)
+    properties = next(iter(generator.components().values()))["properties"]
+    assert properties["value"] == {"oneOf": [{"type": "integer"}, {"type": "null"}], "default": None}
+    assert properties["choice"]["default"] is None
+    assert all("default" not in member for member in properties["choice"]["oneOf"])
+    assert properties["counted"]["default"] == 3
+
+
 def test_array_like_required_position_after_default() -> None:
     class Ordered(msgspec.Struct, array_like=True, kw_only=True):
         optional: int = 1
