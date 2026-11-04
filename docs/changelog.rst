@@ -34,6 +34,8 @@ Added
 Fixed
 -----
 
+* The package imports again with only ``litestar`` installed. Pydantic is needed
+  only when ``create_examples=True``.
 * Kafka binding keys now use their official names: ``schemaRegistryUrl`` and
   ``schemaRegistryVendor`` on servers, and ``schemaIdLocation``,
   ``schemaIdPayloadEncoding`` and ``schemaLookupStrategy`` on messages.

@@ -10,7 +10,6 @@ import msgspec
 from faker import Faker
 from litestar import Litestar
 from litestar._openapi.datastructures import SchemaRegistry
-from litestar._openapi.schema_generation.examples import ExampleFactory, _create_field_meta
 from litestar._openapi.schema_generation.plugins.struct import StructSchemaPlugin
 from litestar._openapi.schema_generation.schema import SchemaCreator
 from litestar.channels.plugin import ChannelsPlugin
@@ -208,7 +207,14 @@ def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) ->
 
 
 def native_example_value(field: FieldDefinition) -> Any:
-    """Use an isolated native example factory without reseeding shared random state."""
+    """Use an isolated native example factory without reseeding shared random state.
+
+    Litestar's example factory module requires pydantic, so it is imported only when
+    automatic examples are requested. Without pydantic, enabling ``create_examples``
+    raises Litestar's ``MissingDependencyException`` naming the missing package.
+    """
+    from litestar._openapi.schema_generation.examples import ExampleFactory, _create_field_meta
+
     faker = Faker()
     faker.seed_instance()
 
