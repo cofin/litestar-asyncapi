@@ -2,6 +2,14 @@
 
 Date-grouped record of Flow lifecycle events, migrations, and completed work.
 
+## 2026-11-05
+
+### Completed: `contract-ergonomics`
+- Document metadata and security scheme definitions are inherited from `app.openapi_config` through `asyncapi/openapi.py`; the default title is now the OpenAPI title (breaking). Requirements and tags are not inherited.
+- `inherit_openapi_servers=True` derives `ws`/`wss` servers from absolute OpenAPI URLs, bound only to WebSocket channels.
+- Security schemes, servers and replies (`ReplyDefinition`) are referenced by name; the contract example is split into a Learn request/reply and a JWTAuth security example; schema-name parity with Litestar OpenAPI is pinned.
+- The `jwt` extra joined the `tests` dependency group; `openapi-3.0.0`/`openapi-3.1.0` fixtures cover every mapped scheme type and derived servers.
+
 ## 2026-11-04
 
 ### Completed: contract fixes, realtime discovery, docs migration

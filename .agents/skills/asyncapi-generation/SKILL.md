@@ -6,11 +6,14 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 # AsyncAPI Generation & Discovery
 
 <!-- truth: start -->
-- `AsyncAPIGenerator.build_asyncapi` is the single assembly path: discover → `_normalize_channels` → `_populate_channels` → `_populate_operations` → merge schema components → `_validate_references`. Add behavior inside this pipeline, not beside it.
+- `AsyncAPIGenerator.build_asyncapi` is the single assembly path: inherited `Info`, servers and security schemes → discover → `_normalize_channels` → `_populate_channels` → `_populate_operations` (named replies resolved last) → merge schema components → `_validate_references`. Add behavior inside this pipeline, not beside it.
+- `asyncapi/openapi.py` is the only reader of `app.openapi_config`: read lazily at build time, `None` and list `components` handled, never mutated, never `app.openapi_schema`/`to_openapi_schema()`. Metadata and security scheme definitions are inherited unless `inherit_openapi=False`; tags and security requirements never are. Unmappable schemes and relative-URL OAuth flows are skipped with `UserWarning`.
+- `inherit_openapi_servers` (default off) derives `openapi`, `openapi_2`, … `ws`/`wss` servers from absolute OpenAPI URLs and binds them only to `DiscoverySource.WEBSOCKET` channels without explicit servers.
+- `OperationDefinition.security`, `ChannelDefinition.servers` and `ReplyDefinition` take names resolved by `_resolve_names` against the final document; unknown names raise listing valid names; a bare `str` in place of a list raises `TypeError` in `__post_init__`.
 - Operation identity is the `document.operations` map key. Never emit a wire `operationId` property.
 - Operation keys and ids are unique case-insensitively via `.casefold()`. `strict_uniqueness=True` raises `ImproperlyConfiguredException`; otherwise suffix `_2`, `_3`, ….
 - Every generated `$ref` token passes through `_json_pointer_escape` (RFC 6901 `~`→`~0`, `/`→`~1`, then percent-quoting).
-- `MessageDefinition`, `OperationDefinition`, `ChannelDefinition` are the shared typed contract for decorators, extractors and `AsyncAPIConfig.channels`. `DiscoveredOperation`/`DiscoveredChannel` add provenance only.
+- `MessageDefinition`, `OperationDefinition`, `ChannelDefinition`, `ReplyDefinition` are the shared typed contract for decorators, extractors and `AsyncAPIConfig.channels`. `DiscoveredOperation`/`DiscoveredChannel` add provenance only.
 - Python payload/header types survive until `_build_message`; extractors never pre-render schemas except ChannelsPlugin's unconstrained `Schema()`.
 - `None` means "no override"; an explicit empty list (`messages=[]`, `examples=[]`) is an override.
 - Explicit `ChannelDefinition.key` replaces matching inferred channels; duplicate explicit keys raise with both sources. Any two discovered channels with the same key raise, naming both provenances; channels are never merged.
@@ -29,13 +32,13 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 
 ## Scope
 
-- `src/litestar_asyncapi/asyncapi/generator.py`
+- `src/litestar_asyncapi/asyncapi/generator.py`, `asyncapi/openapi.py`
 - `src/litestar_asyncapi/asyncapi/extractors/websocket.py`, `extractors/channels.py`
 - `src/litestar_asyncapi/asyncapi/datastructures.py`, `asyncapi/utils/docstrings.py`
 - `src/litestar_asyncapi/decorators.py`, `src/litestar_asyncapi/cli.py`
 - `src/litestar_asyncapi/config.py::AsyncAPIConfig` (contract fields; `DocsConfig` belongs to the docs-UI domain)
 - `src/litestar_asyncapi/spec/**` (wire models, `bindings/`)
-- Tests: `src/tests/unit/test_generator*.py`, `test_traits.py`, `test_decorators*.py`, `test_config.py`, `unit/extractors/*`, `unit/spec/*`, `src/tests/integration/{test_discovery,test_routes,test_cli,test_asyncapi_metadata_examples}.py`
+- Tests: `src/tests/unit/test_generator*.py`, `test_openapi_inheritance.py`, `test_traits.py`, `test_decorators*.py`, `test_config.py`, `unit/extractors/*`, `unit/spec/*`, `src/tests/integration/{test_discovery,test_routes,test_cli,test_asyncapi_metadata_examples}.py`
 
 Schema conversion (`asyncapi/schema_generation/`, `_compat.py` schema creator, examples) belongs to the asyncapi-schema domain; consume it through `AsyncAPISchemaGenerator.generate/components/declared_examples`.
 

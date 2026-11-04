@@ -27,6 +27,6 @@ Active and planned Flow specifications and task worksheets.
 | [channel-source-markers](./channel-source-markers/spec.md) | Flow | completed | realtime-discovery | x-litestar-source and ws bindings on discovered channels. |
 | [sse-discovery](./sse-discovery/spec.md) | Flow | completed | realtime-discovery | Server-Sent Event route discovery. |
 | [channels-plugin-topics](./channels-plugin-topics/spec.md) | Flow | completed | realtime-discovery | Topic-only discovery and channel_payloads. |
-| [contract-ergonomics](./contract-ergonomics/spec.md) | Flow | planned | — | OpenAPI inheritance, name-based references, readable contract examples. |
+| [contract-ergonomics](./contract-ergonomics/spec.md) | Flow | completed | — | OpenAPI inheritance, name-based references, readable contract examples. |
 
 Completed flows are recorded in [bundles/log.md](../log.md).

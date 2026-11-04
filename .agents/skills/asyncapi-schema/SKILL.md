@@ -25,6 +25,7 @@ description: Use when changing payload/header schema generation or message examp
 - `normalize_examples` round-trips through `encode_json`/`decode_json` with `app.type_encoders`.
 - Python >=3.11, PEP 604/585 typing, Google docstrings, zero inline comments, `__slots__` on owned classes.
 - Litestar dependency is `>=2.24.0` with no upper cap; CI exercises 2.24.0 and latest `<3`.
+- Component schema names equal the names Litestar's OpenAPI gives the same Python types, including module-disambiguated duplicates; `test_native.py::test_component_schema_names_match_litestar_openapi_names` pins it.
 <!-- truth: end -->
 
 ## Scope
