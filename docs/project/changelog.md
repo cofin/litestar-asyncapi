@@ -11,9 +11,17 @@ All notable changes to this project will be documented in this file.
   and is tested on Python 3.11 to 3.15.
 - The AsyncAPI enums (`OperationAction`, `SchemaType`, `SchemaFormat`,
   `SecuritySchemeType`) are `StrEnum`s, so `str()` returns the wire value.
+- The document title now defaults to the application's OpenAPI title, which is
+  `Litestar API` unless you set one, instead of `AsyncAPI`. This is a breaking
+  change; set `AsyncAPIConfig(title=...)` to keep a fixed title.
 
 ### Added
 
+- Document metadata is inherited from the application's `OpenAPIConfig`.
+  Unset `title`, `version`, `description`, `contact`, `license`,
+  `terms_of_service` and `external_docs` on `AsyncAPIConfig` are filled from
+  it, and explicit values win. Tags are not inherited. Turn this off with
+  `AsyncAPIConfig(inherit_openapi=False)`.
 - Every discovered channel now says which transport it uses. A channel carries
   `x-litestar-source` set to `websocket` or `channels`, and an explicit
   `bindings` object: native WebSocket channels get a `ws` binding and

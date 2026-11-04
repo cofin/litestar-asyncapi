@@ -5,7 +5,16 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 from litestar.utils.path import normalize_path
 
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
-from litestar_asyncapi.spec import Components, MessageTrait, OperationTrait, Reference, Server
+from litestar_asyncapi.spec import (
+    Components,
+    Contact,
+    ExternalDocumentation,
+    License,
+    MessageTrait,
+    OperationTrait,
+    Reference,
+    Server,
+)
 
 if TYPE_CHECKING:
     from litestar.enums import MediaType
@@ -113,12 +122,22 @@ class AsyncAPIConfig:
     documentation for event-driven APIs.
     """
 
-    title: str = "AsyncAPI"
-    """The title of the AsyncAPI document."""
-    version: str = "1.0.0"
-    """The version of the API."""
+    title: str | None = None
+    """Title of the document; inherited from the application's OpenAPI config when unset, else ``AsyncAPI``."""
+    version: str | None = None
+    """Version of the API; inherited from the application's OpenAPI config when unset, else ``1.0.0``."""
     description: str | None = None
-    """An optional description of the API."""
+    """Description of the API; inherited from the application's OpenAPI config when unset."""
+    contact: Contact | None = None
+    """Contact information; inherited from the application's OpenAPI config when unset."""
+    license: License | None = None
+    """License of the API; inherited from the application's OpenAPI config when unset."""
+    terms_of_service: str | None = None
+    """URL of the terms of service; inherited from the application's OpenAPI config when unset."""
+    external_docs: ExternalDocumentation | None = None
+    """Additional external documentation; inherited from the application's OpenAPI config when unset."""
+    inherit_openapi: bool = True
+    """Whether to fill unset metadata from ``app.openapi_config``; tags are never inherited."""
     default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False

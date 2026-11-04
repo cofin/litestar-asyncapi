@@ -56,6 +56,10 @@ traits and other reusable components.
 
 ## Document and discovery changes
 
+- The document title, version and description now come from the application's
+  `OpenAPIConfig` when `AsyncAPIConfig` leaves them unset, so an application
+  without its own title shows `Litestar API` instead of `AsyncAPI`. Set the
+  fields explicitly, or pass `inherit_openapi=False`, to keep the old values.
 - AsyncAPI **3.1.0 is the default**; select `spec_version="3.0.0"` explicitly
   when needed. The root no longer assumes `defaultContentType: application/json`
   for uncertain wire formats. Known inferred messages carry their own content type.

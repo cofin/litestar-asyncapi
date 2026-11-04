@@ -6,9 +6,10 @@ from litestar_asyncapi.spec import Server
 
 def test_config_defaults() -> None:
     config = AsyncAPIConfig()
-    assert config.title == "AsyncAPI"
-    assert config.version == "1.0.0"
+    assert config.title is None
+    assert config.version is None
     assert config.description is None
+    assert config.inherit_openapi is True
     assert config.servers == {}
     assert config.default_content_type is None
     assert config.use_handler_docstrings is False

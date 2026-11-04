@@ -25,12 +25,12 @@ from litestar_asyncapi.asyncapi.extractors import (
     extract_sse_channels,
     extract_websocket_channels,
 )
+from litestar_asyncapi.asyncapi.openapi import inherited_info
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
 from litestar_asyncapi.spec import (
     AsyncAPI,
     Channel,
-    Info,
     Message,
     MessageTrait,
     MultiFormatSchema,
@@ -69,9 +69,11 @@ class AsyncAPIGenerator:
             The generated AsyncAPI document.
         """
         schema_generator = AsyncAPISchemaGenerator(self.app)
-        info = Info(title=self.config.title, version=self.config.version, description=self.config.description)
+        openapi = self.app.openapi_config
         document = AsyncAPI(
-            info=info, asyncapi=self.config.spec_version, default_content_type=self.config.default_content_type
+            info=inherited_info(self.config, openapi),
+            asyncapi=self.config.spec_version,
+            default_content_type=self.config.default_content_type,
         )
 
         document.servers.update(self.config.to_servers())
