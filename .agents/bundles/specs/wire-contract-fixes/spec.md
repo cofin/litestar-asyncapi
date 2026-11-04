@@ -48,7 +48,7 @@ Fix the two places where wire models emit invalid or ignored keys (audit B1, B6)
 ## Implementation Plan
 
 - [x] [aba7e97] t01 — official Kafka keys, alias-driven key normalization and the bindings conformance fixture (tasks/t01-kafka-keys-and-conformance-fixture.md)
-- [x] t02 — export explicit `Schema.prefix_items` as Draft07 tuple items (tasks/t02-prefix-items-export.md)
+- [x] [b980b75] t02 — export explicit `Schema.prefix_items` as Draft07 tuple items (tasks/t02-prefix-items-export.md)
 
 **Recovery checkpoint:** `make lint && make type-check && make test && make validate-asyncapi` exits `0`.
 

@@ -31,7 +31,7 @@ last_verified_commit: aba7e97
 verification_evidence: "RED: 2 new prefix_items wire tests failed and the bindings export contained prefixItems. GREEN: make lint 0, make type-check 0, make test 0 (221 passed, 93.74%), make validate-asyncapi 0 (7 documents validated)"
 created_at: 2026-11-04T00:00:00Z
 updated_at: 2026-11-04T17:48:54Z
-commit: null
+commit: b980b75
 tags: [conformance, draft07, tuples]
 ---
 
