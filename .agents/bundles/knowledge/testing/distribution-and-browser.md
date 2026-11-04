@@ -31,6 +31,8 @@ sources:
 
 # Distribution, Installed-Wheel and Browser Lanes
 
+Commands live in [Project workflow](../workflow.md); this page records what each lane proves.
+
 <!-- truth: start -->
 - Node (`.nvmrc`) is build/test-only: `make js-install build` produces assets, wheel and sdist; consumers need neither Node nor a CDN.
 - `make validate-asyncapi` validates an exported fixture with the pinned official parser, spec schemas and Draft07 payload checks.

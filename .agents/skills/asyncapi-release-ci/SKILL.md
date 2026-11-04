@@ -1,6 +1,6 @@
 ---
 name: asyncapi-release-ci
-description: Use when editing Makefile targets (build, release, pre-release, installed-test, browser-test-installed, js-*, validate-*, zizmor, docs), pyproject.toml build/dependency/pytest/coverage/slotscheck/ruff/bumpversion config, package.json or package-lock.json, vite.config.ts, playwright.config.ts, .github/workflows/*.yml, .pre-commit-config.yaml, tools/ci/*.py, tools/validate_asyncapi.mjs, tools/docs_audit.py, tools/hooks/*.py, or PEP 723 blocks and doc markers in docs/examples.
+description: Use when editing Makefile targets (build, release, pre-release, installed-test, browser-test-installed, js-*, validate-*, zizmor, docs), pyproject.toml build/dependency/pytest/coverage/slotscheck/ruff/bumpversion config, package.json or package-lock.json, vite.config.ts, playwright.config.ts, .github/workflows/*.yml, .pre-commit-config.yaml, tools/ci/*.py, tools/validate_asyncapi.mjs, tools/docs_audit.py, or PEP 723 blocks and doc markers in docs/examples.
 ---
 
 # AsyncAPI Release & CI
@@ -16,9 +16,9 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - Every `actions/checkout` sets `persist-credentials: false`. Local reusable workflows use `uses: $/.github/workflows/<file>.yml`.
 - `make zizmor` reports zero high/medium findings.
 - Focused tests: `uv run pytest <path> -q --no-cov`. Global `--cov-fail-under=80` in `pyproject.toml::tool.pytest.ini_options.addopts` fails any partial run.
-- `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-examples, validate-pep723. `make check-all` = lint + test + coverage.
+- `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-examples, validate-pep723. `make check-all` = lint, then the suite once with coverage.
 - `make release` / `make pre-release` bump versions in `pyproject.toml` and `uv.lock` via bump-my-version (`commit = false`, `tag = false`). Run them only on explicit user request; never create, move or delete Git tags and never push.
-- Package Python code never uses `from __future__ import annotations` (`tools/hooks/no_future_annotations.py`) and carries zero inline comments.
+- Python code never uses `from __future__ import annotations` (ruff `flake8-tidy-imports.banned-api`, rule TID251) and package code carries zero inline comments.
 - Runnable `docs/examples/**/*.py` declare a PEP 723 block with `requires-python >=3.10` and a `litestar-asyncapi` dependency; `# start-example`/`# end-example` blocks compile standalone.
 <!-- truth: end -->
 
@@ -28,7 +28,7 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - `pyproject.toml`: `project.dependencies`, `tool.hatch.build.*`, `dependency-groups`, `tool.pytest.ini_options`, `tool.coverage.*`, `tool.bumpversion`, `tool.ruff*`, `tool.mypy`, `tool.pyright`, `tool.slotscheck`, `tool.codespell`.
 - `package.json`, `package-lock.json`, `vite.config.ts`, `playwright.config.ts`.
 - `.github/workflows/{ci,test,distribution,publish,docs,pr-title}.yml`, `.pre-commit-config.yaml`.
-- `tools/ci/validate_doc_markers.py`, `tools/ci/validate_pep723_blocks.py`, `tools/validate_asyncapi.mjs`, `tools/docs_audit.py`, `tools/hooks/no_future_annotations.py`, `tools/frontend/tests/distribution.py`.
+- `tools/ci/validate_doc_markers.py`, `tools/ci/validate_pep723_blocks.py`, `tools/validate_asyncapi.mjs`, `tools/docs_audit.py`, `tools/frontend/tests/distribution.py`.
 - `docs/conf.py`, `docs/examples/**`.
 
 ## Seams
@@ -61,19 +61,7 @@ Dependency categories:
 
 ## Verification
 
-```bash
-uv run pytest src/tests/path/to/test_file.py -q --no-cov
-make lint
-make test
-make check-all
-make zizmor
-make validate-examples validate-pep723
-make js-install build js-test validate-asyncapi browser-test
-make installed-test PYTHON_VERSION=3.12
-make installed-test PYTHON_VERSION=3.12 LITESTAR_BOUNDARY=latest
-make browser-test-installed PYTHON_VERSION=3.12
-make docs docs-linkcheck
-```
+Run the commands for the touched lane from [Project workflow](../../bundles/knowledge/workflow.md); [Distribution lanes](references/distribution-lanes.md) maps each lane to what it proves.
 
 ## References
 

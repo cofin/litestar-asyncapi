@@ -1,8 +1,8 @@
 ---
 type: Guide
 title: Public-Seam TDD and Test Map
-description: Canonical test-file map, public seams, async conventions and the red-capable focused command for Python changes.
-tags: [testing, tdd, pytest, anyio, seams]
+description: Canonical test-file map, public seams and red-capable focused runs for Python changes.
+tags: [testing, tdd, pytest, seams]
 status: stable
 generated:
   by: flow-setup
@@ -12,9 +12,6 @@ verified:
     at: 2026-11-04
     commit: 49bc3c8
 sources:
-  - id: conftest
-    resource: src/tests/conftest.py::anyio_backend
-    title: Shared fixtures and async backend
   - id: addopts
     resource: pyproject.toml::tool.pytest.ini_options
     title: Global coverage floor
@@ -32,18 +29,14 @@ sources:
 - Focused runs: `uv run pytest <path>[::test] -q --no-cov`. Without `--no-cov` the global `--cov-fail-under=80` addopt makes any partial run exit 1.
 - Test through public seams: `AsyncAPIPlugin.get_asyncapi_schema(app)`, `get_asyncapi_json(app)`, docs routes via `litestar.testing` clients, decorators, and `AsyncAPIConfig` contracts.
 - Build a real `Litestar` app per test; never mock the generator, extractors or schema bridge under test.
-- Async tests use `pytestmark = pytest.mark.anyio` with the `asyncio` backend from `src/tests/conftest.py`.
+- Tests are synchronous. The only shared fixture is `src/tests/integration/conftest.py`, which asserts unique discovered channel keys across the integration suite.
 - Add tests to the canonical file for the module below; never create `test_*remediation*.py` or `test_*audit*.py`.
 - Assert on emitted wire content (keys, `$ref` targets, bounds), not on nonempty output.
 <!-- truth: end -->
 
 ## Red-capable reproduction
 
-```bash
-uv run pytest src/tests/unit/test_generator.py::test_name -q --no-cov
-```
-
-The command must fail before the fix and pass after. A focused run without `--no-cov` exits 1 regardless of assertions[^addopts], so it cannot distinguish red from green.
+Use the focused command from [Project workflow](../workflow.md). It must fail before the fix and pass after. A focused run without `--no-cov` exits 1 regardless of assertions[^addopts], so it cannot distinguish red from green.
 
 ## Canonical test map
 
@@ -73,7 +66,6 @@ Paths are relative to `src/tests/`.
 
 Discovery tests cover root routes, nested routers and deeply nested routers, verifying cumulative paths and layered `include_in_schema` at every level[^disc].
 
-[^conftest]: `src/tests/conftest.py::anyio_backend`
 [^addopts]: `pyproject.toml::tool.pytest.ini_options`
 [^disc]: `src/tests/integration/test_discovery.py`
 [^plugin]: `src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin.get_asyncapi_schema`

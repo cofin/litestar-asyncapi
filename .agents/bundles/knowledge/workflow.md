@@ -38,7 +38,7 @@ sources:
 
 ## Canonical Commands
 
-Verified on this host (uv 0.13, GNU Make 4.4, Node via npm). Prefer `Makefile` targets[^make]; run Python tools through `uv run`.
+This is the single command reference for the repository; other `.agents` files and `AGENTS.md` point here. Prefer `Makefile` targets[^make]; run Python tools through `uv run`.
 
 ```bash
 # setup
@@ -50,13 +50,22 @@ uv run pytest src/tests/unit/test_generator.py::test_name -q --no-cov
 
 # lint & typecheck
 make lint                                      # prek, type-check, slotscheck, zizmor, validate-examples, validate-pep723
-make type-check                                # mypy src && pyright
-make slotscheck
+make prek                                      # ruff (incl. the future-annotations ban), codespell, file hygiene on tracked and untracked files
+make type-check                                # mypy and pyright
+make slotscheck                                # every class defines __slots__ unless excluded in pyproject.toml
+make zizmor                                    # workflow security scan
+make validate-examples validate-pep723         # docs/examples marker blocks and PEP 723 metadata
 make fix                                       # ruff autofix + format
 
-# full verification gate
-make check-all                                 # lint, test-all, coverage
-make build validate-asyncapi js-test browser-test
+# tests
+make test                                      # full suite once, coverage floor 80
+make coverage                                  # same suite under xdist, plus HTML and XML reports
+make check-all                                 # lint, then the suite once
+
+# packaged frontend and installed distribution
+make build                                     # Vite assets, wheel and sdist, asset completeness check
+make validate-asyncapi                         # official schema/parser on exported fixtures
+make js-test browser-test                      # Vitest and Playwright Chromium
 make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]
 make browser-test-installed PYTHON_VERSION=3.12
 
@@ -64,7 +73,7 @@ make browser-test-installed PYTHON_VERSION=3.12
 make docs docs-linkcheck docs-audit
 ```
 
-The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `make test` and `make check-all` enforce it. CI splits these gates into `prek`, `mypy`, `pyright`, `slotscheck`, tested-distribution and per-Python test jobs[^ci].
+The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `make test` and `make check-all` enforce it. Coverage traces both `multiprocessing` and `thread`, so handlers run in the `TestClient` worker thread are measured. CI splits these gates into `prek`, `mypy`, `pyright`, `slotscheck`, tested-distribution and per-Python test jobs[^ci].
 
 ## Direct Markdown Continuity & Execution Loop
 

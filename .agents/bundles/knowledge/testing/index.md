@@ -9,5 +9,5 @@ tags: [testing, index]
 
 | Chapter | Description |
 | --- | --- |
-| [Public-Seam TDD](./public-seam-tdd.md) | Canonical test map, seams, async conventions, red-capable focused command |
+| [Public-Seam TDD](./public-seam-tdd.md) | Canonical test map, seams, red-capable focused runs |
 | [Distribution and Browser](./distribution-and-browser.md) | Installed-wheel, official validator and Playwright lanes |
