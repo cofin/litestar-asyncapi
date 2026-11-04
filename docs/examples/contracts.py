@@ -8,14 +8,7 @@
 
 from litestar import Litestar
 
-from litestar_asyncapi import (
-    AsyncAPIConfig,
-    AsyncAPIPlugin,
-    ChannelDefinition,
-    DocsConfig,
-    MessageDefinition,
-    OperationDefinition,
-)
+from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, ChannelDefinition, MessageDefinition, OperationDefinition
 from litestar_asyncapi.spec import (
     Components,
     CorrelationId,
@@ -31,7 +24,6 @@ __all__ = ("app",)
 
 config = AsyncAPIConfig(
     title="Broker request/reply contracts",
-    docs=DocsConfig(enabled=False),
     servers={"broker": Server(host="localhost:5672", protocol="amqp")},
     components=Components(security_schemes={"credentials": SecurityScheme(type="userPassword")}),
     message_traits={"correlated": MessageTrait(correlation_id=CorrelationId(location="$message.payload#/request_id"))},

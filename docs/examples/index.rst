@@ -98,7 +98,7 @@ An application returns structured responses for its handled validation cases. Th
 Broker traits, security and replies
 -----------------------------------
 
-Explicit broker contracts without a transport implementation. Docs routes are disabled; use the headless export command.
+Explicit broker contracts without a transport implementation. The documentation is served at ``/asyncapi/``, and the headless export command writes the same document.
 
 .. code-block:: bash
 
