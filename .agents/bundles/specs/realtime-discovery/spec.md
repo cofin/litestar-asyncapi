@@ -141,12 +141,12 @@ Chapters 2 and 3 are independent after chapter 1. Both add fields to `config.py`
 ## Implementation Plan
 
 - [x] [05d8ec8] channel-source-markers — transport markers and ws bindings on discovered channels (../channel-source-markers/spec.md)
-- [ ] sse-discovery — Server-Sent Event route discovery (../sse-discovery/spec.md)
+- [x] [0371687] sse-discovery — Server-Sent Event route discovery (../sse-discovery/spec.md)
 - [ ] channels-plugin-topics — topic-only discovery and typed topic payloads (../channels-plugin-topics/spec.md)
 
 ## Continuity Snapshot
 
-- **State:** active. Chapter 1 completed at `05d8ec8`.
+- **State:** active. Chapter 1 completed at `05d8ec8`, chapter 2 at `0371687`.
 - **Decisions on 2026-11-04 (user):** `channel_payloads` mapping; topic-only discovery on by default; sequenced after `discovery-fixes`.
 - **Review:** round 1 of the independent review is adjudicated. All 9 findings were adopted, and `plan_revision` is now 2.
 - **Discoveries:** litestar-vite guesses `ws` when bindings are absent, so ChannelsPlugin channels need an explicit empty object.

@@ -3,16 +3,16 @@ type: Spec
 flow_id: sse-discovery
 title: Server-Sent Event Route Discovery
 description: Discover HTTP routes returning ServerSentEvent as send-only channels with typed payloads from decorators.
-state: draft
+state: completed
 parent_prd: realtime-discovery
 research: []
-plan_revision: 2
-plan_commit: null
+plan_revision: 3
+plan_commit: 2fac422
 state_revision: 0
 current_task: null
-last_verified_checkpoint: null
+last_verified_checkpoint: 0371687
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T21:10:00Z
 tags: [discovery, sse, http]
 ---
 
@@ -53,3 +53,14 @@ Implement Master Decision 3: HTTP routes that return `litestar.response.ServerSe
 ## Acceptance Boundary
 
 The tests pass, and `make validate-asyncapi` passes with the SSE fixture.
+
+## Implementation Plan
+
+- [x] [0371687] t01 — discover Server-Sent Event routes as send-only channels (tasks/t01-sse-channels.md)
+
+**Recovery checkpoint:** `make lint && make type-check && make test && make validate-asyncapi` exits `0`.
+
+## Continuity Snapshot
+
+- **State:** completed at `0371687`. `make lint`, `make type-check`, `make test` (254 passed, 96.63%) and `make validate-asyncapi` exit `0`.
+- **Discoveries:** detection needs only public Litestar API; a WebSocket route at the same path always forces the `:sse` suffix.

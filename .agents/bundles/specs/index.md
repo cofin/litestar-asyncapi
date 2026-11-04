@@ -25,7 +25,7 @@ Active and planned Flow specifications and task worksheets.
 | [test-gate-debloat](./test-gate-debloat/spec.md) | Flow | completed | contract-fixes | Trim tests and gates with proven replacements. |
 | [realtime-discovery](./realtime-discovery/spec.md) | PRD | active | — | Issue #11: transport markers, SSE discovery, typed ChannelsPlugin topics. |
 | [channel-source-markers](./channel-source-markers/spec.md) | Flow | completed | realtime-discovery | x-litestar-source and ws bindings on discovered channels. |
-| [sse-discovery](./sse-discovery/spec.md) | Flow | draft | realtime-discovery | Server-Sent Event route discovery. |
+| [sse-discovery](./sse-discovery/spec.md) | Flow | completed | realtime-discovery | Server-Sent Event route discovery. |
 | [channels-plugin-topics](./channels-plugin-topics/spec.md) | Flow | draft | realtime-discovery | Topic-only discovery and channel_payloads. |
 
 Completed flows are recorded in [bundles/log.md](../log.md).
