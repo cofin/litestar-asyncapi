@@ -4,9 +4,9 @@ research_id: "contract-ergonomics-20261105"
 title: "Proposal: OpenAPI Inheritance and Name-Based References for Explicit Contracts"
 description: "Proposal to inherit document metadata, security schemes and servers from Litestar's OpenAPI config, accept names instead of JSON-pointer references, and rewrite the explicit-contract example. Under review."
 scope: architecture
-status: draft
-state: open
-promoted_to: null
+status: stable
+state: promoted
+promoted_to: contract-ergonomics
 tags: [research, proposal, openapi, ergonomics, contracts]
 generated:
   by: flow/0.26.0
