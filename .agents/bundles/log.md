@@ -4,6 +4,11 @@ Date-grouped record of Flow lifecycle events, migrations, and completed work.
 
 ## 2026-11-04
 
+### Planning: audit and three approved PRDs
+- Audited the tree at `23d1a4a` across generation, schema, docs UI and AsyncAPI 3.0/3.1 conformance; promoted the findings into `specs/contract-fixes/research/codebase-audit_20261104.md`.
+- Approved `docs-redesign` (Zensical migration, four tabs, executed examples), `contract-fixes` (verified bugs, leak removal, debloat ledger) and `realtime-discovery` (issue #11: transport markers, SSE discovery, typed ChannelsPlugin topics). Each passed one independent review round with all findings adopted.
+- Pointed project URLs and the Codecov slug at `cofin/litestar-asyncapi`; closed four superseded Dependabot PRs.
+
 ### Setup alignment (`synthesize` / `verify` at 49bc3c8)
 - Verified knowledge against the current tree and corrected drift: Litestar bound is `>=2.24.0` with no cap; application-encoder normalization lives in `AsyncAPIPlugin` and `normalize_examples`; JSON Pointer tokens are also percent-encoded; removed the unused `litestar.utils.predicates` pattern.
 - Added `product/index.md`, `domains/asyncapi-contracts.md`, `testing/{public-seam-tdd,distribution-and-browser}.md`, `gotchas/runtime-and-tooling.md`, and split decisions into ADR-001..003.

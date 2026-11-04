@@ -12,4 +12,4 @@ Pre-PRD and pre-flow technical research notes.
 | Topic | State | Flow | Description |
 | --- | --- | --- | --- |
 
-*(No unpromoted research notes open. New research is created during discovery.)*
+*(No unpromoted research notes open. The codebase audit was promoted into [`contract-fixes`](../specs/contract-fixes/research/codebase-audit_20261104.md).)*
