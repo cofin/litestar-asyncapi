@@ -15,8 +15,12 @@ Raw sockets manually choose how to read and write. Supply explicit decorators,
 payloads, content types and descriptions as in :ref:`decorator-overrides`.
 Undecorated raw handlers are omitted unless
 ``include_raw_websocket_routes=True``; opting in documents uncertainty with an
-unconstrained payload and warning. Raw socket docstrings are not automatically
-applied to explicit operations; provide their description directly.
+unconstrained payload and warning.
+
+A handler's own ``summary``, ``description`` and ``operation_id``, and its
+docstring when ``use_handler_docstrings=True``, fill only the operation fields
+that decorators leave empty. This includes operations a decorator adds, such as
+the explicit operations of a raw socket.
 
 Native ``include_in_schema=False`` on a handler or parent layer excludes it.
 No SSE or arbitrary broker-consumer inference is implemented.

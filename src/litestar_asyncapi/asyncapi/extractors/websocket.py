@@ -152,27 +152,29 @@ def _infer_operations_from_handler(
             )
             if field is not None and not (action is OperationAction.SEND and _is_none_return_type(field))
         ]
-        _apply_handler_metadata(route_handler, operations, include_action_suffix=receive is not None)
-        _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(
+        operations = _apply_decorator_overrides(
             route_handler, operations, schema_generator=schema_generator, config=config, app=app
         )
-
-    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
-    explicit = isinstance(metadata, AsyncAPIMetadata) and bool(metadata.operations)
-    if not explicit and not config.include_raw_websocket_routes:
-        return []
-    operations = _infer_raw_websocket_operations(route_handler)
-    _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
-    _apply_docstring_descriptions(route_handler, operations, config=config)
-    operations = _apply_decorator_overrides(
-        route_handler, operations, schema_generator=schema_generator, config=config, app=app, replace_placeholders=True
-    )
-    if any(message.payload is None for operation in operations for message in operation.messages or []):
-        warnings.warn(
-            f"AsyncAPI cannot infer the raw WebSocket payload for {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}; emitting an unconstrained message",
-            stacklevel=2,
+    else:
+        metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+        explicit = isinstance(metadata, AsyncAPIMetadata) and bool(metadata.operations)
+        if not explicit and not config.include_raw_websocket_routes:
+            return []
+        operations = _apply_decorator_overrides(
+            route_handler,
+            _infer_raw_websocket_operations(route_handler),
+            schema_generator=schema_generator,
+            config=config,
+            app=app,
+            replace_placeholders=True,
         )
+        if any(message.payload is None for operation in operations for message in operation.messages or []):
+            warnings.warn(
+                f"AsyncAPI cannot infer the raw WebSocket payload for {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}; emitting an unconstrained message",
+                stacklevel=2,
+            )
+    _apply_handler_metadata(route_handler, operations)
+    _apply_docstring_descriptions(route_handler, operations, config=config)
     return operations
 
 
@@ -259,26 +261,33 @@ def _infer_raw_websocket_operations(route_handler: Any) -> list[DiscoveredOperat
     ]
 
 
-def _apply_handler_metadata(
-    route_handler: Any, operations: list[DiscoveredOperation], *, include_action_suffix: bool
-) -> None:
+def _apply_handler_metadata(route_handler: Any, operations: list[DiscoveredOperation]) -> None:
+    """Fill operation fields the decorators left empty from the handler's own metadata.
+
+    The handler ``operation_id`` replaces the inferred id of every operation without a decorator
+    ``operation_id`` and is suffixed with the action when the handler documents several operations.
+    """
+    from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
+
     summary = _get_handler_string_attribute(route_handler, "summary")
     description = _get_handler_string_attribute(route_handler, "description")
     operation_id = _get_handler_string_attribute(route_handler, "operation_id")
-
-    if not any((summary, description, operation_id)):
-        return
+    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+    decorated_ids = (
+        {action for action, override in metadata.operations.items() if override.operation_id is not None}
+        if isinstance(metadata, AsyncAPIMetadata)
+        else set()
+    )
 
     for operation in operations:
         if summary is not None and operation.summary is None:
             operation.summary = summary
         if description is not None and operation.description is None:
             operation.description = description
-        if operation_id is not None:
-            if include_action_suffix and len(operations) > 1:
-                operation.operation_id = f"{operation_id}_{OperationAction(operation.action).value}"
-            else:
-                operation.operation_id = operation_id
+        if operation_id is not None and operation.action not in decorated_ids:
+            operation.operation_id = (
+                f"{operation_id}_{OperationAction(operation.action).value}" if len(operations) > 1 else operation_id
+            )
 
 
 def _apply_docstring_descriptions(

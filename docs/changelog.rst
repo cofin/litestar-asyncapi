@@ -43,6 +43,9 @@ Fixed
   ``ListenerHandler_send``, numbered ``_2``, ``_3`` in route order, so
   ``strict_uniqueness=True`` failed on any app with two listeners. This is a
   breaking change for anyone matching the old operation or message keys.
+* Operations added by ``asyncapi_operation`` or ``asyncapi_message`` now get the
+  handler's ``summary``, ``description``, ``operation_id`` and docstring when the
+  decorator sets none. Decorator values still win.
 
 0.2.0
 =====
