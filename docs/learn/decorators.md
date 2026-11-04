@@ -22,10 +22,27 @@ Place the AsyncAPI decorators above the Litestar route decorator. They read and 
 
 Explicit values win over inference, and an explicit empty list is a value: `messages=[]` documents an operation without messages, and `examples=[]` turns off generated examples for that message. Tags take `Tag` objects rather than strings. To give an example headers, a name or a summary, pass a `MessageExample`; other values become the example's payload, and an explicit `None` payload is kept as `null`.
 
-The same decorators describe [Server-Sent Event routes](websocket-handlers.md#server-sent-events), where only `send` operations are allowed. For contracts that have no route, such as a broker topic consumed elsewhere, use `ChannelDefinition` in `AsyncAPIConfig.channels`; see [Security and servers](../integrations/security-and-servers.md#explicit-broker-traits-and-replies).
+The same decorators describe [Server-Sent Event routes](websocket-handlers.md#server-sent-events), where only `send` operations are allowed. For contracts that have no route, see [Contracts without a route](#contracts-without-a-route).
+
+## Contracts without a route { #contracts-without-a-route }
+
+A broker topic that the application consumes or publishes elsewhere has no route to decorate. Declare it with `ChannelDefinition` in `AsyncAPIConfig.channels`. This application answers price quote requests on a reply channel:
+
+```python
+--8<-- "docs/examples/contracts.py"
+```
+
+```json
+--8<-- "docs/_generated/fragments/contracts/operations.json"
+```
+
+A channel's `key` names it in the document and its `address` is the broker destination. Operations and messages take the same `OperationDefinition` and `MessageDefinition` values as the decorators, and payload dataclasses become schemas under `components.schemas`.
+
+`ReplyDefinition("quotes", messages=["Quote"])` names the reply channel by key and its messages by name; the document gets the matching references. Each reply message must belong to the reply channel, and an unknown channel or message name raises an error that lists the valid names. The reply channel declares its own `send` operation, so clients can tell which direction the reply travels. Pass `address=ReplyAddress(...)` when the reply goes to an address carried in the request.
 
 ## Recap
 
 - Decorators go above the route decorator and always name an action.
 - `asyncapi_operation` declares an operation with named message choices; `asyncapi_message` adds one message.
+- `ChannelDefinition` declares channels without a route, and `ReplyDefinition` names a reply channel and its messages.
 - Next, [Schema generation](schema-generation.md) explains how payload types become schemas.

@@ -78,12 +78,20 @@ The application answers handled validation cases with structured error messages.
 --8<-- "docs/examples/error_handling/app.py"
 ```
 
-## Broker traits, security and replies { #broker-contracts }
+## Broker request and reply { #broker-contracts }
 
-Explicit broker contracts with traits, a security scheme and a reply, without a broker client.
+Typed broker channels declared without a route or broker client. The request operation names its reply channel and message.
 
 ```python
 --8<-- "docs/examples/contracts.py"
+```
+
+## JWT-protected WebSocket { #secured-orders }
+
+`JWTAuth` protects a WebSocket listener. The document inherits the bearer scheme and a `wss` server from the OpenAPI config, refers to the scheme by name, shares one operation trait between both operations and declares a correlation ID.
+
+```python
+--8<-- "docs/examples/secured_orders.py"
 ```
 
 ## Native schema plugin { #native-schema }

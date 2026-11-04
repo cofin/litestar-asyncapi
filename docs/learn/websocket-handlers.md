@@ -28,7 +28,7 @@ A handler declared with `@websocket` reads and writes frames itself, so its para
 
 A handler's own `summary`, `description` and `operation_id` fill the operation fields that decorators leave empty. With `AsyncAPIConfig(use_handler_docstrings=True)`, the handler's docstring fills the description too. This also applies to operations that a decorator adds, such as the explicit operations of a raw socket.
 
-`include_in_schema=False` on a handler, router or controller removes its routes from the document. Messages that reach the application through a broker rather than a route are not inferred; declare them as [explicit channels](../integrations/security-and-servers.md#explicit-broker-traits-and-replies).
+`include_in_schema=False` on a handler, router or controller removes its routes from the document. Messages that reach the application through a broker rather than a route are not inferred; declare them as [explicit channels](decorators.md#contracts-without-a-route).
 
 ## Server-Sent Events
 

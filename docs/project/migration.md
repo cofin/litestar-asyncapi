@@ -80,8 +80,10 @@ traits and other reusable components.
 - Message examples are wire `MessageExample` objects (`{"payload": ...}`), not
   arbitrary bare entries. Decorator example values are wrapped for you. An explicit
   empty list suppresses fallback generation, and explicit null is preserved.
-- Operation/server security entries are schemes or references, not OpenAPI
-  requirement-name maps. Put named definitions in `Components.security_schemes`.
+- Operation/server security entries are scheme names, schemes or references,
+  not OpenAPI requirement-name maps. Name a scheme from
+  `Components.security_schemes` or one inherited from the OpenAPI config, for
+  example `security=["BearerToken"]`. Security requirements are not inherited.
 - Only finalized native routes are inferred. Internal Channels subscriptions no
   longer create phantom endpoints. Declare external broker channels explicitly.
   Raw sockets require explicit metadata, or opt into uncertain discovery with

@@ -1,24 +1,47 @@
 # Security, servers and mounted docs
 
-This application describes a broker it talks to through explicit contracts: a server, a security scheme, reusable traits, and an operation that expects a reply. It has no routes and creates no broker client:
+This application protects a WebSocket route with Litestar's `JWTAuth`. The document takes its title, the bearer scheme that `JWTAuth` registers and a `wss` server from the application's OpenAPI config:
 
 ```python
---8<-- "docs/examples/contracts.py"
+--8<-- "docs/examples/secured_orders.py"
 ```
 
 ## The generated contract
 
 ```json
---8<-- "docs/_generated/fragments/contracts/servers.json"
+--8<-- "docs/_generated/fragments/secured_orders/servers.json"
 ```
 
 ```json
---8<-- "docs/_generated/fragments/contracts/components-securitySchemes.json"
+--8<-- "docs/_generated/fragments/secured_orders/components-securitySchemes.json"
 ```
 
 ```json
---8<-- "docs/_generated/fragments/contracts/channels.json"
+--8<-- "docs/_generated/fragments/secured_orders/operations.json"
 ```
+
+## Inherited from OpenAPI
+
+The plugin reads `app.openapi_config` when it builds the document, after auth backends such as `JWTAuth` have added their components. It never changes that config.
+
+- **Metadata.** Unset `title`, `version`, `description`, `contact`, `license`, `terms_of_service` and `external_docs` on `AsyncAPIConfig` come from the OpenAPI config, and explicit values win. Tags group HTTP routes, so they are not inherited. OpenAPI's `summary` and the license `identifier` have no AsyncAPI equivalent.
+- **Security schemes.** Scheme definitions are added to `components.securitySchemes` under their OpenAPI names. Security requirements are not inherited, because AsyncAPI cannot express OpenAPI's alternatives, optional authentication or excluded routes.
+- **Servers.** Only with `inherit_openapi_servers=True`; see [Servers](#servers).
+
+`AsyncAPIConfig(inherit_openapi=False)` turns all of this off.
+
+Schemes are converted as follows. A scheme or OAuth flow that AsyncAPI cannot express is skipped with a warning.
+
+| OpenAPI | AsyncAPI |
+| --- | --- |
+| `http` with `bearer` | `http` with `scheme: bearer` and `bearerFormat`; the header `name` is dropped |
+| `http` with another scheme, such as `basic` | `http` with that scheme in lowercase |
+| `apiKey` in a header, query or cookie | `httpApiKey` |
+| `oauth2` | `oauth2`; each flow keeps its URLs and gets `availableScopes`; flows with relative URLs are skipped |
+| `openIdConnect` | `openIdConnect` |
+| `mutualTLS` | `X509` |
+
+A scheme in `AsyncAPIConfig.components` with the same name as an inherited one must convert to the same definition; otherwise building the document raises an error naming both.
 
 ## Servers
 
@@ -28,13 +51,15 @@ A `Server` splits a connection URL into `protocol` (such as `ws`, `wss` or `amqp
 
 ## Security schemes
 
-Put security schemes in `Components(security_schemes=...)` and refer to them from servers and operations with `Reference("#/components/securitySchemes/<name>")`, as `acceptOrder` does. A scheme documents a requirement; it installs no authentication. An API key in the query string uses `type="httpApiKey"` with `in_="query"`. Browser WebSockets cannot send arbitrary headers, and the plugin provides no proxy for them.
+Operations name the schemes they need, as `security=["BearerToken"]` does above. A name can refer to an inherited scheme or to one in `Components(security_schemes=...)`; an unknown name raises an error that lists the valid names. Scheme objects and `Reference`s are also accepted. In the same way, `ChannelDefinition(servers=["broker"])` names the servers that host a channel.
 
-## Explicit broker, traits and replies
+A scheme documents a requirement; it installs no authentication. An API key in the query string uses `type="httpApiKey"` with `in_="query"`. Browser WebSockets cannot send arbitrary headers, and the plugin provides no proxy for them.
 
-`ChannelDefinition` declares a channel that no route provides. Its `key` names the channel in the document and its `address` is the broker destination. Operations and messages take the same definitions as the decorators. Traits listed by name in an operation or message must be registered in `operation_traits` or `message_traits`.
+## Traits and correlation IDs
 
-A reply names its channel and messages by reference, and those messages must belong to the reply channel. Local references are checked against the places AsyncAPI allows them; external references are kept as written and never fetched. Configured components cannot replace a schema that the application generates under the same name.
+`operation_traits` registers reusable operation fields under `components.operationTraits`, and operations list them by name; here both operations share the `orders` tag through one trait. Message traits work the same way through `message_traits`. A `CorrelationId` gives the runtime expression that pairs a request with its response, such as `$message.payload#/order_id`.
+
+Local references are checked against the places AsyncAPI allows them; external references are kept as written and never fetched. Configured components cannot replace a schema that the application generates under the same name. For broker channels without a route and replies, see [Contracts without a route](../learn/decorators.md#contracts-without-a-route).
 
 ## Guarded, mounted documentation
 

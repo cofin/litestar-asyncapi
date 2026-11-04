@@ -39,4 +39,4 @@ Topics come from the names passed to the `ChannelsPlugin` constructor, read once
 
 Every ChannelsPlugin channel carries `x-litestar-source: channels` and an empty `bindings` object. The empty bindings tell it apart from a native WebSocket handler, even when both live under the same path prefix.
 
-Clients subscribe to the generated routes directly. For a broker that the application reaches without ChannelsPlugin, declare [explicit channels](security-and-servers.md#explicit-broker-traits-and-replies); declaring them does not create a broker client.
+Clients subscribe to the generated routes directly. For a broker that the application reaches without ChannelsPlugin, declare [explicit channels](../learn/decorators.md#contracts-without-a-route); declaring them does not create a broker client.

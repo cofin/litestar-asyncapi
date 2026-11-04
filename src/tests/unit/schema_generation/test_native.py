@@ -492,3 +492,40 @@ def test_mixed_literal_types_generate_listener_and_decorator_documents() -> None
     for channel in document["channels"].values():
         payload = next(iter(channel["messages"].values()))["payload"]
         assert set(payload["type"]) == {"integer", "null"}
+
+
+def test_component_schema_names_match_litestar_openapi_names() -> None:
+    from dataclasses import make_dataclass
+
+    from litestar import Litestar, post, websocket_listener
+    from pydantic import BaseModel
+
+    from litestar_asyncapi import AsyncAPIPlugin
+
+    class Address(BaseModel):
+        city: str
+
+    class Customer(msgspec.Struct):
+        address: Address
+
+    first = make_dataclass("Item", [("sku", str)])
+    first.__module__ = "warehouse.first"
+    second = make_dataclass("Item", [("count", int)])
+    second.__module__ = "warehouse.second"
+    order = make_dataclass("Order", [("customer", Customer), ("first", first), ("second", second), ("node", Node)])
+    namespace = {"Order": order}
+
+    @post("/orders", signature_namespace=namespace)
+    async def create(data: order) -> order:  # type: ignore[valid-type]
+        return data
+
+    @websocket_listener("/orders", signature_namespace=namespace)
+    async def stream(data: order) -> order:  # type: ignore[valid-type]
+        return data
+
+    plugin = AsyncAPIPlugin()
+    app = Litestar([create, stream], plugins=[plugin])
+    openapi_components = app.openapi_schema.components.schemas or {}
+
+    assert set(plugin.get_asyncapi_schema(app)["components"]["schemas"]) == set(openapi_components)
+    assert len(openapi_components) == 6

@@ -1,6 +1,6 @@
 # Exporting documents
 
-The plugin adds an `asyncapi export` command to the Litestar CLI. This application describes a broker with explicit contracts and has no routes:
+The plugin adds an `asyncapi export` command to the Litestar CLI. This application describes a broker request and reply with [explicit contracts](decorators.md#contracts-without-a-route) and has no routes:
 
 ```python
 --8<-- "docs/examples/contracts.py"

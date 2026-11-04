@@ -4,59 +4,58 @@
 # [tool.uv.sources]
 # litestar-asyncapi = { path = "../.." }
 # ///
-"""Explicit broker contracts; declarations do not create a broker client or enforce auth."""
+"""A typed broker request/reply contract; declaring it creates no broker client."""
+
+from dataclasses import dataclass
 
 from litestar import Litestar
 
-from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, ChannelDefinition, MessageDefinition, OperationDefinition
-from litestar_asyncapi.spec import (
-    Components,
-    CorrelationId,
-    MessageTrait,
-    OperationTrait,
-    Reference,
-    Reply,
-    SecurityScheme,
-    Server,
+from litestar_asyncapi import (
+    AsyncAPIConfig,
+    AsyncAPIPlugin,
+    ChannelDefinition,
+    MessageDefinition,
+    OperationDefinition,
+    ReplyDefinition,
 )
 
 __all__ = ("app",)
 
+
+@dataclass
+class QuoteRequest:
+    sku: str
+    quantity: int
+
+
+@dataclass
+class Quote:
+    sku: str
+    total: float
+
+
 config = AsyncAPIConfig(
-    title="Broker request/reply contracts",
-    servers={"broker": Server(host="localhost:5672", protocol="amqp")},
-    components=Components(security_schemes={"credentials": SecurityScheme(type="userPassword")}),
-    message_traits={"correlated": MessageTrait(correlation_id=CorrelationId(location="$message.payload#/request_id"))},
-    operation_traits={"observed": OperationTrait(summary="Application receives a command")},
+    title="Pricing broker",
     channels=[
         ChannelDefinition(
-            key="commands",
-            address="orders.commands",
+            key="quote-requests",
+            address="pricing.requests",
             operations=[
                 OperationDefinition(
                     action="receive",
-                    operation_id="acceptOrder",
-                    traits=["observed"],
-                    security=[Reference("#/components/securitySchemes/credentials")],
-                    messages=[
-                        MessageDefinition(
-                            name="Order",
-                            payload={"type": "object", "properties": {"request_id": {"type": "string"}}},
-                            traits=["correlated"],
-                        )
-                    ],
-                    reply=Reply(
-                        channel=Reference("#/channels/results"),
-                        messages=[Reference("#/channels/results/messages/Result")],
-                    ),
+                    operation_id="handleQuoteRequest",
+                    messages=[MessageDefinition(name="QuoteRequest", payload=QuoteRequest)],
+                    reply=ReplyDefinition("quotes", messages=["Quote"]),
                 )
             ],
         ),
         ChannelDefinition(
-            key="results",
-            address="orders.results",
+            key="quotes",
+            address="pricing.quotes",
             operations=[
-                OperationDefinition(action="send", messages=[MessageDefinition(name="Result", payload=dict[str, str])])
+                OperationDefinition(
+                    action="send", operation_id="sendQuote", messages=[MessageDefinition(name="Quote", payload=Quote)]
+                )
             ],
         ),
     ],
