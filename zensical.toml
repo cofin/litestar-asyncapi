@@ -1,0 +1,154 @@
+[project]
+site_name = "Litestar AsyncAPI"
+site_description = "Generate and serve AsyncAPI 3.1 documents for Litestar WebSocket, Server-Sent Event and ChannelsPlugin applications."
+site_url = "https://cofin.github.io/litestar-asyncapi/"
+repo_url = "https://github.com/cofin/litestar-asyncapi"
+repo_name = "cofin/litestar-asyncapi"
+edit_uri = "edit/main/docs/"
+copyright = "Copyright &copy; 2026 Litestar Organization"
+docs_dir = "docs"
+site_dir = "site"
+use_directory_urls = true
+extra_css = ["stylesheets/extra.css"]
+exclude_docs = """
+__init__.py
+examples/**
+_generated/**
+"""
+
+nav = [
+  { "Home" = "index.md" },
+  { "Learn" = [
+    { "Learn" = "learn/index.md" },
+    { "Installation" = "learn/installation.md" },
+    { "Concepts and lifecycle" = "learn/concepts.md" },
+    { "WebSocket handlers" = "learn/websocket-handlers.md" },
+    { "Decorators" = "learn/decorators.md" },
+    { "Schema generation" = "learn/schema-generation.md" },
+    { "Runnable examples" = "learn/examples.md" },
+  ] },
+  { "Integrations" = [
+    { "Integrations" = "integrations/index.md" },
+    { "ChannelsPlugin" = "integrations/channels-plugin.md" },
+    { "Documentation UI" = "integrations/documentation-ui.md" },
+    { "Security and servers" = "integrations/security-and-servers.md" },
+  ] },
+  { "Reference" = [
+    { "API reference" = "reference/index.md" },
+    { "Core" = "reference/core.md" },
+    { "Render plugins" = "reference/plugins.md" },
+    { "Specification models" = "reference/spec.md" },
+    { "Extractors" = "reference/extractors.md" },
+    { "Schema generation" = "reference/schema-generation.md" },
+  ] },
+  { "Project" = [
+    { "Project" = "project/index.md" },
+    { "Migration" = "project/migration.md" },
+    { "Changelog" = "project/changelog.md" },
+    { "Contribution guide" = "project/contribution-guide.md" },
+  ] },
+]
+
+[project.validation]
+invalid_links = true
+invalid_link_anchors = true
+
+[project.theme]
+variant = "modern"
+language = "en"
+favicon = "_static/favicon.ico"
+logo = "_static/logo-light.svg"
+features = [
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.indexes",
+  "navigation.top",
+  "navigation.footer",
+  "navigation.tracking",
+  "search.highlight",
+  "search.suggest",
+  "toc.follow",
+  "content.code.copy",
+  "content.tabs.link",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.tables]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.inlinehilite]
+
+[project.markdown_extensions.toc]
+permalink = true
+toc_depth = "2-3"
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions.pymdownx.snippets]
+base_path = ["."]
+check_paths = true
+dedent_subsections = true
+
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+
+[project.plugins.mkdocstrings]
+default_handler = "python"
+enable_inventory = true
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["src"]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://docs.litestar.dev/latest/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+heading_level = 2
+inherited_members = false
+members_order = "source"
+show_bases = true
+show_if_no_docstring = true
+show_root_heading = true
+show_root_full_path = true
+show_source = false
+show_symbol_type_heading = true
+show_symbol_type_toc = false
+summary = true
+
+[project.extra]
+generator = false
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/cofin/litestar-asyncapi"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/discord"
+link = "https://discord.gg/litestar-919193495116337154"

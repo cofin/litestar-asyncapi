@@ -133,33 +133,37 @@ pre-release:                                       ## Start a pre-release: make 
 # Documentation
 # =============================================================================
 
+DOCS_PYTHON ?= 3.12
+DOCS_RUN = UV_PROJECT_ENVIRONMENT=.venv-docs uv run --frozen --python $(DOCS_PYTHON) --no-default-groups --group docs
+
 .PHONY: docs
-docs:                                             ## Build documentation
+docs:                                             ## Build, redirect and verify the documentation site
 	@echo "${INFO} Building docs... 📚"
-	@uv run sphinx-build -b html docs docs/_build/html
+	@$(DOCS_RUN) zensical build --clean --strict
+	@$(DOCS_RUN) python -m tools.docs.postbuild
+	@$(DOCS_RUN) python -m tools.docs.verify_docs_artifacts
 	@echo "${OK} Docs build complete 📚"
 
+.PHONY: docs-serve
+docs-serve:                                       ## Serve the documentation with live reload
+	@$(DOCS_RUN) zensical serve
+
 .PHONY: docs-linkcheck
-docs-linkcheck:                                   ## Check documentation links
-	@echo "${INFO} Checking docs links... 📚"
-	@uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
-	@echo "${OK} Docs linkcheck complete 📚"
+docs-linkcheck:                                   ## Check external links in the built site with lychee
+	@if ! command -v lychee >/dev/null 2>&1; then \
+		echo "${WARN} lychee is not installed; skipping the external link check"; \
+	elif [ ! -f site/index.html ]; then \
+		echo "${ERROR} No built site; run make docs first"; \
+		exit 1; \
+	else \
+		lychee --root-dir "$$(pwd)/site" 'site/**/*.html'; \
+	fi
 
 .PHONY: docs-clean
 docs-clean:                                       ## Clean documentation artifacts
 	@echo "${INFO} Cleaning docs artifacts... 📚"
-	@rm -rf docs/_build docs-build >/dev/null 2>&1
+	@rm -rf site docs/_generated >/dev/null 2>&1
 	@echo "${OK} Docs artifacts cleaned 📚"
-
-.PHONY: docs-audit
-docs-audit:                                       ## Audit documentation structure and terminology
-	@echo "${INFO} Auditing docs... 📚"
-	@if [ -f tools/docs_audit.py ]; then \
-		uv run python tools/docs_audit.py; \
-	else \
-		echo "${INFO} tools/docs_audit.py not found, skipping"; \
-	fi
-	@echo "${OK} Docs audit complete 📚"
 
 # =============================================================================
 # Validation Targets

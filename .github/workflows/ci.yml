@@ -170,11 +170,11 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Install dependencies
-        run: make install PYTHON_VERSION=3.12
-
-      - name: Build docs
+      - name: Build and verify docs
         run: make docs
 
-      - name: Check docs links
-        run: make docs-linkcheck
+      - name: Check external docs links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --root-dir ${{ github.workspace }}/site 'site/**/*.html'
+          jobSummary: false

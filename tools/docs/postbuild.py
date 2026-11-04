@@ -1,0 +1,94 @@
+"""Write redirect stubs from every former Sphinx URL to its page on the Zensical site.
+
+The Sphinx site served flat ``<page>.html`` files. The Zensical site uses directory URLs, so each
+former file becomes a small HTML stub that forwards to the new page and keeps the URL fragment,
+which preserves deep links such as ``usage/websocket-handlers.html#server-sent-events``.
+"""
+
+import html
+import json
+import posixpath
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+SITE = ROOT / "site"
+
+REDIRECTS: dict[str, str] = {
+    "getting-started.html": "learn/installation/",
+    "usage/index.html": "learn/",
+    "usage/quickstart.html": "learn/installation/",
+    "usage/concepts.html": "learn/concepts/",
+    "usage/websocket-handlers.html": "learn/websocket-handlers/",
+    "usage/decorators.html": "learn/decorators/",
+    "usage/schema-generation.html": "learn/schema-generation/",
+    "usage/channels-plugin.html": "integrations/channels-plugin/",
+    "usage/renderers.html": "integrations/documentation-ui/",
+    "usage/security-and-servers.html": "integrations/security-and-servers/",
+    "examples/index.html": "learn/examples/",
+    "examples/README.html": "learn/examples/",
+    "migration.html": "project/migration/",
+    "changelog.html": "project/changelog/",
+    "contribution-guide.html": "project/contribution-guide/",
+    "reference/api.html": "reference/",
+    "reference/core.html": "reference/core/",
+    "reference/plugins.html": "reference/plugins/",
+    "reference/spec.html": "reference/spec/",
+    "reference/extractors.html": "reference/extractors/",
+    "reference/schema-generation.html": "reference/schema-generation/",
+    "genindex.html": "reference/",
+    "py-modindex.html": "reference/",
+    "search.html": "./",
+}
+"""Former Sphinx page path mapped to its locked Zensical URL, both relative to the site root."""
+
+STUB = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Redirecting</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{href}">
+<script>location.replace({target} + location.hash);</script>
+<meta http-equiv="refresh" content="0; url={href}">
+</head>
+<body>
+<p>This page has moved to <a href="{href}">{href}</a>.</p>
+</body>
+</html>
+"""
+
+
+def relative_target(source: str, target: str) -> str:
+    """Return the target URL relative to the directory that serves the stub."""
+    relative = posixpath.relpath(target, posixpath.dirname(source) or ".")
+    return "./" if relative == "." else f"{relative}/"
+
+
+def write_redirects(site: Path) -> list[Path]:
+    """Write one stub per former URL and return the written files."""
+    written = []
+    for source, target in REDIRECTS.items():
+        path = site / source
+        if path.exists():
+            msg = f"{source}: a built page already exists where the redirect stub belongs"
+            raise FileExistsError(msg)
+        href = relative_target(source, target)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(STUB.format(href=html.escape(href, quote=True), target=json.dumps(href)), encoding="utf-8")
+        written.append(path)
+    return written
+
+
+def main() -> int:
+    """Write the redirect stubs into the built site and return a process exit code."""
+    if not (SITE / "index.html").is_file():
+        print(f"{SITE} has no built site; run the Zensical build first", file=sys.stderr)
+        return 1
+    written = write_redirects(SITE)
+    print(f"Wrote {len(written)} redirect stubs")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

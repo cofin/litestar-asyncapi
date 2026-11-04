@@ -1,0 +1,23 @@
+# Decorator customization
+
+Place AsyncAPI decorators **above** the Litestar route decorator: they decorate
+a route handler, not the undecorated Python function. Always select an explicit
+application action, `receive` or `send`.
+
+`asyncapi_operation(messages=[MessageDefinition(...), ...])` describes multiple
+named choices for one action. `operation_id` selects the operation map key.
+`asyncapi_message` adds one named message; it rejects an ambiguous unnamed
+message when others exist. Messages from both decorators are merged by name in
+either stacking order, and a repeated name raises `ValueError`. Use `Tag`
+objects for tags, not strings.
+
+Explicit metadata overrides inference. Explicit `messages=[]` and `examples=[]`
+are intentional empty lists; they do not request fallback inference or generation.
+Typed `MessageExample` preserves payload, headers, name and summary, including
+an explicit null payload. Ordinary example values are wrapped as payloads.
+
+The runnable raw socket validates two incoming choices and describes its response:
+
+```python
+--8<-- "docs/examples/decorator_overrides/app.py"
+```

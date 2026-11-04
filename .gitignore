@@ -41,10 +41,10 @@ dist/
 *.egg-info/
 .eggs/
 
-# Documentation output
-docs/_build/
+# Documentation output and its Python 3.11+ build environment
+site/
 docs/_generated/
-docs-build/
+.venv-docs/
 
 # Editors and operating systems
 .idea/
