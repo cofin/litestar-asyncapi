@@ -62,6 +62,10 @@ Fixed
   Previously both docs sites shared fixed route names, so one docs page could
   link to the other's document and assets, including a guarded one. Use one
   plugin per application.
+* ``DocsConfig`` now rejects a ``path`` at the application root, such as
+  ``"/"`` or ``""``, with ``ValueError``. Previously the docs fallback route
+  became the application's 404 page and the docs guards applied to every
+  unmatched request.
 * The interactive console now opens for payloads typed ``[object, null]`` and
   for ``oneOf`` or ``anyOf`` unions whose members are all objects or arrays.
   Previously these operations showed "Interactive sending is unavailable".

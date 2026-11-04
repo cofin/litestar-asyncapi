@@ -50,6 +50,12 @@ class DocsConfig:
         from litestar_asyncapi.docs import renderer_name
         from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
 
+        if normalize_path(self.path) == "/":
+            message = (
+                f"Documentation path {self.path!r} must not be the application root; "
+                "its fallback route would answer every unmatched request"
+            )
+            raise ValueError(message)
         plugins = (
             list(self.render_plugins)
             if self.render_plugins is not None
