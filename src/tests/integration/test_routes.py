@@ -153,3 +153,12 @@ def test_single_plugin_with_other_plugins_starts() -> None:
     app = Litestar([], plugins=[PydanticPlugin(), AsyncAPIPlugin()])
     with TestClient(app) as client:
         assert client.get("/asyncapi/asyncapi.json").status_code == 200
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_nested_docs_route_configuration(enabled: bool) -> None:
+    plugin = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(path="/events", enabled=enabled, interactive=True)))
+    with TestClient(Litestar([], plugins=[plugin])) as client:
+        assert client.get("/events/asyncapi.json").status_code == (200 if enabled else 404)
+        assert client.get("/events/playground").status_code == (200 if enabled else 404)
+        assert client.get("/asyncapi/asyncapi.json").status_code == 404
