@@ -4,6 +4,12 @@ Date-grouped record of Flow lifecycle events, migrations, and completed work.
 
 ## 2026-11-04
 
+### Completed: contract fixes, realtime discovery, docs migration
+- `contract-fixes` completed: leaked environment details removed, lint green, wire keys and Draft07 export corrected, payload schema fidelity, listener naming, decorator merging, single-plugin and root-path guards, console unions, and test/gate debloat (coverage now measures handler threads).
+- `realtime-discovery` completed (issue #11): `x-litestar-source` transport markers and bindings, Server-Sent Event discovery, ChannelsPlugin topics with `channel_payloads`; runtime-subscribed topics are never published.
+- `docs-redesign` completed: Zensical site with Learn, Integrations, Reference and Project tabs, executed examples, budgeted Reference pages, generated CLI page and redirects from the Sphinx URLs.
+- Also: frontend builds on Node 26 from `.nvmrc`; the package imports without pydantic; Python support is 3.11–3.15.
+
 ### Planning: audit and three approved PRDs
 - Audited the tree at `23d1a4a` across generation, schema, docs UI and AsyncAPI 3.0/3.1 conformance; promoted the findings into `specs/contract-fixes/research/codebase-audit_20261104.md`.
 - Approved `docs-redesign` (Zensical migration, four tabs, executed examples), `contract-fixes` (verified bugs, leak removal, debloat ledger) and `realtime-discovery` (issue #11: transport markers, SSE discovery, typed ChannelsPlugin topics). Each passed one independent review round with all findings adopted.
