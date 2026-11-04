@@ -204,9 +204,6 @@ test:                                              ## Run the tests
 	@uv run pytest src/tests
 	@echo "${OK} Tests complete 🧪"
 
-.PHONY: test-all
-test-all: test                                     ## Run all tests
-
 .PHONY: coverage
 coverage:                                          ## Run tests with coverage report
 	@echo "${INFO} Running tests with coverage... 🧪"
@@ -222,12 +219,6 @@ coverage:                                          ## Run tests with coverage re
 .PHONY: mypy
 mypy:                                              ## Run mypy
 	@echo "${INFO} Running mypy... 🔍"
-	@uv run mypy
-	@echo "${OK} Mypy checks passed ✨"
-
-.PHONY: mypy-nocache
-mypy-nocache:                                      ## Run Mypy without cache
-	@echo "${INFO} Running mypy without cache... 🔍"
 	@uv run mypy
 	@echo "${OK} Mypy checks passed ✨"
 
@@ -257,9 +248,6 @@ prek:                                               ## Run prek hooks
 	fi
 	@echo "${OK} prek checks passed ✨"
 
-.PHONY: pre-commit
-pre-commit: prek                                   ## Run prek hooks (alias for pre-commit)
-
 .PHONY: zizmor
 zizmor:                                             ## Run zizmor workflow security scanner
 	@echo "${INFO} Running zizmor workflow security checks... 🛡️"
@@ -287,7 +275,7 @@ fix:                                               ## Fix linting issues
 lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run all linting checks
 
 .PHONY: check-all
-check-all: lint test-all coverage                  ## Run all checks (lint, test, coverage)
+check-all: lint test                               ## Run lint, then the test suite once with coverage
 
 .PHONY: validate-asyncapi
 validate-asyncapi: export-asyncapi-fixture          ## Validate offline AsyncAPI contracts and Draft07 payloads

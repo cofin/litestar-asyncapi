@@ -51,7 +51,7 @@ Development Workflow
 
    .. code-block:: bash
 
-       make check-all     # Aggregate check: lint, test-all, coverage
+       make check-all     # Aggregate check: lint, then tests with coverage
 
 5. **Commit your changes**: Use Conventional Commits formatting:
 
