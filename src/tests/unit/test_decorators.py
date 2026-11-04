@@ -112,3 +112,13 @@ def test_empty_operation_messages_override_inference() -> None:
     document = AsyncAPIGenerator(Litestar([handler]), AsyncAPIConfig()).build_schema()
     assert next(iter(document["operations"].values()))["messages"] == []
     assert not document["channels"]["/no-messages"].get("messages")
+
+
+def test_decorators_normalize_action_through_operation_definition() -> None:
+    async def fn(data: str) -> None:
+        return None
+
+    handler = asyncapi_message(action=" Receive ", name="Text", payload=str)(websocket_listener("/actions")(fn))
+    assert list(handler.opt[ASYNCAPI_OPT_KEY].operations) == [OperationAction.RECEIVE]
+    with pytest.raises(ValueError, match="Invalid action 'publish'"):
+        asyncapi_operation(action="publish")

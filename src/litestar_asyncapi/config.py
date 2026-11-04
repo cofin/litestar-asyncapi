@@ -140,6 +140,9 @@ class AsyncAPIConfig:
 
     def __post_init__(self) -> None:
         _validate_create_examples(self.create_examples)
+        if self.spec_version not in {"3.0.0", "3.1.0"}:
+            message = f"Unsupported spec_version {self.spec_version!r}. Expected '3.0.0' or '3.1.0'."
+            raise ValueError(message)
 
     def to_servers(self) -> dict[str, Server | Reference]:
         """Return a mapping of server definitions.

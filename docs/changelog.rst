@@ -51,6 +51,12 @@ Fixed
   messages added by ``asyncapi_message`` placed below it. Declaring the same
   message name twice now raises ``ValueError`` instead of keeping only the last
   declaration.
+* ``OperationDefinition`` now accepts an action in any case or with surrounding
+  spaces, such as ``" Send "``, as the decorators already did. Previously it
+  raised ``ValueError``.
+* ``AsyncAPIConfig`` now rejects an unsupported ``spec_version`` such as
+  ``"3.0"`` with ``ValueError``. Previously the value was written into the
+  document unchecked.
 
 0.2.0
 =====

@@ -69,7 +69,11 @@ class OperationDefinition:
     reply: Reply | Reference | None = None
 
     def __post_init__(self) -> None:
-        self.action = OperationAction(self.action)
+        action = self.action.strip().lower()
+        if action not in {item.value for item in OperationAction}:
+            detail = f"Invalid action {self.action!r}. Expected 'send' or 'receive'."
+            raise ValueError(detail)
+        self.action = OperationAction(action)
         names: set[str | None] = set()
         for message in self.messages or []:
             if message.name in names:

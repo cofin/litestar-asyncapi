@@ -41,3 +41,9 @@ def test_nested_docs_options_and_document_version() -> None:
     assert config.docs.interactive is False
     assert not hasattr(config.docs, "__dict__")
     assert AsyncAPIGenerator(Litestar([]), config).build_schema()["asyncapi"] == "3.0.0"
+
+
+@pytest.mark.parametrize("spec_version", ["3.0", "2.6.0", "3.2.0"])
+def test_unsupported_spec_version_is_rejected(spec_version: str) -> None:
+    with pytest.raises(ValueError, match=rf"Unsupported spec_version '{spec_version}'. Expected '3.0.0' or '3.1.0'."):
+        AsyncAPIConfig(spec_version=spec_version)  # type: ignore[arg-type]

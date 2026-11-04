@@ -36,18 +36,6 @@ class AsyncAPIMetadata:
     operations: dict[OperationAction, OperationDefinition] = field(default_factory=dict)
 
 
-def _coerce_action(action: OperationAction | str) -> OperationAction:
-    if isinstance(action, OperationAction):
-        return action
-    value = action.strip().lower()
-    if value == OperationAction.SEND.value:
-        return OperationAction.SEND
-    if value == OperationAction.RECEIVE.value:
-        return OperationAction.RECEIVE
-    msg = f"Invalid action {action!r}. Expected 'send' or 'receive'."
-    raise ValueError(msg)
-
-
 def _get_route_handler(obj: object) -> "BaseRouteHandler":
     if not hasattr(obj, "opt"):
         msg = "AsyncAPI decorators must wrap a Litestar route handler."
@@ -85,7 +73,7 @@ def asyncapi_operation(
         A decorator that mutates the Litestar route handler metadata in-place.
     """
 
-    op_action = _coerce_action(action)
+    op_action = OperationAction(OperationDefinition(action=action).action)
 
     def decorator(obj: T) -> T:
         route_handler = _get_route_handler(obj)
@@ -138,7 +126,7 @@ def asyncapi_message(
         A decorator that mutates the Litestar route handler metadata in-place.
     """
 
-    op_action = _coerce_action(action)
+    op_action = OperationAction(OperationDefinition(action=action).action)
 
     def decorator(obj: T) -> T:
         route_handler = _get_route_handler(obj)
