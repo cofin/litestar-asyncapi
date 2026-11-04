@@ -3,16 +3,16 @@ type: Spec
 flow_id: channels-plugin-topics
 title: Typed ChannelsPlugin Topics
 description: Discover configured ChannelsPlugin topics without generated routes and attach payload types through AsyncAPIConfig.channel_payloads.
-state: draft
+state: completed
 parent_prd: realtime-discovery
 research: []
-plan_revision: 2
-plan_commit: null
+plan_revision: 3
+plan_commit: b99e4ee
 state_revision: 0
 current_task: null
-last_verified_checkpoint: null
+last_verified_checkpoint: 8327249
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T22:20:00Z
 tags: [discovery, channels-plugin, schema]
 ---
 
@@ -53,3 +53,15 @@ Implement Master Decisions 4 and 5. Configured ChannelsPlugin topics appear even
 ## Acceptance Boundary
 
 The tests pass, `make validate-asyncapi` passes with the topic fixture, and `make installed-test` passes with `LITESTAR_BOUNDARY=minimum` and `LITESTAR_BOUNDARY=latest`.
+
+## Implementation Plan
+
+- [x] [d3def2e] t01 — discover configured topics as topic-only channels from an init-time snapshot (tasks/t01-topic-only-channels.md); review fix [bc99dcf]
+- [x] [8327249] t02 — type topic payloads through `AsyncAPIConfig.channel_payloads` (tasks/t02-channel-payloads.md)
+
+**Recovery checkpoint:** `make lint && make type-check && make test && make validate-asyncapi` exits `0`.
+
+## Continuity Snapshot
+
+- **State:** completed at `8327249`. `make lint`, `make type-check`, `make test` (264 passed, 96.68%) and `make validate-asyncapi` exit `0`. The installed-wheel suite passes on Litestar 2.24.0 and 2.25.0; `make installed-test` still fails in its pre-existing minimal-install smoke step.
+- **Discoveries:** runtime subscriptions share the topic mapping in arbitrary mode, so topic names are read only at init (`bc99dcf`); the snapshot lookup lives in the extractor because `generator.py` may not use lazy imports or private access.

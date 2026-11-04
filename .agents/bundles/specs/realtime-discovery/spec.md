@@ -3,16 +3,16 @@ type: Spec
 flow_id: realtime-discovery
 title: Realtime Source Discovery for Downstream Codegen
 description: Mark each discovered channel's transport, discover Server-Sent Event routes, and discover typed ChannelsPlugin topics, so client code generators such as litestar-vite need no heuristics or duplicated contracts (issue #11).
-state: active
+state: completed
 parent_prd: null
 research: []
 plan_revision: 3
 plan_commit: 5e875e6
 state_revision: 0
 current_task: null
-last_verified_checkpoint: null
+last_verified_checkpoint: 8327249
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T22:20:00Z
 tags: [prd, discovery, sse, channels-plugin, bindings, codegen]
 ---
 
@@ -117,8 +117,8 @@ Issue #11, filed after litestar-vite removed its own AsyncAPI fallback generator
 | Chapter | Flow ID | Title | Key Deliverables | Public Seams | Dependencies | State |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `channel-source-markers` | Transport markers | `x-litestar-source` on discovered channels, `ws` binding on native WebSocket channels | Generated `channels` objects | `discovery-fixes` | completed |
-| 2 | `sse-discovery` | Server-Sent Event routes | `extract_sse_channels`, `include_sse_routes`, decorator support on HTTP handlers, `http` binding | `asyncapi.extractors.extract_sse_channels`, `AsyncAPIConfig.include_sse_routes` | 1 | draft |
-| 3 | `channels-plugin-topics` | Typed ChannelsPlugin topics | Topic-only discovery, `include_channels_plugin_topics`, `channel_payloads` | `AsyncAPIConfig.channel_payloads`, `AsyncAPIConfig.include_channels_plugin_topics` | 1 | draft |
+| 2 | `sse-discovery` | Server-Sent Event routes | `extract_sse_channels`, `include_sse_routes`, decorator support on HTTP handlers, `http` binding | `asyncapi.extractors.extract_sse_channels`, `AsyncAPIConfig.include_sse_routes` | 1 | completed |
+| 3 | `channels-plugin-topics` | Typed ChannelsPlugin topics | Topic-only discovery, `include_channels_plugin_topics`, `channel_payloads` | `AsyncAPIConfig.channel_payloads`, `AsyncAPIConfig.include_channels_plugin_topics` | 1 | completed |
 
 Chapters 2 and 3 are independent after chapter 1. Both add fields to `config.py`, so land 2 then 3.
 
@@ -142,11 +142,12 @@ Chapters 2 and 3 are independent after chapter 1. Both add fields to `config.py`
 
 - [x] [05d8ec8] channel-source-markers — transport markers and ws bindings on discovered channels (../channel-source-markers/spec.md)
 - [x] [0371687] sse-discovery — Server-Sent Event route discovery (../sse-discovery/spec.md)
-- [ ] channels-plugin-topics — topic-only discovery and typed topic payloads (../channels-plugin-topics/spec.md)
+- [x] [8327249] channels-plugin-topics — topic-only discovery and typed topic payloads (../channels-plugin-topics/spec.md)
 
 ## Continuity Snapshot
 
-- **State:** active. Chapter 1 completed at `05d8ec8`, chapter 2 at `0371687`.
+- **State:** completed. Chapter 1 at `05d8ec8`, chapter 2 at `0371687`, chapter 3 at `d3def2e`, `bc99dcf` and `8327249`.
+- **Success metric:** litestar-vite's unchanged classifier maps every discovered channel of the generated realtime fixture (3.0.0 and 3.1.0) to its `x-litestar-source`, with 0 mismatches.
 - **Decisions on 2026-11-04 (user):** `channel_payloads` mapping; topic-only discovery on by default; sequenced after `discovery-fixes`.
 - **Review:** round 1 of the independent review is adjudicated. All 9 findings were adopted, and `plan_revision` is now 2.
 - **Discoveries:** litestar-vite guesses `ws` when bindings are absent, so ChannelsPlugin channels need an explicit empty object.
