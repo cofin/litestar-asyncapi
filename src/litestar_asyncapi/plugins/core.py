@@ -188,14 +188,27 @@ class AsyncAPIPlugin(InitPluginProtocol):
         """Handle application initialization.
 
         This method is called during Litestar application initialization.
-        Registers docs routes when enabled.
+        Registers docs routes when enabled. Documentation route names are fixed,
+        so an application accepts exactly one AsyncAPIPlugin.
 
         Args:
             app_config: The Litestar application configuration.
 
         Returns:
             The updated application configuration.
+
+        Raises:
+            ImproperlyConfiguredException: If the application has another AsyncAPIPlugin.
         """
+        other = next(
+            (plugin for plugin in app_config.plugins if isinstance(plugin, AsyncAPIPlugin) and plugin is not self), None
+        )
+        if other is not None:
+            message = (
+                "An application accepts one AsyncAPIPlugin; found plugins with docs paths "
+                f"{self.config.docs.path!r} and {other.config.docs.path!r}"
+            )
+            raise ImproperlyConfiguredException(message)
         if self.config.docs.enabled:
             app_config.route_handlers.append(self.create_docs_router())
         return app_config

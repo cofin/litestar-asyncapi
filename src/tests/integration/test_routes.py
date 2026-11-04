@@ -133,3 +133,25 @@ def test_docs_under_native_nested_router() -> None:
         assert response.status_code == 200
         assert "/gateway/service/asyncapi/asyncapi.json" in response.text
         assert client.get("/service/asyncapi/assets/bootstrap.js").status_code == 200
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_second_plugin_in_one_app_is_rejected_at_startup(enabled: bool) -> None:
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    public = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(path="/public")))
+    internal = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(path="/internal", enabled=enabled)))
+
+    with pytest.raises(ImproperlyConfiguredException, match="AsyncAPIPlugin") as error:
+        Litestar([], plugins=[public, internal])
+
+    assert "/public" in str(error.value)
+    assert "/internal" in str(error.value)
+
+
+def test_single_plugin_with_other_plugins_starts() -> None:
+    from litestar.plugins.pydantic import PydanticPlugin
+
+    app = Litestar([], plugins=[PydanticPlugin(), AsyncAPIPlugin()])
+    with TestClient(app) as client:
+        assert client.get("/asyncapi/asyncapi.json").status_code == 200

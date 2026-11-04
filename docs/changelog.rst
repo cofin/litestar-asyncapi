@@ -57,6 +57,11 @@ Fixed
 * ``AsyncAPIConfig`` now rejects an unsupported ``spec_version`` such as
   ``"3.0"`` with ``ValueError``. Previously the value was written into the
   document unchecked.
+* Registering a second ``AsyncAPIPlugin`` on one application now raises
+  ``ImproperlyConfiguredException`` at startup, naming both docs paths.
+  Previously both docs sites shared fixed route names, so one docs page could
+  link to the other's document and assets, including a guarded one. Use one
+  plugin per application.
 * The interactive console now opens for payloads typed ``[object, null]`` and
   for ``oneOf`` or ``anyOf`` unions whose members are all objects or arrays.
   Previously these operations showed "Interactive sending is unavailable".
