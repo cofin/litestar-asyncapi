@@ -21,6 +21,11 @@ Fixed
   ``additionalItems``. Previously the Draft07 document carried ``prefixItems``,
   which validators ignore. Setting ``items``, ``additional_items`` and
   ``prefix_items`` together now raises ``ValueError``.
+* A variable-length tuple with length limits, such as
+  ``Annotated[tuple[int, ...], Parameter(max_items=3)]``, now keeps its item
+  type. Previously its items were exported as ``oneOf`` an integer or anything.
+* Length limits of zero (``min_items``, ``max_items``, ``min_length``,
+  ``max_length``) are no longer dropped from payload schemas.
 
 0.2.0
 =====

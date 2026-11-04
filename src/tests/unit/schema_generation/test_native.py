@@ -319,6 +319,43 @@ def test_tuple_zero_maximum_is_not_dropped() -> None:
     assert schema["maxItems"] == 0
 
 
+def test_constrained_variadic_tuple_keeps_item_type() -> None:
+    import typing
+
+    from litestar.params import Parameter
+
+    generator = AsyncAPISchemaGenerator()
+    for annotation in (tuple[int, ...], vars(typing)["Tuple"][int, ...]):
+        field = FieldDefinition.from_annotation(annotation, kwarg_definition=Parameter(min_items=1, max_items=3))
+        assert generator.generate(field) == {
+            "type": "array",
+            "items": {"type": "integer"},
+            "minItems": 1,
+            "maxItems": 3,
+        }
+
+
+def test_zero_bounds_are_not_dropped() -> None:
+    from typing import Annotated
+
+    from litestar.params import Parameter
+
+    @dataclass
+    class Empty:
+        items: Annotated[list[int], Parameter(max_items=0)]
+        text: Annotated[str, Parameter(min_length=0, max_length=0)]
+        values: Annotated[tuple[int, ...], Parameter(min_items=0, max_items=0)]
+
+    generator = AsyncAPISchemaGenerator()
+    generator.generate(Empty)
+    properties = next(iter(generator.components().values()))["properties"]
+    assert properties["items"]["maxItems"] == 0
+    assert properties["text"]["minLength"] == properties["text"]["maxLength"] == 0
+    assert properties["values"]["minItems"] == properties["values"]["maxItems"] == 0
+    field = FieldDefinition.from_annotation(list[str], kwarg_definition=Parameter(min_items=0))
+    assert generator.generate(field)["minItems"] == 0
+
+
 def test_native_projection_honors_excluded_fields() -> None:
     from dataclasses import dataclass
 

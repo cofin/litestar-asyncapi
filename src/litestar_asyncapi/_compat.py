@@ -43,7 +43,11 @@ class _SchemaCreator(SchemaCreator):
         self._null_schemas: dict[int, Schema] = {}
 
     def process_schema_result(self, field: FieldDefinition, schema: Schema) -> Schema | Reference:
-        """Record explicit null defaults before native optional fields lose presence."""
+        """Record explicit null defaults and keep zero-valued bounds that native truthiness checks drop."""
+        if isinstance(field.kwarg_definition, KwargDefinition):
+            for name in ("min_items", "max_items", "min_length", "max_length"):
+                if getattr(field.kwarg_definition, name) == 0 and getattr(schema, name) is None:
+                    setattr(schema, name, 0)
         if field.default is None:
             self.null_fields.setdefault(id(schema), set()).add("default")
             if field.is_const:
@@ -58,7 +62,7 @@ class _SchemaCreator(SchemaCreator):
         return super().process_schema_result(field, schema)
 
     def for_field_definition(self, field_definition: FieldDefinition) -> Schema | Reference:
-        """Preserve tuple cardinality from its Python annotation, including empty tuples."""
+        """Preserve tuple item types and cardinality from the Python annotation, including empty tuples."""
         if field_definition.is_forward_ref:
             namespace = self._namespaces[-1] if self._namespaces else {}
             carrier = SimpleNamespace(__annotations__={"payload": field_definition.raw})
@@ -75,26 +79,23 @@ class _SchemaCreator(SchemaCreator):
         annotation = field_definition.annotation
         args = get_args(annotation)
         if (
-            get_origin(annotation) is tuple
-            and hasattr(annotation, "__args__")
-            and not (args and args[-1] is Ellipsis)
-            and self.get_plugin_for(field_definition) is None
+            get_origin(annotation) is not tuple
+            or not hasattr(annotation, "__args__")
+            or self.get_plugin_for(field_definition) is not None
         ):
-            args = () if args == ((),) else args
-            schema = Schema(
-                type=OpenAPIType.ARRAY,
-                prefix_items=[self.for_field_definition(FieldDefinition.from_annotation(arg)) for arg in args] or None,
-            )
-            result = self.process_schema_result(field_definition, schema)
-            schema.min_items = max(len(args), schema.min_items if schema.min_items is not None else len(args))
-            schema.max_items = min(len(args), schema.max_items if schema.max_items is not None else len(args))
-            if (
-                isinstance(field_definition.kwarg_definition, KwargDefinition)
-                and field_definition.kwarg_definition.max_items == 0
-            ):
-                schema.max_items = 0
-            return result
-        return super().for_field_definition(field_definition)
+            return super().for_field_definition(field_definition)
+        if args and args[-1] is Ellipsis:
+            items = self.for_field_definition(FieldDefinition.from_annotation(args[0]))
+            return self.process_schema_result(field_definition, Schema(type=OpenAPIType.ARRAY, items=items))
+        args = () if args == ((),) else args
+        schema = Schema(
+            type=OpenAPIType.ARRAY,
+            prefix_items=[self.for_field_definition(FieldDefinition.from_annotation(arg)) for arg in args] or None,
+        )
+        result = self.process_schema_result(field_definition, schema)
+        schema.min_items = max(len(args), schema.min_items if schema.min_items is not None else len(args))
+        schema.max_items = min(len(args), schema.max_items if schema.max_items is not None else len(args))
+        return result
 
     def for_plugin(self, field_definition: FieldDefinition, plugin: Any) -> Schema | Reference:
         """Reuse native field schemas while correcting msgspec's array wire layout."""
