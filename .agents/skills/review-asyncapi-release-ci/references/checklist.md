@@ -79,7 +79,7 @@ Anchor: `pyproject.toml::tool.bumpversion`, `Makefile::release`, `Makefile::pre-
 
 ## REL-15 **Runnable doc examples keep valid PEP 723 metadata and standalone marker blocks.**
 Why: Broken metadata or marker blocks break copy-paste examples and CI.
-Check: `# /// script` with `requires-python >=3.10` and a `litestar-asyncapi` dependency; a module-level `app` that serves its document.
+Check: `# /// script` with `requires-python >=3.11` and a `litestar-asyncapi` dependency; a module-level `app` that serves its document.
 Anchor: `tools/ci/validate_pep723_blocks.py::validate_file`, `src/tests/unit/docs/test_examples.py`
 
 ## REL-16 **Python code stays free of `from __future__ import annotations`, and package code free of inline comments.**

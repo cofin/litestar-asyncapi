@@ -43,7 +43,7 @@ Packaged AsyncAPI React component 3.2.1 is the default documentation renderer[^p
 
 Optional upstream asyncapi-ws-plugin 0.1.0 supports verified JSON-text object/array operations. It never auto-connects and uses advisory validation, intentionally allowing invalid sends. Unsupported modes retain documentation. Applications enforce actual payload and authorization rules.
 
-Use official schema/parser gates, behavioral tests, real browser acceptance and installed-wheel Python 3.10–3.14 lanes as evidence. Do not equate nonempty output or successful documentation builds with complete schema or runtime fidelity.
+Use official schema/parser gates, behavioral tests, real browser acceptance and installed-wheel Python 3.11–3.15 lanes as evidence. Do not equate nonempty output or successful documentation builds with complete schema or runtime fidelity.
 
 [^pkg]: `pyproject.toml::project`
 [^api]: `src/litestar_asyncapi/__init__.py`

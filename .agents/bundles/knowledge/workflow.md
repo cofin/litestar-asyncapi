@@ -71,7 +71,7 @@ make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]
 make browser-test-installed PYTHON_VERSION=3.12
 
 # documentation
-make docs                                      # generated CLI page and example documents, Zensical strict build, compaction and redirects, link and Reference budget verification (.venv-docs, Python 3.12)
+make docs                                      # generated CLI page and example documents, Zensical strict build, compaction and redirects, link and Reference budget verification
 make docs-serve                                # live preview
 make docs-linkcheck                            # external links with lychee; skips when lychee is absent
 make docs-clean                                # remove site/, docs/_generated/ and the generated CLI page

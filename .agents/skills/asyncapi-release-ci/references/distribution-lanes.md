@@ -21,7 +21,7 @@ How build, test and publish targets compose into the single tested artifact.
 | Browser | `make browser-test` | Playwright Chromium against `tools/frontend/tests/server.py` | `npx playwright install chromium` |
 | Installed Python | `make installed-test PYTHON_VERSION=X LITESTAR_BOUNDARY=minimum\|latest` | wheel imports from site-packages, minimal generation, full tests outside the checkout | built `dist/*.whl` |
 | Installed browser | `make browser-test-installed PYTHON_VERSION=X` | installed manifest hash equals source manifest; browser suite against installed wheel | built wheel, Node (`.nvmrc`) |
-| Docs | `make docs docs-linkcheck` | Zensical strict build, redirect stubs, inventory and internal links; external links via lychee | docs group in `.venv-docs` |
+| Docs | `make docs docs-linkcheck` | Zensical strict build, redirect stubs, inventory and internal links; external links via lychee | docs group |
 
 ## `make build`
 
@@ -46,7 +46,7 @@ When raising the minimum Litestar version, update `project.dependencies`, both p
 
 ## CI composition
 
-- `ci.yml::distribution` calls `distribution.yml`; `ci.yml::test_python` fans out `test.yml` over Python 3.10–3.14 x `minimum`/`latest` and downloads `tested-distribution`.
+- `ci.yml::distribution` calls `distribution.yml`; `ci.yml::test_python` fans out `test.yml` over Python 3.11–3.15 x `minimum`/`latest` and downloads `tested-distribution`.
 - Coverage runs only where `coverage` input is true (3.12/minimum) and uploads `coverage-xml` for `ci.yml::codecov`.
 - `publish.yml` (on `release: published` or `workflow_dispatch`) calls `distribution.yml`, then `pypi` downloads `tested-distribution` into `dist` and publishes via trusted publishing.
 

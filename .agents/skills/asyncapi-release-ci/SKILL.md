@@ -11,7 +11,7 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - Built UI assets are committed and shipped through hatch `artifacts`; consumers need neither Node nor a CDN. Node (`.nvmrc`) is build/test-only (`package.json::engines`).
 - Runtime dependency is `litestar>=2.24.0` with no upper cap; `installed-test` proves `minimum` (`litestar==2.24.0`) and `latest` (`litestar>=2.24,<3`) boundaries.
 - `installed-test` installs the wheel into a temp venv outside the checkout, asserts `litestar_asyncapi.__file__` is under `sys.prefix`, generates a 3.1.0 document, then runs `pytest tests --no-cov -q`.
-- CI matrix: Python 3.10–3.14 x `minimum`/`latest`; coverage XML only on 3.12/minimum.
+- CI matrix: Python 3.11–3.15 x `minimum`/`latest`; coverage XML only on 3.12/minimum.
 - Every external Action pins a full 40-char SHA with a `# vX` comment; workflows default to `permissions: contents: read`; elevate per job only (`id-token: write` for PyPI/Pages).
 - Every `actions/checkout` sets `persist-credentials: false`. Local reusable workflows use `uses: $/.github/workflows/<file>.yml`.
 - `make zizmor` reports zero high/medium findings.
@@ -19,7 +19,7 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-pep723, scan-docstrings. `make check-all` = lint, then the suite once with coverage.
 - `make release` / `make pre-release` bump versions in `pyproject.toml` and `uv.lock` via bump-my-version (`commit = false`, `tag = false`). Run them only on explicit user request; never create, move or delete Git tags and never push.
 - Python code never uses `from __future__ import annotations` (ruff `flake8-tidy-imports.banned-api`, rule TID251) and package code carries zero inline comments.
-- Runnable `docs/examples/**/*.py` declare a PEP 723 block with `requires-python >=3.10` and a `litestar-asyncapi` dependency and a module-level `app` that `src/tests/unit/docs/test_examples.py` serves; `make validate-asyncapi` validates each exported example document.
+- Runnable `docs/examples/**/*.py` declare a PEP 723 block with `requires-python >=3.11` and a `litestar-asyncapi` dependency and a module-level `app` that `src/tests/unit/docs/test_examples.py` serves; `make validate-asyncapi` validates each exported example document.
 <!-- truth: end -->
 
 ## Scope

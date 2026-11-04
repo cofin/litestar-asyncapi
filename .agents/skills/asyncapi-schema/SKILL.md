@@ -23,7 +23,7 @@ description: Use when changing payload/header schema generation or message examp
 - Failures name the payload and its provenance (handler/channel) in `ImproperlyConfiguredException`.
 - Example precedence: explicit message examples (including `[]` and `None` payload) > declared schema/model examples > generated example. Generated examples never reseed shared RNG/Faker and are omitted with a warning when unsupported.
 - `normalize_examples` round-trips through `encode_json`/`decode_json` with `app.type_encoders`.
-- Python >=3.10, PEP 604/585 typing, Google docstrings, zero inline comments, `__slots__` on owned classes.
+- Python >=3.11, PEP 604/585 typing, Google docstrings, zero inline comments, `__slots__` on owned classes.
 - Litestar dependency is `>=2.24.0` with no upper cap; CI exercises 2.24.0 and latest `<3`.
 <!-- truth: end -->
 

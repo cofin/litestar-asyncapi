@@ -38,7 +38,7 @@ You are the write-enabled specialist for the litestar-asyncapi schema domain: `s
 
 - Fixed tuple bounds derive from the annotation; empty fixed tuples export `maxItems: 0`; literal data is never converted; unsupported keywords fail with a JSON pointer; explicit `MultiFormatSchema` bypasses conversion; explicit null default/const survives.
 - Fresh registry per generator; `components()` finalizes once after all payloads.
-- Python >=3.10, PEP 604/585, Google docstrings, zero inline comments, `__slots__` on owned classes.
+- Python >=3.11, PEP 604/585, Google docstrings, zero inline comments, `__slots__` on owned classes.
 - Stage only files you changed; do not commit, push or tag unless explicitly instructed.
 
 # Output Contract

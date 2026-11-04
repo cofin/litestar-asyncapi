@@ -46,7 +46,7 @@ sources:
 ## Testing
 
 - **Coverage floor on partial runs.** `addopts` carries `--cov=litestar_asyncapi --cov-fail-under=80`[^addopts]. Any single-file run reports ~40% and exits 1, so its exit code cannot distinguish red from green. Use `--no-cov`.
-- **`make_dataclass` module names.** On Python 3.12+, `make_dataclass` overrides a `__module__` supplied through the namespace. Assign `__module__` after construction when tests need distinct module-qualified names across 3.10–3.14.
+- **`make_dataclass` module names.** On Python 3.12+, `make_dataclass` overrides a `__module__` supplied through the namespace. Assign `__module__` after construction when tests need distinct module-qualified names across 3.11–3.15.
 
 ## Litestar integration
 

@@ -23,7 +23,7 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 - Spec models subclass `BaseSchemaObject`, are `@dataclass(slots=True)`, and serialize through `to_schema`: `UNSET` (Litestar `Empty`) omits; `None` omits unless field metadata `nullable=True`; `extensions` keys must start with `x-` and never shadow modeled fields.
 - Logical `content_type` is distinct from the `x-websocket-mode` frame-mode extension; explicit extensions win over inferred ones.
 - Private Litestar imports live only in `_compat.py`; extractors call its helpers (`websocket_signature`, `websocket_payload`, `generated_channels_mode`).
-- Python >=3.10, PEP 604/585 typing, no inline comments (Google docstrings), owned classes slotted.
+- Python >=3.11, PEP 604/585 typing, no inline comments (Google docstrings), owned classes slotted.
 - Focused tests: `uv run pytest <path> -q --no-cov` (the global coverage floor fails focused runs).
 <!-- truth: end -->
 

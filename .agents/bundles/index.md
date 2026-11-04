@@ -9,7 +9,7 @@ tags: [index, okf, bundles]
 # Knowledge Bundles Index
 
 <!-- truth: start -->
-- Python >= 3.10, run everything through `uv run`; PEP 604/585 typing; zero inline comments; no `from __future__ import annotations` in package code.
+- Python >= 3.11, run everything through `uv run`; PEP 604/585 typing; zero inline comments; no `from __future__ import annotations` in package code.
 - Litestar `>=2.24.0` with no upper cap; private Litestar imports only in `_compat.py`.
 - AsyncAPI 3.1.0 default, explicit 3.0.0; Draft07 payload schemas with annotation-derived tuple bounds.
 - Operation identity is the casefold-unique operations-map key; no wire `operationId`.

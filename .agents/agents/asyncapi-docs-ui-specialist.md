@@ -34,7 +34,7 @@ You are the implementation specialist for the `litestar-asyncapi` documentation 
 - Frontend (Node (`.nvmrc`)): `make js-install build`, `make js-test browser-test`. Installed lane: `make browser-test-installed PYTHON_VERSION=3.12`.
 
 ### Constraints
-- Python >=3.10, PEP 604/585 typing, Google-style docstrings, no inline comments.
+- Python >=3.11, PEP 604/585 typing, Google-style docstrings, no inline comments.
 - No second validator, WebSocket transport, URL resolver or copy of a native renderer.
 - Never hand-edit hashed assets or `manifest.json`. Stage only task-owned paths, and never push.
 
