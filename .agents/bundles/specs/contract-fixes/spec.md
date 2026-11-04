@@ -35,7 +35,7 @@ Every document the plugin emits says what the application actually does, and val
   - `prefixItems` leaks into Draft07 documents.
 - **Validator blind spot.** `tools/validate_asyncapi.mjs` validates hand-written fixtures. They include security schemes, traits and `ws` bindings, but no Kafka or AMQP bindings and no `x-` extensions. That is why the Kafka key bug passed.
 - **Private details in a public repo.** `Makefile` (an OS-detection block plus `setup-env` help text) and `tools/scripts/setup-env.sh` name an internal environment. The index URLs they set are public PyPI. Both files are already on `origin/main`.
-- **Lint is red.** codespell flags the pytest key `addopts`. `pyproject.toml::tool.mypy` sets the option `warn_untyped_fields`, which pydantic-mypy does not recognize.
+- **Lint is red.** codespell flags the pytest key `addopts`. `pyproject.toml::tool.pydantic-mypy` sets the option `warn_untyped_fields`, which pydantic-mypy does not recognize.
 - **Bloat:**
   - Some code exists only to serve synthetic tests: the merge path in `_normalize_channels` is reached only by monkeypatched extractor output.
   - Six attribute probes guess at Litestar handler internals.
@@ -173,7 +173,7 @@ Each candidate is classified by tracing its callers, re-exports, `opt` strings a
 
 ## Implementation Plan
 
-- [ ] public-hygiene — remove leaked internals, green lint (../public-hygiene/spec.md)
+- [ ] public-hygiene — remove leaked internals, green lint (../public-hygiene/spec.md) — planned, approved
 - [ ] wire-contract-fixes — key normalization, prefixItems export, conformance fixture (../wire-contract-fixes/spec.md)
 - [ ] schema-fixes — tuple, bounds, example and null fidelity (../schema-fixes/spec.md)
 - [ ] discovery-fixes — listener naming, metadata order, decorator merging, discovery debloat (../discovery-fixes/spec.md)
