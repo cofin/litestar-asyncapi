@@ -10,7 +10,7 @@ description: Use when changing payload/header schema generation or message examp
 - Every private `litestar._openapi.*` import lives in `src/litestar_asyncapi/_compat.py`. Other modules import from `_compat`, never from `litestar._openapi`.
 - Each `AsyncAPISchemaGenerator` builds a fresh `SchemaRegistry` via `create_schema_creator(app)`; never share the app's OpenAPI registry or cache.
 - App schema plugins (`app.plugins.openapi`) participate even when OpenAPI serving is disabled; user plugins override native tuple/Struct shapes.
-- `prefer_alias` comes from the app's `PydanticSchemaPlugin` (default `True`); msgspec `encode_name` aliases stay native.
+- `prefer_alias` comes from the app's `PydanticSchemaPlugin`, which Litestar registers with `prefer_alias=False`; `True` applies only when no Pydantic plugin is registered. msgspec `encode_name` aliases stay native.
 - `generate()` returns provisional dicts; `components()` finalizes native names and refreshes every previously returned dict in place. Call it once, after all payloads, before serializing.
 - Native AsyncAPI 3.0/3.1 schemas are Draft07: fixed tuples export `items` arrays plus `minItems`/`maxItems` derived from the annotation. `prefixItems` alone never implies exact length.
 - Empty fixed tuple `tuple[()]` exports `maxItems: 0`, never `items: []`. Tuple bounds intersect declared constraints; variadic tuples stay unbounded.
