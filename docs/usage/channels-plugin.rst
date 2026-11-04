@@ -7,6 +7,11 @@ the application publishes messages to subscribers; incoming frames are discarded
 by the generated route. Text, bytes and JSON values are possible, so discovery
 does not invent a universal object/JSON payload.
 
+Each generated channel carries ``x-litestar-source: channels`` and an empty
+``bindings`` object. The empty object is deliberate: it marks a ChannelsPlugin
+subscription rather than a native WebSocket handler, even under a ``/ws/``
+prefix.
+
 With ``create_ws_route_handlers=False``, internal subscriptions produce no phantom
 network channels. Dynamic subscriptions are not broker contracts. Deduplication
 uses native handler identity so a user socket at another address is not hidden.

@@ -336,3 +336,41 @@ def test_handler_include_in_schema_false_excludes_raw_socket() -> None:
     app = Litestar(route_handlers=[included_handler, excluded_handler])
     channels = extract_websocket_channels(app, schema_generator=AsyncAPISchemaGenerator())
     assert {channel.address for channel in channels} == {"/included"}
+
+
+def test_discovered_channels_carry_transport_markers() -> None:
+    from litestar import Litestar, websocket_listener
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+
+    from litestar_asyncapi import ChannelDefinition, MessageDefinition, OperationDefinition
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    @websocket_listener("/live/metrics")
+    async def metrics(data: str) -> str:
+        return data
+
+    plugin = ChannelsPlugin(
+        MemoryChannelsBackend(), channels=["news"], create_ws_route_handlers=True, ws_handler_base_path="/ws/"
+    )
+    config = AsyncAPIConfig(
+        channels=[
+            ChannelDefinition(
+                "audit",
+                "audit",
+                [OperationDefinition(action="send", messages=[MessageDefinition(name="Entry", payload=str)])],
+                description="Audit trail",
+                extensions={"x-retention": "7d"},
+            )
+        ]
+    )
+    channels = AsyncAPIGenerator(Litestar([metrics], plugins=[plugin]), config).build_schema()["channels"]
+
+    assert channels["/live/metrics"]["x-litestar-source"] == "websocket"
+    assert channels["/live/metrics"]["bindings"] == {"ws": {}}
+    assert channels["/ws/news"]["x-litestar-source"] == "channels"
+    assert channels["/ws/news"]["bindings"] == {}
+    assert channels["audit"]["description"] == "Audit trail"
+    assert channels["audit"]["x-retention"] == "7d"
+    assert "x-litestar-source" not in channels["audit"]
+    assert "bindings" not in channels["audit"]

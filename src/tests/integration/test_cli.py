@@ -75,14 +75,17 @@ def test_write_failure_and_invalid_format(tmp_path: Path) -> None:
     assert "Invalid value" in invalid.stderr
 
 
+@pytest.mark.parametrize("name", ["bindings", "realtime"])
 @pytest.mark.parametrize("version", ["3.0.0", "3.1.0"])
-def test_committed_bindings_fixtures_match_export(version: str) -> None:
-    from litestar_asyncapi import AsyncAPIPlugin
-    from tests.fixtures.apps import bindings
+def test_committed_generated_fixtures_match_export(name: str, version: str) -> None:
+    from importlib import import_module
 
-    app = bindings.app_3_0 if version == "3.0.0" else bindings.app_3_1
+    from litestar_asyncapi import AsyncAPIPlugin
+
+    module = import_module(f"tests.fixtures.apps.{name}")
+    app = module.app_3_0 if version == "3.0.0" else module.app_3_1
     plugin = next(plugin for plugin in app.plugins if isinstance(plugin, AsyncAPIPlugin))
-    committed = FIXTURE.parents[1] / "asyncapi" / f"bindings-{version}.json"
+    committed = FIXTURE.parents[1] / "asyncapi" / f"{name}-{version}.json"
     exported = plugin.get_asyncapi_json(app).decode("utf-8")
     assert "prefixItems" not in exported
     assert committed.read_text(encoding="utf-8") == exported + "\n"

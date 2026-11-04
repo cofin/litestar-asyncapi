@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file.
 Unreleased
 ==========
 
+Added
+-----
+
+* Every discovered channel now says which transport it uses. A channel carries
+  ``x-litestar-source`` set to ``websocket`` or ``channels``, and an explicit
+  ``bindings`` object: native WebSocket channels get a ``ws`` binding and
+  ChannelsPlugin channels get an empty one. Client generators can pick the right
+  client from the document alone.
+* ``ChannelDefinition`` accepts ``description`` and ``extensions``. Explicit
+  channels get no automatic transport marker.
+
 Fixed
 -----
 

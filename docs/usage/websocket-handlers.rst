@@ -22,5 +22,9 @@ docstring when ``use_handler_docstrings=True``, fill only the operation fields
 that decorators leave empty. This includes operations a decorator adds, such as
 the explicit operations of a raw socket.
 
+Each discovered WebSocket channel carries ``x-litestar-source: websocket`` and a
+``ws`` channel binding, so client generators can tell native sockets apart from
+ChannelsPlugin routes without guessing from the path.
+
 Native ``include_in_schema=False`` on a handler or parent layer excludes it.
 No SSE or arbitrary broker-consumer inference is implemented.

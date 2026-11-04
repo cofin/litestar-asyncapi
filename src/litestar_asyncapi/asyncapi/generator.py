@@ -11,6 +11,8 @@ from litestar.typing import FieldDefinition
 
 from litestar_asyncapi._compat import NativeDTOPayload, resolve_annotation
 from litestar_asyncapi.asyncapi.datastructures import (
+    SOURCE_EXTENSION,
+    SOURCE_MARKERS,
     ChannelDefinition,
     DiscoveredChannel,
     DiscoveredOperation,
@@ -184,10 +186,22 @@ def _discover_channels(
 
 
 def _populate_channels(document: AsyncAPI, discovered: list[DiscoveredChannel]) -> dict[str, Channel]:
-    """Add one inline channel per discovered channel and return them by key."""
+    """Add one inline channel per discovered channel and return them by key.
+
+    Discovered channels carry an ``x-litestar-source`` transport marker unless their own extensions set one.
+    """
     channels = {
         channel.key: Channel(
-            address=channel.address, parameters=channel.parameters, servers=channel.servers, bindings=channel.bindings
+            address=channel.address,
+            description=channel.description,
+            parameters=channel.parameters,
+            servers=channel.servers,
+            bindings=channel.bindings,
+            extensions=(
+                {SOURCE_EXTENSION: SOURCE_MARKERS[channel.source], **channel.extensions}
+                if channel.source in SOURCE_MARKERS
+                else dict(channel.extensions)
+            ),
         )
         for channel in discovered
     }

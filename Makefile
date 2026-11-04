@@ -288,6 +288,8 @@ export-asyncapi-fixture:                           ## Export application contrac
 	@uv run litestar --app-dir src --app tests.fixtures.apps.cli:app asyncapi export --output .tmp/asyncapi-fixture.json --overwrite
 	@uv run litestar --app-dir src --app tests.fixtures.apps.bindings:app_3_0 asyncapi export --output src/tests/fixtures/asyncapi/bindings-3.0.0.json --overwrite
 	@uv run litestar --app-dir src --app tests.fixtures.apps.bindings:app_3_1 asyncapi export --output src/tests/fixtures/asyncapi/bindings-3.1.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.realtime:app_3_0 asyncapi export --output src/tests/fixtures/asyncapi/realtime-3.0.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.realtime:app_3_1 asyncapi export --output src/tests/fixtures/asyncapi/realtime-3.1.0.json --overwrite
 
 .PHONY: js-build js-test browser-test
 js-build:                                          ## Build packaged browser assets

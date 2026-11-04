@@ -17,6 +17,7 @@ from litestar_asyncapi.asyncapi.datastructures import (
     OperationDefinition,
 )
 from litestar_asyncapi.spec import OperationAction, Parameter, Reference
+from litestar_asyncapi.spec.bindings import WebSocketChannelBinding
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -78,6 +79,7 @@ def extract_websocket_channels(
                 provenance=f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}",
                 source=DiscoverySource.WEBSOCKET,
                 parameters=parameters or None,
+                bindings={"ws": WebSocketChannelBinding()},
                 operations=operations,
             )
         )

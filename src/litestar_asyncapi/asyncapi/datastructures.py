@@ -16,6 +16,8 @@ from litestar_asyncapi.spec import (
 )
 
 __all__ = (
+    "SOURCE_EXTENSION",
+    "SOURCE_MARKERS",
     "ChannelDefinition",
     "DiscoveredChannel",
     "DiscoveredOperation",
@@ -31,6 +33,18 @@ class DiscoverySource(str, Enum):
     WEBSOCKET = "websocket"
     CHANNELS_PLUGIN = "channels-plugin"
     CONFIG = "config"
+    SSE = "sse"
+
+
+SOURCE_EXTENSION = "x-litestar-source"
+"""Channel extension naming the transport of a discovered channel."""
+
+SOURCE_MARKERS: dict[DiscoverySource, str] = {
+    DiscoverySource.WEBSOCKET: "websocket",
+    DiscoverySource.CHANNELS_PLUGIN: "channels",
+    DiscoverySource.SSE: "sse",
+}
+"""``x-litestar-source`` values for discovered channels; explicit config channels carry none."""
 
 
 @dataclass(slots=True)
@@ -92,6 +106,8 @@ class ChannelDefinition:
     parameters: dict[str, Parameter | Reference] | None = None
     servers: list[Reference] | None = None
     bindings: dict[str, Any] | Reference | None = None
+    description: str | None = None
+    extensions: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(kw_only=True)
