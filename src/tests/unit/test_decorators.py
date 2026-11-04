@@ -56,7 +56,7 @@ def test_named_message_replaces_same_name_and_unnamed_repeat_fails() -> None:
     messages = handler.opt[ASYNCAPI_OPT_KEY].operations[OperationAction.RECEIVE].messages
     assert len(messages) == 1
     assert messages[0].payload is int
-    with pytest.raises(ImproperlyConfiguredException, match=r"Ambiguous unnamed.*/names"):
+    with pytest.raises(ImproperlyConfiguredException, match=r"Ambiguous unnamed.*/names.*handler fn:"):
         asyncapi_message(action="receive", payload=bool)(handler)
 
 

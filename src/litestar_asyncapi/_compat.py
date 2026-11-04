@@ -247,12 +247,17 @@ def websocket_signature(handler: Any) -> tuple[FieldDefinition | None, FieldDefi
     return None
 
 
-def websocket_handler_name(handler: Any) -> str:
-    """Return the user callback name behind native listener and stream wrappers."""
+def websocket_handler_callback(handler: Any) -> Any:
+    """Return the user callback behind native listener and stream wrappers."""
     callback = handler.fn
     if isinstance(handler, WebsocketListenerRouteHandler):
         callback = callback._fn
-    return str(getattr(unwrap(callback), "__qualname__", handler.handler_name))
+    return unwrap(callback)
+
+
+def websocket_handler_name(handler: Any) -> str:
+    """Return the user callback ``__name__`` behind native listener and stream wrappers."""
+    return str(getattr(websocket_handler_callback(handler), "__name__", handler.handler_name))
 
 
 def generated_channels_mode(handler: Any, app: Litestar) -> str | None:

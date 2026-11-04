@@ -39,7 +39,7 @@ def test_headless_export_matches_http() -> None:
     document = json.loads(result.stdout)
     assert document["servers"]["local"] == {"host": "localhost:8000", "protocol": "ws"}
     messages = document["channels"]["/events"]["messages"]
-    assert messages["ListenerHandler_receive"]["examples"] == [{"payload": ["amount:2.50", 1]}]
+    assert messages["events_receive"]["examples"] == [{"payload": ["amount:2.50", 1]}]
     assert invoke().stdout == result.stdout
 
 

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from litestar.exceptions import ImproperlyConfiguredException
 
+from litestar_asyncapi._compat import websocket_handler_name
 from litestar_asyncapi.asyncapi.datastructures import MessageDefinition, OperationDefinition
 from litestar_asyncapi.spec import (
     CorrelationId,
@@ -147,7 +148,7 @@ def asyncapi_message(
 
         operation = metadata.operations.get(op_action) or OperationDefinition(action=op_action)
         if name is None and operation.messages:
-            msg = f"Ambiguous unnamed AsyncAPI message on {sorted(route_handler.paths)!r} handler {route_handler.handler_name}: assign explicit message names"
+            msg = f"Ambiguous unnamed AsyncAPI message on {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}: assign explicit message names"
             raise ImproperlyConfiguredException(msg)
         message = MessageDefinition(
             payload=payload,

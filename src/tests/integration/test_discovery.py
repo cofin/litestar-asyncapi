@@ -237,3 +237,40 @@ def test_mixed_stream_does_not_claim_json_for_raw_text() -> None:
         ]
         == "application/custom"
     )
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_listener_operations_are_named_after_their_callbacks(reverse: bool) -> None:
+    from litestar import Litestar, websocket_listener
+
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    @websocket_listener("/chat")
+    async def chat(data: str) -> None:
+        return None
+
+    @websocket_listener("/feed")
+    async def feed(data: int) -> None:
+        return None
+
+    handlers = [feed, chat] if reverse else [chat, feed]
+    document = AsyncAPIGenerator(Litestar(handlers), AsyncAPIConfig(strict_uniqueness=True)).build_schema()
+    assert set(document["operations"]) == {"chat_receive", "feed_receive"}
+    assert document["operations"]["chat_receive"]["channel"] == {"$ref": "#/channels/~1chat"}
+
+
+def test_factory_listener_name_has_no_local_qualifier() -> None:
+    from litestar import Litestar, websocket_listener
+
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    def make_handler() -> object:
+        @websocket_listener("/chat")
+        async def chat(data: str) -> str:
+            return data
+
+        return chat
+
+    document = AsyncAPIGenerator(Litestar([make_handler()]), AsyncAPIConfig()).build_schema()
+    assert set(document["operations"]) == {"chat_receive", "chat_send"}
+    assert "<locals>" not in str(document)

@@ -135,7 +135,7 @@ def _infer_operations_from_handler(
             DiscoveredOperation(
                 action=action,
                 provenance=websocket_handler_name(route_handler),
-                operation_id=f"{route_handler.handler_name}_{action.value}",
+                operation_id=f"{websocket_handler_name(route_handler)}_{action.value}",
                 messages=[
                     MessageDefinition(
                         payload=websocket_payload(route_handler, field, sending=action is OperationAction.SEND),

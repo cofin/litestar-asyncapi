@@ -37,6 +37,12 @@ Fixed
 * Payload schema errors are easier to read: they carry a single ``500:``
   prefix, show the payload type by name instead of its full field definition,
   and a failing component names only the payloads that use it.
+* ``websocket_listener`` operations and their inferred messages are now named
+  after the handler function, for example ``chat_receive`` and ``chat_send``.
+  Previously every listener was named ``ListenerHandler_receive`` or
+  ``ListenerHandler_send``, numbered ``_2``, ``_3`` in route order, so
+  ``strict_uniqueness=True`` failed on any app with two listeners. This is a
+  breaking change for anyone matching the old operation or message keys.
 
 0.2.0
 =====
