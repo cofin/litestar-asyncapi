@@ -325,7 +325,6 @@ warn_unused_ignores = true
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
-warn_untyped_fields = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -337,5 +336,5 @@ strict-imports = false
 exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding|litestar_asyncapi\\.plugins\\.renderers:AsyncAPIUIRenderPlugin"
 
 [tool.codespell]
-ignore-words-list = ["asyncapi"]
+ignore-words-list = ["addopt", "asyncapi"]
 skip = 'uv.lock,package-lock.json'

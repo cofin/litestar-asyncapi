@@ -23,7 +23,6 @@ class SecurityScheme(BaseSchemaObject):
     bearer_format: str | None = None
     open_id_connect_url: str | None = None
 
-    # OAuth2 details are left flexible for now (PRD-006 can tighten this).
     flows: dict[str, Any] | None = None
 
     extensions: dict[str, Any] = field(default_factory=dict)

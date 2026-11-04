@@ -2,7 +2,7 @@
 type: Task
 id: public-hygiene:t02
 title: Green the lint gate and remove planning labels
-state: pending
+state: completed
 priority: P0
 verification_strategy: static_validation
 depends_on: [public-hygiene:t01]
@@ -13,15 +13,15 @@ files:
 tests: []
 plan_revision: 4
 plan_commit: 691324d
-state_revision: 0
+state_revision: 1
 claimed_by: null
 claimed_at: null
 blocked_reason: null
 unblock_condition: null
 next_step: null
-last_verified_at: null
+last_verified_at: 2026-11-04T17:37:40Z
 last_verified_commit: null
-verification_evidence: null
+verification_evidence: "make lint exit 0; no unrecognized mypy options; planning-label grep exit 1; 212 tests pass"
 created_at: 2026-11-04T00:00:00Z
 updated_at: 2026-11-04T00:00:00Z
 commit: null
@@ -62,8 +62,8 @@ tags: [hygiene, lint]
 
 ## Acceptance Criteria
 
-- [ ] R3: `make lint` exits `0`.
-- [ ] R4: no planning labels in `src`, `tools` or `docs`.
-- [ ] mypy reports no unrecognized configuration options.
+- [x] R3: `make lint` exits `0`.
+- [x] R4: no planning labels in `src`, `tools` or `docs`.
+- [x] mypy reports no unrecognized configuration options.
 
 ## Notes & Discoveries

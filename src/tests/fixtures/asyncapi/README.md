@@ -1,6 +1,6 @@
 # AsyncAPI conformance fixtures
 
-Run `npm ci` with Node 22, then `make validate-asyncapi`. Node packages are development-only. To validate independent exports, pass local JSON paths to `npm run validate:asyncapi -- path/to/document.json`. Task 5.1 will connect CLI-generated documents to this gate; these fixtures are intentionally independent contracts.
+Run `npm ci` with Node 22, then `make validate-asyncapi`. Node packages are development-only. To validate independent exports, pass local JSON paths to `npm run validate:asyncapi -- path/to/document.json`. `make validate-asyncapi` also exports `tests.fixtures.apps.cli:app` through the CLI and validates the result; these fixtures remain independent hand-written contracts.
 
 The gate applies both the pinned `@asyncapi/specs` 6.11.1 document schema and `@asyncapi/parser` 3.6.3. Parser errors fail validation and the parser must return a document. Warnings do not fail validation. AJV 8.20.0 validates Draft07 payload instances separately: tuple ordering, missing elements and extra elements are checked explicitly. Document validation alone does not establish payload-instance validity.
 
