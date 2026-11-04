@@ -1,6 +1,6 @@
 # litestar-asyncapi
 
-Generate AsyncAPI 3.1 documents from Litestar WebSocket routes and serve packaged documentation. Requires Python 3.10–3.14 and Litestar `>=2.24,<3`. AsyncAPI 3.0 remains available with `spec_version="3.0.0"`.
+Generate AsyncAPI 3.1 documents from Litestar WebSocket routes and serve packaged documentation. Requires Python 3.11–3.15 and Litestar `>=2.24,<3`. AsyncAPI 3.0 remains available with `spec_version="3.0.0"`.
 
 ```python
 from dataclasses import dataclass

@@ -10,11 +10,11 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Natural Language :: English",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Programming Language :: Python",
   "Topic :: Software Development",
   "Typing :: Typed",
@@ -28,7 +28,7 @@ keywords = ["litestar", "asyncapi", "async", "api", "documentation"]
 license = { text = "MIT" }
 name = "litestar-asyncapi"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 version = "0.2.0"
 
 [project.urls]
@@ -68,9 +68,9 @@ dev = [
   { include-group = "lint" },
 ]
 docs = [
-  "mkdocstrings-python>=2.0.1; python_version >= '3.11'",
-  "pymdown-extensions>=10.16; python_version >= '3.11'",
-  "zensical>=0.0.71,<0.1; python_version >= '3.11'",
+  "mkdocstrings-python>=2.0.1",
+  "pymdown-extensions>=10.16",
+  "zensical>=0.0.71,<0.1",
 ]
 lint = [
   "codespell",
@@ -194,7 +194,7 @@ version = "{current_version}"
 extend-exclude = ["site"]
 line-length = 120
 src = ["src"]
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -294,7 +294,7 @@ ban-relative-imports = "all"
 # Pyright configuration
 [tool.pyright]
 include = ["src/litestar_asyncapi"]
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 typeCheckingMode = "standard"
 
 # Mypy configuration

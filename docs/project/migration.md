@@ -2,7 +2,7 @@
 
 This redesign makes intentional API breaks without a deprecation layer. Upgrade
 Litestar to `>=2.24,<3` and test the generated document and your actual wire
-messages. Python 3.10–3.14 is supported.
+messages. Python 3.11–3.15 is supported.
 
 ## Configuration and imports
 

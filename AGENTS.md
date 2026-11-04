@@ -37,7 +37,7 @@ make check-all                                 # lint, then the full suite once 
 
 ## Conventions & Patterns
 
-- **Python:** >= 3.10, PEP 604 unions, PEP 585 collections. No `from __future__ import annotations` in package code.
+- **Python:** >= 3.11, PEP 604 unions, PEP 585 collections. No `from __future__ import annotations` in package code.
 - **No inline comments:** explanations belong in Google-style docstrings.
 - **Slotted classes:** enforced via `slotscheck`; owned UI adapters inheriting unslotted native renderer bases are narrowly exempt.
 - **Tuple fidelity:** fixed-length tuples keep positional types and exact length; wire output uses Draft07 `items` arrays with `minItems`/`maxItems`. Never infer length from `prefixItems` alone.

@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from litestar_asyncapi.spec import (
@@ -27,7 +27,7 @@ __all__ = (
 )
 
 
-class DiscoverySource(str, Enum):
+class DiscoverySource(StrEnum):
     """Identify the source of a discovered channel."""
 
     WEBSOCKET = "websocket"

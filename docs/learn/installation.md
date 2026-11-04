@@ -26,7 +26,7 @@ Install the package into the environment of your Litestar application:
     poetry add litestar-asyncapi
     ```
 
-It supports Python 3.10 to 3.14 and Litestar 2.24 or later. The documentation UI ships inside the wheel, so the application needs neither Node nor a CDN.
+It supports Python 3.11 to 3.15 and Litestar 2.24 or later. The documentation UI ships inside the wheel, so the application needs neither Node nor a CDN.
 
 ## A first application
 

@@ -45,7 +45,6 @@ dist/
 site/
 docs/_generated/
 docs/reference/cli.md
-.venv-docs/
 
 # Editors and operating systems
 .idea/

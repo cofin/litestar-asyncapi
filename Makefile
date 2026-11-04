@@ -9,7 +9,7 @@ SHELL := /bin/bash
 .ONESHELL:
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
-PYTHON_VERSION ?= 3.10
+PYTHON_VERSION ?= 3.11
 UV_SYNC_ARGS ?= --all-extras --dev
 
 -include Makefile.local
@@ -133,8 +133,7 @@ pre-release:                                       ## Start a pre-release: make 
 # Documentation
 # =============================================================================
 
-DOCS_PYTHON ?= 3.12
-DOCS_RUN = UV_PROJECT_ENVIRONMENT=.venv-docs uv run --frozen --python $(DOCS_PYTHON) --no-default-groups --group docs
+DOCS_RUN = uv run --frozen
 
 .PHONY: docs
 docs:                                             ## Build, redirect and verify the documentation site

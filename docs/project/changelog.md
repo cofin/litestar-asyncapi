@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- Python 3.10 is no longer supported. The package requires Python 3.11 or newer
+  and is tested on Python 3.11 to 3.15.
+- The AsyncAPI enums (`OperationAction`, `SchemaType`, `SchemaFormat`,
+  `SecuritySchemeType`) are `StrEnum`s, so `str()` returns the wire value.
+
 ### Added
 
 - Every discovered channel now says which transport it uses. A channel carries

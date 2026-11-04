@@ -70,8 +70,7 @@ Every PR must pass our CI matrix before merge:
 ## Documentation
 
 The site is built with [Zensical](https://zensical.org/) from Markdown under `docs/`.
-Building it needs Python 3.11 or newer; `make docs` creates a separate `.venv-docs`
-environment for it, so the development environment can stay on Python 3.10.
+`make docs` builds it in the development environment.
 
 ```bash
 make docs            # Build, write legacy redirects and verify the site

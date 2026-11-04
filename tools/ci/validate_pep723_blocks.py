@@ -9,7 +9,7 @@ The validator discovers example Python files except package initializers, parses
 metadata block as TOML, and asserts:
 
 1. The block exists and is well-formed.
-2. ``requires-python`` is present and declares ``>=3.10`` (or stricter).
+2. ``requires-python`` is present and declares ``>=3.11`` (or stricter).
 3. ``dependencies`` is a non-empty list that includes ``litestar-asyncapi``.
 
 The script exits non-zero on any failure so it can be wired into CI and the
@@ -18,12 +18,8 @@ The script exits non-zero on any failure so it can be wired into CI and the
 
 import re
 import sys
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib  # type: ignore[import-not-found]
-except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
-    import tomli as tomllib  # type: ignore[import-not-found, no-redef]
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -66,8 +62,8 @@ def validate_file(path: Path) -> list[str]:
     requires = data.get("requires-python")
     if not isinstance(requires, str) or not requires.strip():
         errors.append(f"{path}: missing or empty `requires-python`")
-    elif ">=3.10" not in requires and ">=3.11" not in requires and ">=3.12" not in requires:
-        errors.append(f"{path}: `requires-python` must declare `>=3.10` or stricter (got {requires!r})")
+    elif not any(f">=3.{minor}" in requires for minor in range(11, 16)):
+        errors.append(f"{path}: `requires-python` must declare `>=3.11` or stricter (got {requires!r})")
 
     deps = data.get("dependencies")
     if not isinstance(deps, list) or not deps:
