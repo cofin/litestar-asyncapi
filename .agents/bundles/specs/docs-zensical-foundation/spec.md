@@ -88,6 +88,7 @@ URLs are relative to `https://cofin.github.io/litestar-asyncapi/`. Later chapter
 | `usage/decorators.html` | `learn/decorators/` | Learn |
 | `usage/schema-generation.html` | `learn/schema-generation/` | Learn |
 | `examples/index.html`, `examples/README.html` | `learn/examples/` | Learn |
+| none (new page) | `learn/export/` | Learn |
 | none (new section index) | `integrations/` | Integrations |
 | `usage/channels-plugin.html` | `integrations/channels-plugin/` | Integrations |
 | `usage/renderers.html` | `integrations/documentation-ui/` | Integrations |

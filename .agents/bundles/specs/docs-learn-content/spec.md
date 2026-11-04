@@ -3,16 +3,16 @@ type: Spec
 flow_id: docs-learn-content
 title: Learn and Integrations Rewrite
 description: Rewrite the Learn and Integrations guides as example-first Markdown pages at locked URLs.
-state: draft
+state: completed
 parent_prd: docs-redesign
 research: []
 plan_revision: 2
-plan_commit: null
+plan_commit: 6ccfaa7
 state_revision: 0
 current_task: null
-last_verified_checkpoint: null
+last_verified_checkpoint: 3afc896
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T20:00:00Z
 tags: [docs, content, information-architecture]
 ---
 
@@ -60,3 +60,15 @@ Rewrite the converted Learn and Integrations guides as short, task-focused pages
 ## Acceptance Boundary
 
 `make docs` passes with snippet path checks on, every Learn page opens with an executed example, and `make docs-linkcheck` reports no broken internal or external links.
+
+## Implementation Plan
+
+- [x] [3afc896] t01 — example-first Learn and Integrations guides with generated fragments (tasks/t01-example-first-guides.md)
+
+**Recovery checkpoint:** `make lint && make test && make validate-asyncapi && make docs` exits `0`.
+
+## Continuity Snapshot
+
+- **State:** completed at `3afc896`. `make lint`, `make test` (278 passed, 97.01%), `make validate-asyncapi` and `make docs` exit `0`.
+- **Decisions:** fragments live in `docs/_generated/fragments/<example>/<section>.json`; `learn/export/` is a new page; mounting stays on `integrations/security-and-servers/`.
+- **Discoveries:** see the task notes; lychee remains unexercised locally.

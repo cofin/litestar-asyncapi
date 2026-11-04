@@ -16,7 +16,7 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - Every `actions/checkout` sets `persist-credentials: false`. Local reusable workflows use `uses: $/.github/workflows/<file>.yml`.
 - `make zizmor` reports zero high/medium findings.
 - Focused tests: `uv run pytest <path> -q --no-cov`. Global `--cov-fail-under=80` in `pyproject.toml::tool.pytest.ini_options.addopts` fails any partial run.
-- `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-pep723. `make check-all` = lint, then the suite once with coverage.
+- `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-pep723, scan-docstrings. `make check-all` = lint, then the suite once with coverage.
 - `make release` / `make pre-release` bump versions in `pyproject.toml` and `uv.lock` via bump-my-version (`commit = false`, `tag = false`). Run them only on explicit user request; never create, move or delete Git tags and never push.
 - Python code never uses `from __future__ import annotations` (ruff `flake8-tidy-imports.banned-api`, rule TID251) and package code carries zero inline comments.
 - Runnable `docs/examples/**/*.py` declare a PEP 723 block with `requires-python >=3.10` and a `litestar-asyncapi` dependency and a module-level `app` that `src/tests/unit/docs/test_examples.py` serves; `make validate-asyncapi` validates each exported example document.
