@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from urllib.parse import unquote
 
 import pytest
@@ -198,3 +199,76 @@ def test_actual_channels_routes_are_deduplicated_by_native_identity(arbitrary: b
     assert message["x-websocket-mode"] == "text"
     hidden = AsyncAPIGenerator(app, AsyncAPIConfig(include_channels_plugin=False)).build_schema()
     assert set(hidden["channels"]) == {"/ws/user"}
+
+
+@dataclass
+class Headline:
+    title: str
+
+
+def test_channel_payloads_type_generated_routes_and_topic_channels() -> None:
+    from litestar import Litestar
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    routes = ChannelsPlugin(
+        MemoryChannelsBackend(), channels=["news"], create_ws_route_handlers=True, ws_handler_base_path="/ws/"
+    )
+    topics = ChannelsPlugin(MemoryChannelsBackend(), channels=["orders", "alerts"])
+    config = AsyncAPIConfig(channel_payloads={"news": Headline, "orders": Headline})
+    document = AsyncAPIGenerator(Litestar([], plugins=[routes, topics]), config).build_schema()
+    headline = {"$ref": "#/components/schemas/Headline"}
+
+    assert document["channels"]["/ws/news"]["messages"] == {
+        "ws_news_send": {"payload": headline, "contentType": "application/json", "x-websocket-mode": "text"}
+    }
+    assert document["channels"]["orders"]["messages"] == {
+        "orders_send": {"payload": headline, "contentType": "application/json"}
+    }
+    assert document["channels"]["alerts"]["messages"] == {"alerts_send": {"payload": {}}}
+    assert document["components"]["schemas"]["Headline"]["properties"] == {"title": {"type": "string"}}
+
+
+@pytest.mark.parametrize("flags", [{}, {"include_channels_plugin": False}, {"include_channels_plugin_topics": False}])
+def test_channel_payloads_reject_unknown_topics_whatever_the_flags(flags: "dict[str, bool]") -> None:
+    from litestar import Litestar
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    config = AsyncAPIConfig(channel_payloads={"missing": Headline}, **flags)
+    app = Litestar([], plugins=[ChannelsPlugin(MemoryChannelsBackend(), channels=["news"])])
+    with pytest.raises(ImproperlyConfiguredException, match=r"channel_payloads key 'missing' names no configured"):
+        AsyncAPIGenerator(app, config).build_schema()
+    with pytest.raises(ImproperlyConfiguredException, match=r"channel_payloads key 'missing' names no configured"):
+        AsyncAPIGenerator(Litestar([]), config).build_schema()
+
+
+def test_arbitrary_channels_declare_payload_topics_and_keep_their_route_untyped() -> None:
+    from litestar import Litestar
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    plugin = ChannelsPlugin(
+        MemoryChannelsBackend(),
+        arbitrary_channels_allowed=True,
+        create_ws_route_handlers=True,
+        ws_handler_base_path="/ws/",
+    )
+    config = AsyncAPIConfig(channel_payloads={"prices": Headline})
+    document = AsyncAPIGenerator(Litestar([], plugins=[plugin]), config).build_schema()
+
+    assert set(document["channels"]) == {"/ws/{channel_name}", "prices"}
+    assert next(iter(document["channels"]["/ws/{channel_name}"]["messages"].values()))["payload"] == {}
+    assert document["channels"]["prices"]["messages"]["prices_send"]["payload"] == {
+        "$ref": "#/components/schemas/Headline"
+    }

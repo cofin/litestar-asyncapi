@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -130,6 +130,15 @@ class AsyncAPIConfig:
     """Whether configured ChannelsPlugin topics without a generated route become topic-only channels.
 
     Applies only when ``include_channels_plugin`` is true.
+    """
+
+    channel_payloads: Mapping[str, Any] = field(default_factory=dict)
+    """Payload types keyed by ChannelsPlugin topic name.
+
+    A typed topic's generated route and topic-only channel use the generated schema with
+    ``application/json``. Keys must name a configured topic unless a ChannelsPlugin allows arbitrary
+    channels, in which case an unlisted key declares a topic. Keys are validated whatever the include
+    flags say; the arbitrary-channel route stays untyped.
     """
 
     include_sse_routes: bool = True

@@ -24,6 +24,10 @@ Added
   route becomes a channel keyed by its name with one ``send`` operation. Topics
   are read when the application starts, so runtime subscriptions never appear.
   Turn this off with ``AsyncAPIConfig(include_channels_plugin_topics=False)``.
+* ``AsyncAPIConfig.channel_payloads`` maps a ChannelsPlugin topic name to a
+  payload type. The topic's generated route and topic channel then document the
+  generated schema as ``application/json``. Unknown topic names raise unless a
+  plugin allows arbitrary channels, in which case the name declares a topic.
 * ``ChannelDefinition`` accepts ``description`` and ``extensions``. Explicit
   channels get no automatic transport marker.
 

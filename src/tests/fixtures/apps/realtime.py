@@ -36,6 +36,12 @@ async def chat(data: ChatMessage) -> ChatMessage:
 
 
 @dataclass
+class Order:
+    order_id: str
+    quantity: int
+
+
+@dataclass
 class Price:
     symbol: str
     amount: float
@@ -62,6 +68,7 @@ def create_app(spec_version: Literal["3.0.0", "3.1.0"]) -> Litestar:
         version="1.0.0",
         spec_version=spec_version,
         docs=DocsConfig(enabled=False),
+        channel_payloads={"news": ChatMessage, "orders": Order},
         channels=[
             ChannelDefinition(
                 key="audit",

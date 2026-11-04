@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any
 
 from litestar.channels import ChannelsPlugin
 from litestar.exceptions import ImproperlyConfiguredException
@@ -49,12 +50,14 @@ def extract_channels_plugin_channels(
         A list of discovered channels.
 
     Raises:
-        ImproperlyConfiguredException: If two ChannelsPlugin instances configure the same topic.
+        ImproperlyConfiguredException: If two ChannelsPlugin instances configure the same topic, or a
+            ``channel_payloads`` key names no configured topic while no plugin allows arbitrary channels.
     """
     from litestar_asyncapi import AsyncAPIConfig
 
     config = config or AsyncAPIConfig()
-    configured = _configured_topics(app)
+    payloads = dict(config.channel_payloads)
+    configured = _declare_payload_topics(_configured_topics(app), payloads)
     if not config.include_channels_plugin:
         return []
     owners: dict[str, int] = {}
@@ -74,8 +77,11 @@ def extract_channels_plugin_channels(
         if plugin is None:
             continue
         index, snapshot = next((i, item[1]) for i, item in enumerate(configured) if item[0] is plugin)
-        if not snapshot.arbitrary_channels_allowed:
-            routed.add((index, route.path_format.removeprefix(snapshot.root_path)))
+        route_topic = (
+            None if snapshot.arbitrary_channels_allowed else route.path_format.removeprefix(snapshot.root_path)
+        )
+        if route_topic is not None:
+            routed.add((index, route_topic))
         if not _should_include_handler(route.route_handler):
             continue
         mode = generated_channels_mode(route.route_handler, app)
@@ -95,6 +101,12 @@ def extract_channels_plugin_channels(
                         provenance=provenance,
                         messages=[
                             MessageDefinition(
+                                payload=payloads[route_topic],
+                                content_type="application/json",
+                                extensions={"x-websocket-mode": mode},
+                            )
+                            if route_topic in payloads
+                            else MessageDefinition(
                                 payload=Schema(),
                                 content_type="text/plain" if mode == "text" else "application/octet-stream",
                                 extensions={"x-websocket-mode": mode},
@@ -107,7 +119,7 @@ def extract_channels_plugin_channels(
 
     if config.include_channels_plugin_topics:
         discovered.extend(
-            _topic_channel(topic, provenance=f"ChannelsPlugin[{index}] topic {topic!r}")
+            _topic_channel(topic, payloads, provenance=f"ChannelsPlugin[{index}] topic {topic!r}")
             for index, (_, snapshot) in enumerate(configured)
             for topic in snapshot.topics
             if (index, topic) not in routed
@@ -133,7 +145,35 @@ def _configured_topics(app: "Litestar") -> list[tuple[ChannelsPlugin, ChannelsPl
     return configured
 
 
-def _topic_channel(topic: str, *, provenance: str) -> DiscoveredChannel:
+def _declare_payload_topics(
+    configured: list[tuple[ChannelsPlugin, ChannelsPluginTopics]], payloads: dict[str, Any]
+) -> list[tuple[ChannelsPlugin, ChannelsPluginTopics]]:
+    """Validate ``channel_payloads`` keys and add unlisted keys to the first arbitrary-channel plugin.
+
+    Returns:
+        The configured plugins, with declared topics appended to the arbitrary-channel plugin.
+
+    Raises:
+        ImproperlyConfiguredException: If a key names no configured topic and no plugin allows arbitrary channels.
+    """
+    known = {topic for _, snapshot in configured for topic in snapshot.topics}
+    declared = tuple(key for key in payloads if key not in known)
+    if not declared:
+        return configured
+    arbitrary = next((index for index, (_, item) in enumerate(configured) if item.arbitrary_channels_allowed), None)
+    if arbitrary is None:
+        message = (
+            f"AsyncAPIConfig.channel_payloads key {declared[0]!r} names no configured ChannelsPlugin topic; "
+            "add it to a ChannelsPlugin's channels or allow arbitrary channels"
+        )
+        raise ImproperlyConfiguredException(message)
+    plugin, snapshot = configured[arbitrary]
+    configured = list(configured)
+    configured[arbitrary] = (plugin, replace(snapshot, topics=(*snapshot.topics, *declared)))
+    return configured
+
+
+def _topic_channel(topic: str, payloads: dict[str, Any], *, provenance: str) -> DiscoveredChannel:
     """Describe a configured topic without a generated route as a broker channel keyed by its name.
 
     Returns:
@@ -149,7 +189,13 @@ def _topic_channel(topic: str, *, provenance: str) -> DiscoveredChannel:
         bindings={},
         operations=[
             DiscoveredOperation(
-                action=OperationAction.SEND, provenance=provenance, messages=[MessageDefinition(payload=Schema())]
+                action=OperationAction.SEND,
+                provenance=provenance,
+                messages=[
+                    MessageDefinition(payload=payloads[topic], content_type="application/json")
+                    if topic in payloads
+                    else MessageDefinition(payload=Schema())
+                ],
             )
         ],
     )

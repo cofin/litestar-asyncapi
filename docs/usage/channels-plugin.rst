@@ -23,6 +23,21 @@ subscriptions, so an ``AsyncAPIGenerator`` used without ``AsyncAPIPlugin``
 documents none of its topics. A topic named like another channel key, or configured on two
 ``ChannelsPlugin`` instances, raises ``ImproperlyConfiguredException``.
 
+Generated and topic-only messages are untyped by default. Map a topic name to a
+payload type with ``channel_payloads`` to document its schema:
+
+.. code-block:: python
+
+   AsyncAPIConfig(channel_payloads={"news": Headline, "orders": Order})
+
+The topic's generated route and topic-only channel then use the generated
+schema with ``contentType: application/json``; generated routes keep
+``x-websocket-mode``. A key that names no configured topic raises
+``ImproperlyConfiguredException``, whatever the include flags say. When a
+``ChannelsPlugin`` allows arbitrary channels, an unlisted key instead declares a
+topic, which then gets a topic-only channel. The arbitrary-channel route
+(``.../{channel_name}``) stays untyped.
+
 Every ChannelsPlugin channel carries ``x-litestar-source: channels`` and an empty
 ``bindings`` object. The empty object is deliberate: it marks a ChannelsPlugin
 channel rather than a native WebSocket handler, even under a ``/ws/`` prefix.
