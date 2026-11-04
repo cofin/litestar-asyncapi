@@ -3,7 +3,7 @@ type: Spec
 flow_id: contract-fixes
 title: Contract Fixes and Debloat
 description: Fix the verified wire-contract, discovery and docs-routing bugs from the 2026-11-04 audit, remove leaked internal environment details, and cut test and gate bloat without weakening verification.
-state: planned
+state: completed
 parent_prd: null
 research: [research/codebase-audit_20261104.md]
 plan_revision: 2
@@ -12,7 +12,7 @@ state_revision: 0
 current_task: null
 last_verified_checkpoint: null
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T18:40:00Z
 tags: [prd, bugs, conformance, debloat, hygiene]
 ---
 
@@ -106,7 +106,7 @@ Every document the plugin emits says what the application actually does, and val
 | 3 | `schema-fixes` | Payload schema fidelity | B4, B5, B9, B10, B11, schema error message cleanup | `AsyncAPISchemaGenerator`, generated `components/schemas` | 1 | completed |
 | 4 | `discovery-fixes` | Discovery, naming and decorators | B2, B7, B8, B12 (action, spec_version), listener-unwrapping helper, discovery debloat ledger items | `AsyncAPIGenerator.build_schema`, `asyncapi_operation`, `asyncapi_message` | 1 | completed |
 | 5 | `docs-routing-fixes` | Docs routing and console | B3 single-plugin guard, B12 `path="/"`, B13 console unions (verify first), manifest caching | `AsyncAPIPlugin`, `DocsConfig`, docs routes | 1 | completed |
-| 6 | `test-gate-debloat` | Test and gate debloat | anyio markers, echo tests, duplicate slotscheck, `check-all` double run, Makefile aliases, ruff ignores, future-annotations hook → ruff (if proven), `.agents` command duplication | `make lint`, `make check-all` | 2, 3, 4, 5 | draft |
+| 6 | `test-gate-debloat` | Test and gate debloat | anyio markers, echo tests, duplicate slotscheck, `check-all` double run, Makefile aliases, ruff ignores, future-annotations hook → ruff (if proven), `.agents` command duplication | `make lint`, `make check-all` | 2, 3, 4, 5 | completed |
 
 **Merge order:** 1 → 2 → 3 → 4 → 5 → 6. The chapters share these files:
 
@@ -178,13 +178,13 @@ Each candidate is classified by tracing its callers, re-exports, `opt` strings a
 - [x] schema-fixes — tuple, bounds, example and null fidelity (../schema-fixes/spec.md)
 - [x] discovery-fixes — listener naming, metadata order, decorator merging, discovery debloat (../discovery-fixes/spec.md)
 - [x] docs-routing-fixes — single-plugin guard, root path, console unions, caching (../docs-routing-fixes/spec.md)
-- [ ] test-gate-debloat — tests and gates trimmed with proven replacements (../test-gate-debloat/spec.md)
+- [x] test-gate-debloat — tests and gates trimmed with proven replacements (../test-gate-debloat/spec.md)
 
 ## Continuity Snapshot
 
-- **State:** planned. Chapters 1–5 (`public-hygiene`, `wire-contract-fixes`, `schema-fixes`, `discovery-fixes`, `docs-routing-fixes`) are completed; `test-gate-debloat` is next.
+- **State:** completed. All six chapters landed; `make check-all` runs the suite once (246 passed, 96.53% with thread-aware coverage).
 - **Review:** round 1 of the independent review is adjudicated. All 16 findings were adopted, and `plan_revision` is now 2.
 - **Discoveries:**
   - `coverage.xml` in the working tree can be stale after partial runs. Regenerate it before comparing coverage.
   - Issue #11 (`../realtime-discovery/spec.md`) builds on chapter 4's extractors and lands after it.
-  - Coverage omits the `thread` concurrency, so docs request-handler code is never traced. Chapter 6 should decide whether to add it.
+  - Coverage now traces `thread` as well as `multiprocessing` (chapter 6), so docs request handlers are measured.
