@@ -216,7 +216,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
             )
             raise ImproperlyConfiguredException(message)
         self._channels_topics = tuple(
-            (plugin, channels_plugin_topics(plugin))
+            (plugin, channels_plugin_topics(plugin, at_init=True))
             for plugin in app_config.plugins
             if isinstance(plugin, ChannelsPlugin)
         )

@@ -269,16 +269,26 @@ class ChannelsPluginTopics:
     arbitrary_channels_allowed: bool
 
 
-def channels_plugin_topics(plugin: ChannelsPlugin) -> ChannelsPluginTopics:
+def channels_plugin_topics(plugin: ChannelsPlugin, *, at_init: bool = False) -> ChannelsPluginTopics:
     """Read a plugin's configured topics, handler root path and arbitrary-channel setting.
 
-    Runtime subscriptions add topics to the same private mapping, so callers snapshot this before the
-    application starts.
+    With ``arbitrary_channels_allowed``, ``ChannelsPlugin.subscribe`` adds runtime topic names to the
+    same private mapping as the configured ones. Those names are returned only during application
+    init (``at_init=True``), before any subscription; afterwards an arbitrary-channel plugin reports no
+    topics. Without arbitrary channels the mapping cannot grow, so it is always read.
+
+    Args:
+        plugin: The ChannelsPlugin to read.
+        at_init: Whether the application is still initializing.
+
+    Returns:
+        The plugin's topic snapshot.
     """
+    arbitrary = plugin._arbitrary_channels_allowed
     return ChannelsPluginTopics(
-        topics=tuple(plugin._channels),
+        topics=tuple(plugin._channels) if at_init or not arbitrary else (),
         root_path=plugin._handler_root_path,
-        arbitrary_channels_allowed=plugin._arbitrary_channels_allowed,
+        arbitrary_channels_allowed=arbitrary,
     )
 
 

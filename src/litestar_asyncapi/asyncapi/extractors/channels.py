@@ -37,7 +37,8 @@ def extract_channels_plugin_channels(
 
     Generated routes keep their path as channel key. Configured topics without a generated fixed-topic
     route become topic-only channels keyed by the topic name. Topics come from the snapshot the
-    application's ``AsyncAPIPlugin`` takes at init, or are read directly without one.
+    application's ``AsyncAPIPlugin`` takes at init. Without that snapshot, plugins that allow arbitrary
+    channels contribute no topic-only channels, since runtime subscriptions share their topic mapping.
 
     Args:
         app: Litestar application.

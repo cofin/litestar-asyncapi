@@ -33,7 +33,8 @@ def test_configured_topics_without_routes_become_topic_channels() -> None:
     assert hidden["channels"] == {}
 
 
-def test_runtime_subscriptions_never_reach_the_document() -> None:
+@pytest.mark.parametrize("snapshot", [True, False])
+def test_runtime_subscriptions_never_reach_the_document(snapshot: bool) -> None:
     import asyncio
 
     from litestar import Litestar
@@ -41,17 +42,34 @@ def test_runtime_subscriptions_never_reach_the_document() -> None:
     from litestar.channels.plugin import ChannelsPlugin
 
     from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
     channels = ChannelsPlugin(MemoryChannelsBackend(), channels=["news"], arbitrary_channels_allowed=True)
-    asyncapi = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(enabled=False), use_cache=False))
-    app = Litestar(route_handlers=[], plugins=[channels, asyncapi])
+    config = AsyncAPIConfig(docs=DocsConfig(enabled=False), use_cache=False)
+    asyncapi = AsyncAPIPlugin(config)
+    app = Litestar(route_handlers=[], plugins=[channels, asyncapi] if snapshot else [channels])
 
     async def subscribe() -> None:
         async with channels:
             await channels.subscribe("runtime")
 
     asyncio.run(subscribe())
-    assert set(asyncapi.get_asyncapi_schema(app)["channels"]) == {"news"}
+    document = asyncapi.get_asyncapi_schema(app) if snapshot else AsyncAPIGenerator(app, config).build_schema()
+    assert set(document["channels"]) == ({"news"} if snapshot else set())
+
+
+def test_arbitrary_channels_without_snapshot_emit_no_topic_channels() -> None:
+    from litestar import Litestar
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    arbitrary = ChannelsPlugin(MemoryChannelsBackend(), channels=["news"], arbitrary_channels_allowed=True)
+    fixed = ChannelsPlugin(MemoryChannelsBackend(), channels=["alerts"])
+    document = AsyncAPIGenerator(Litestar([], plugins=[arbitrary, fixed]), AsyncAPIConfig()).build_schema()
+    assert set(document["channels"]) == {"alerts"}
 
 
 def test_topic_keys_colliding_with_other_channels_raise() -> None:
@@ -167,8 +185,7 @@ def test_actual_channels_routes_are_deduplicated_by_native_identity(arbitrary: b
     app = Litestar([user], plugins=[plugin])
     document = AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()
     generated_path = "/ws/{channel_name}" if arbitrary else "/ws/news"
-    topic_channels = {"news"} if arbitrary else set()
-    assert set(document["channels"]) == {"/ws/user", generated_path, *topic_channels}
+    assert set(document["channels"]) == {"/ws/user", generated_path}
     actions = [
         operation["action"]
         for operation in document["operations"].values()

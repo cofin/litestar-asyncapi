@@ -18,7 +18,9 @@ can connect to; hide them with
 Topics come only from the names passed to the ``ChannelsPlugin`` constructor and
 are read once when the application starts, so runtime subscriptions never change
 the document. ``arbitrary_channels_allowed=True`` without configured names adds
-no topic channels. A topic named like another channel key, or configured on two
+no topic channels. Such a plugin shares its topic list with runtime
+subscriptions, so an ``AsyncAPIGenerator`` used without ``AsyncAPIPlugin``
+documents none of its topics. A topic named like another channel key, or configured on two
 ``ChannelsPlugin`` instances, raises ``ImproperlyConfiguredException``.
 
 Every ChannelsPlugin channel carries ``x-litestar-source: channels`` and an empty
