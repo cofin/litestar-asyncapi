@@ -49,14 +49,14 @@ The command must fail before the fix and pass after. A focused run without `--no
 
 | Source module | Canonical tests |
 | --- | --- |
-| `asyncapi/generator.py` | `unit/test_generator.py`, `unit/test_generator_components.py`, `unit/test_operation_id_hardening.py`, `unit/test_traits.py` |
+| `asyncapi/generator.py` | `unit/test_generator.py`, `unit/test_generator_components.py`, `unit/test_traits.py` |
 | `asyncapi/extractors/websocket.py` | `unit/extractors/test_*inference.py`, `test_decorator_overrides.py`, `test_handler_metadata.py`, `test_docstring_descriptions.py`, `test_plain_websocket_fallback.py`, `integration/test_discovery.py` |
 | `asyncapi/extractors/channels.py` | `unit/extractors/test_channels_plugin.py` |
 | `asyncapi/datastructures.py` | `unit/extractors/test_datastructures.py` |
 | `asyncapi/schema_generation/`, `_compat.py` | `unit/schema_generation/test_native.py`, `test_dialect.py` |
 | `asyncapi/utils/examples.py` | `unit/utils/test_examples.py`, `unit/extractors/test_example_generation.py`, `test_example_precedence.py` |
 | `spec/` | `unit/spec/test_base.py`, `test_asyncapi.py`, `test_wire_contract.py` |
-| `decorators.py` | `unit/test_decorators.py`, `unit/test_decorators_storage.py` |
+| `decorators.py` | `unit/test_decorators.py` |
 | `config.py` | `unit/test_config.py` |
 | `plugins/`, `docs.py` | `unit/plugins/`, `unit/test_ui_security.py`, `unit/test_json_plugin.py`, `integration/test_routes.py`, `integration/test_plugin_cache.py` |
 | `cli.py` | `integration/test_cli.py` (fixture app `fixtures/apps/cli.py`) |

@@ -21,7 +21,7 @@ How `src/litestar_asyncapi/asyncapi/generator.py::AsyncAPIGenerator.build_asynca
 
 ## Channel normalization
 
-`_normalize_channels` sorts by `(key, provenance)` and merges same-key channels only when `route_identity` is the same non-`None` object and the address matches. `parameters`/`servers`/`bindings` merge when non-conflicting (dict keys compared by `_definition_key`). Non-`CONFIG` channels then dedupe operations by their message-less definition key and concatenate messages.
+`_normalize_channels` sorts by `(key, provenance)` and raises `ImproperlyConfiguredException` naming both provenances when two channels share a key (for example two handlers on one path). Real discovery never yields two channels for one route, so nothing is merged; `src/tests/integration/conftest.py` asserts unique discovered keys across the integration suite.
 
 ## Operation identity
 
@@ -69,7 +69,7 @@ How `src/litestar_asyncapi/asyncapi/generator.py::AsyncAPIGenerator.build_asynca
 | Seam | Test file |
 | --- | --- |
 | Assembly, ordering, conflicts | `src/tests/unit/test_generator.py`, `test_generator_components.py` |
-| Operation id / key uniqueness | `src/tests/unit/test_operation_id_hardening.py` |
+| Operation id / key uniqueness | `src/tests/unit/test_generator.py` |
 | Traits | `src/tests/unit/test_traits.py` |
 | Example precedence | `src/tests/unit/extractors/test_example_precedence.py`, `src/tests/integration/test_asyncapi_metadata_examples.py` |
 | Wire serialization | `src/tests/unit/spec/test_base.py`, `test_wire_contract.py`, per-model `src/tests/unit/spec/test_*.py` |

@@ -13,7 +13,7 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 - `MessageDefinition`, `OperationDefinition`, `ChannelDefinition` are the shared typed contract for decorators, extractors and `AsyncAPIConfig.channels`. `DiscoveredOperation`/`DiscoveredChannel` add provenance only.
 - Python payload/header types survive until `_build_message`; extractors never pre-render schemas except ChannelsPlugin's unconstrained `Schema()`.
 - `None` means "no override"; an explicit empty list (`messages=[]`, `examples=[]`) is an override.
-- Explicit `ChannelDefinition.key` replaces matching inferred channels; duplicate explicit keys raise with both sources. Inferred channels merge only when they share the same `route_identity` object and address.
+- Explicit `ChannelDefinition.key` replaces matching inferred channels; duplicate explicit keys raise with both sources. Any two discovered channels with the same key raise, naming both provenances; channels are never merged.
 - Conflicts (channel, message, component, trait) raise `ImproperlyConfiguredException` naming both provenance strings. Never silently pick one side.
 - Ordering is deterministic through `_definition_key` (public values, never `id()`); keep provenance/route_identity out of ordering keys.
 - `include_in_schema` in handler `opt` is honored by both extractors (`_should_include_handler`).
@@ -35,7 +35,7 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 - `src/litestar_asyncapi/decorators.py`, `src/litestar_asyncapi/cli.py`
 - `src/litestar_asyncapi/config.py::AsyncAPIConfig` (contract fields; `DocsConfig` belongs to the docs-UI domain)
 - `src/litestar_asyncapi/spec/**` (wire models, `bindings/`)
-- Tests: `src/tests/unit/test_generator*.py`, `test_operation_id_hardening.py`, `test_traits.py`, `test_decorators*.py`, `test_config.py`, `unit/extractors/*`, `unit/spec/*`, `src/tests/integration/{test_discovery,test_routes,test_cli,test_asyncapi_metadata_examples}.py`
+- Tests: `src/tests/unit/test_generator*.py`, `test_traits.py`, `test_decorators*.py`, `test_config.py`, `unit/extractors/*`, `unit/spec/*`, `src/tests/integration/{test_discovery,test_routes,test_cli,test_asyncapi_metadata_examples}.py`
 
 Schema conversion (`asyncapi/schema_generation/`, `_compat.py` schema creator, examples) belongs to the asyncapi-schema domain; consume it through `AsyncAPISchemaGenerator.generate/components/declared_examples`.
 

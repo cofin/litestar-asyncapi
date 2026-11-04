@@ -28,9 +28,9 @@ Override semantics: `None` = inherit/infer; explicit value (including `[]`) = ov
 `src/litestar_asyncapi/decorators.py`
 
 - `asyncapi_operation` / `asyncapi_message` store `AsyncAPIMetadata.operations[action]` under `route_handler.opt[ASYNCAPI_OPT_KEY]` (`"asyncapi"`), the native handler option layer.
-- `_coerce_action` accepts `OperationAction` or case-insensitive `"send"`/`"receive"`; anything else raises `ValueError`.
+- `OperationDefinition.__post_init__` normalizes `action` with `.strip().lower()`; anything other than `send`/`receive` raises `ValueError`. Decorators validate their `action` through it.
 - `_get_route_handler` raises `ImproperlyConfiguredException` when the decorated object is not a route handler (no `opt`). Decorators apply above `@websocket`.
-- Repeated decorators for the same action merge into one `OperationDefinition`; non-`None` arguments win.
+- Repeated decorators for the same action merge into one `OperationDefinition`; non-`None` arguments win. `messages=` and `asyncapi_message` append in either stacking order and rebuild the definition with `dataclasses.replace`, so a repeated message name raises `ValueError`.
 
 ## WebSocket extractor
 
@@ -40,15 +40,15 @@ Override semantics: `None` = inherit/infer; explicit value (including `[]`) = ov
 2. Skips ChannelsPlugin-generated routes (`_compat.py::generated_channels_mode`) and `opt["include_in_schema"] is False` (`_should_include_handler`).
 3. Path parameters → `Parameter(description="Path parameter: <name> (type: <T>)")` via `_path_parameters_to_parameters`. No nested schema.
 4. `_infer_operations_from_handler`:
-   - Listener/stream handlers: `_compat.py::websocket_signature` yields receive/send fields and frame modes. Receive = application receives; send = application sends. A `None` return yields no send operation (`_is_none_return_type`).
+   - Listener/stream handlers: `_compat.py::websocket_signature` yields receive/send fields and frame modes. Receive = application receives; send = application sends. A `None` return yields no send operation (`FieldDefinition.is_none_type`).
    - Each message carries `extensions={"x-websocket-mode": mode}` and `content_type` from `websocket_content_type`.
-   - Default `operation_id` is `<handler_name>_<action>`.
+   - Default `operation_id` is `<callback __name__>_<action>` via `_compat.py::websocket_handler_name`, which unwraps the listener's `ListenerHandler`; `websocket_handler_callback` returns the callback itself (docstrings, provenance).
    - Raw handlers: no output unless decorated or `config.include_raw_websocket_routes`; then `_infer_raw_websocket_operations` placeholders and a `UserWarning` when any payload remains `None`.
 5. Metadata precedence (applied in this order):
-   - `_apply_handler_metadata`: handler `summary`/`description` fill blanks; handler `operation_id` overwrites and gains `_<action>` when the handler has more than one operation.
-   - `_apply_docstring_descriptions`: only when `config.use_handler_docstrings`; fills blank descriptions via `asyncapi/utils/docstrings.py::get_handler_docstring`.
    - `_apply_decorator_overrides`: decorator non-`None` fields overwrite; decorator `messages` replace inferred messages but inherit inferred `payload`, `content_type` and merge `extensions` (explicit keys win). `replace_placeholders=True` discards raw placeholders.
-6. `route_identity=route` binds the channel to the actual route object for merge checks.
+   - `_apply_handler_metadata`: handler `summary`/`description` fill blanks, including on decorator-added operations; handler `operation_id` replaces the id of every operation without a decorator `operation_id` and gains `_<action>` when the handler has more than one operation.
+   - `_apply_docstring_descriptions`: only when `config.use_handler_docstrings`; fills blank descriptions via `asyncapi/utils/docstrings.py::get_handler_docstring`.
+6. `route_identity=route` records the route object behind the channel; it is provenance only and excluded from `_definition_key`.
 
 ## ChannelsPlugin extractor
 
@@ -68,7 +68,7 @@ Override semantics: `None` = inherit/infer; explicit value (including `[]`) = ov
 | --- | --- |
 | Listener / stream inference | `src/tests/unit/extractors/test_listener_inference.py`, `test_stream_inference.py` |
 | Raw sockets | `src/tests/unit/extractors/test_plain_websocket_fallback.py` |
-| Decorator overrides | `src/tests/unit/extractors/test_decorator_overrides.py`, `src/tests/unit/test_decorators.py`, `test_decorators_storage.py` |
+| Decorator overrides | `src/tests/unit/extractors/test_decorator_overrides.py`, `src/tests/unit/test_decorators.py` |
 | Handler metadata / docstrings | `src/tests/unit/extractors/test_handler_metadata.py`, `test_docstring_descriptions.py` |
 | Parameters | `src/tests/unit/extractors/test_websocket_parameters.py` |
 | ChannelsPlugin | `src/tests/unit/extractors/test_channels_plugin.py` |

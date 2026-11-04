@@ -17,10 +17,10 @@ Active and planned Flow specifications and task worksheets.
 | [docs-reference-curation](./docs-reference-curation/spec.md) | Flow | draft | docs-redesign | Budgeted API reference, field docstrings, scanner gate, CLI page. |
 | [docs-learn-content](./docs-learn-content/spec.md) | Flow | draft | docs-redesign | Example-first Learn, Integrations and Project pages. |
 | [contract-fixes](./contract-fixes/spec.md) | PRD | planned | — | Fix verified contract, discovery and routing bugs; remove leaked internals; debloat tests and gates. |
-| [public-hygiene](./public-hygiene/spec.md) | Flow | draft | contract-fixes | Remove leaked internals, green lint. |
-| [wire-contract-fixes](./wire-contract-fixes/spec.md) | Flow | draft | contract-fixes | Alias-driven wire keys, prefixItems export, conformance fixture. |
+| [public-hygiene](./public-hygiene/spec.md) | Flow | completed | contract-fixes | Remove leaked internals, green lint. |
+| [wire-contract-fixes](./wire-contract-fixes/spec.md) | Flow | completed | contract-fixes | Alias-driven wire keys, prefixItems export, conformance fixture. |
 | [schema-fixes](./schema-fixes/spec.md) | Flow | completed | contract-fixes | Tuple, bounds, example and null fidelity. |
-| [discovery-fixes](./discovery-fixes/spec.md) | Flow | draft | contract-fixes | Listener naming, metadata order, decorator merging, discovery debloat. |
+| [discovery-fixes](./discovery-fixes/spec.md) | Flow | completed | contract-fixes | Listener naming, metadata order, decorator merging, discovery debloat. |
 | [docs-routing-fixes](./docs-routing-fixes/spec.md) | Flow | draft | contract-fixes | Single-plugin guard, root path, console unions, caching. |
 | [test-gate-debloat](./test-gate-debloat/spec.md) | Flow | draft | contract-fixes | Trim tests and gates with proven replacements. |
 | [realtime-discovery](./realtime-discovery/spec.md) | PRD | planned | — | Issue #11: transport markers, SSE discovery, typed ChannelsPlugin topics. |

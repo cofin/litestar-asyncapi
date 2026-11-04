@@ -3,16 +3,16 @@ type: Spec
 flow_id: discovery-fixes
 title: Discovery, Naming and Decorators
 description: Name listener operations after the user function, apply metadata after decorator overrides, merge decorator messages by name, validate config inputs, and delete discovery code that only synthetic tests reach.
-state: draft
+state: completed
 parent_prd: contract-fixes
 research: []
-plan_revision: 2
-plan_commit: null
+plan_revision: 3
+plan_commit: 305f2cb
 state_revision: 0
 current_task: null
-last_verified_checkpoint: null
+last_verified_checkpoint: 60e7915
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T18:45:00Z
 tags: [generation, discovery, decorators, debloat]
 ---
 
@@ -59,3 +59,22 @@ Fix how operations and messages are named and assembled from handlers and decora
 
 - Behavior tests exist for B2, B7, B8 and B12.
 - Coverage of `asyncapi/generator.py` and `asyncapi/extractors/` is at or above the baseline, and no test monkeypatches an extractor to produce impossible input.
+
+## Implementation Plan
+
+- [x] [d516376] t01 — name listener operations after the user callback (tasks/t01-listener-operation-names.md)
+- [x] [18625a6] t02 — apply handler metadata and docstrings after decorator overrides (tasks/t02-metadata-after-overrides.md)
+- [x] [3237ed2] t03 — merge decorator messages by name in either stacking order (tasks/t03-decorator-message-merge.md)
+- [x] [e164cd9] t04 — normalize operation actions and validate `spec_version` (tasks/t04-action-and-spec-version-validation.md)
+- [x] [60e7915] t05 — delete discovery code and tests reached only by synthetic input (tasks/t05-discovery-debloat.md)
+
+**Recovery checkpoint:** `make lint && make type-check && make test && make validate-asyncapi` exits `0`.
+
+## Continuity Snapshot
+
+- **State:** completed. All five tasks landed; `make lint`, `make type-check`, `make test` (242 passed, 94.50%) and `make validate-asyncapi` exit `0` at `60e7915`.
+- **Coverage:** `asyncapi/generator.py` 92.1% → 94%, `asyncapi/extractors/websocket.py` 95.0% → 95.3%, `extractors/channels.py` 100%.
+- **Discoveries:**
+  - Real routes can produce duplicate channel keys (two handlers on one path, or a listener on a ChannelsPlugin path) but never two channels for one route. The duplicate-key raise is live; the merge path was dead.
+  - `get_handler_docstring` now takes a route handler; its unit tests use real handlers.
+  - Decorator-added operations, including the explicit operations of raw sockets, now receive the handler docstring; `docs/usage/websocket-handlers.rst` was updated.
