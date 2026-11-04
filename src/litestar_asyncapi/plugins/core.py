@@ -102,7 +102,9 @@ class AsyncAPIPlugin(InitPluginProtocol):
 
         from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
-        document = deepcopy(AsyncAPIGenerator(app=app, config=self.config).build_asyncapi())
+        document = AsyncAPIGenerator(app=app, config=self.config).build_asyncapi()
+        if self.config.use_cache:
+            document = deepcopy(document)
         encoded = encode_json(document.to_schema(), serializer=get_serializer(app.type_encoders))
         schema = decode_json(encoded)
         if self.config.use_cache:
