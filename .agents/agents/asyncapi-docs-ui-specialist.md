@@ -31,7 +31,7 @@ You are the implementation specialist for the `litestar-asyncapi` documentation 
 ### Commands
 - Focused: `uv run pytest <paths> -q --no-cov`. Without `--no-cov`, the global coverage floor makes focused runs exit 1.
 - Static: `make slotscheck type-check`.
-- Frontend (Node 22): `make js-install build`, `make js-test browser-test`. Installed lane: `make browser-test-installed PYTHON_VERSION=3.12`.
+- Frontend (Node (`.nvmrc`)): `make js-install build`, `make js-test browser-test`. Installed lane: `make browser-test-installed PYTHON_VERSION=3.12`.
 
 ### Constraints
 - Python >=3.10, PEP 604/585 typing, Google-style docstrings, no inline comments.
@@ -42,4 +42,4 @@ You are the implementation specialist for the `litestar-asyncapi` documentation 
 
 ### Report
 - List the changed paths, the tests added or changed, and each verification command with its exit code.
-- State any verification that was skipped (for example, browser lanes when Node 22 or Chromium is unavailable) and why.
+- State any verification that was skipped (for example, browser lanes when Node (`.nvmrc`) or Chromium is unavailable) and why.

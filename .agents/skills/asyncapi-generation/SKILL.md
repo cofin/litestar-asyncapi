@@ -78,7 +78,7 @@ make test
 make check-all
 ```
 
-Wire-contract changes also need the official schema gate: `make validate-asyncapi` (Node 22).
+Wire-contract changes also need the official schema gate: `make validate-asyncapi` (Node (`.nvmrc`)).
 
 ## References
 

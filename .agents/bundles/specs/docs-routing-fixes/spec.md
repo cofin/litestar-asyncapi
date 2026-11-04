@@ -34,7 +34,7 @@ Close the docs-page cross-linking exposure (audit B3), along with the remaining 
 - **Debloat** (the Master ledger rows assigned to chapter 5):
   - Skip the `deepcopy` in `_get_document` only when `use_cache=False`. It stays whenever caching is on.
   - Cache the parsed manifest in `docs.py::bootstrap_html`, keeping the fallback on `OSError`, `KeyError` and `ValueError`.
-- **Rebuild assets** if any frontend source changes. Packaged assets under `src/litestar_asyncapi/assets/ui/` must match a Node 22 rebuild.
+- **Rebuild assets** if any frontend source changes. Packaged assets under `src/litestar_asyncapi/assets/ui/` must match a Node (`.nvmrc`) rebuild.
 
 ## Public Seams
 

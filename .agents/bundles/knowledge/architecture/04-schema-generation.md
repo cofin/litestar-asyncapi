@@ -49,7 +49,7 @@ Implicit modern/2020-12 input preserves sibling constraints by wrapping referenc
 
 ## Verification
 
-Use `uv run pytest <path> -q --no-cov` for focused runs, make test, make type-check, make slotscheck and Node 22 make validate-asyncapi. Behavioral coverage checks actual recursive reference targets, custom app plugins, model aliases/tags, tuple and array-like decoder contracts, null constraints and OpenAPI-state isolation. Nonempty output alone does not prove schema fidelity.
+Use `uv run pytest <path> -q --no-cov` for focused runs, make test, make type-check, make slotscheck and Node (`.nvmrc`) make validate-asyncapi. Behavioral coverage checks actual recursive reference targets, custom app plugins, model aliases/tags, tuple and array-like decoder contracts, null constraints and OpenAPI-state isolation. Nonempty output alone does not prove schema fidelity.
 
 [^sg]: `src/litestar_asyncapi/asyncapi/schema_generation/schema.py::AsyncAPISchemaGenerator`
 [^compat]: `src/litestar_asyncapi/_compat.py::create_schema_creator`

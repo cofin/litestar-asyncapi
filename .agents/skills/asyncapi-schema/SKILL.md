@@ -77,7 +77,7 @@ make test
 make validate-asyncapi
 ```
 
-Focused runs need `--no-cov`: the global `--cov-fail-under=80` addopt makes partial runs exit 1. `make validate-asyncapi` requires Node 22 and `make js-install`.
+Focused runs need `--no-cov`: the global `--cov-fail-under=80` addopt makes partial runs exit 1. `make validate-asyncapi` requires Node (`.nvmrc`) and `make js-install`.
 
 ## References
 

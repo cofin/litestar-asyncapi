@@ -32,7 +32,7 @@ sources:
 # Distribution, Installed-Wheel and Browser Lanes
 
 <!-- truth: start -->
-- Node 22 is build/test-only: `make js-install build` produces assets, wheel and sdist; consumers need neither Node nor a CDN.
+- Node (`.nvmrc`) is build/test-only: `make js-install build` produces assets, wheel and sdist; consumers need neither Node nor a CDN.
 - `make validate-asyncapi` validates an exported fixture with the pinned official parser, spec schemas and Draft07 payload checks.
 - `make js-test browser-test` runs Vitest and Playwright against the source tree; artifacts go to `.tmp/test-results`.
 - `make installed-test PYTHON_VERSION=3.1x [LITESTAR_BOUNDARY=latest]` tests the built wheel outside the checkout on 3.10–3.14.

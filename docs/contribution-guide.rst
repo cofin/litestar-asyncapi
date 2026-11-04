@@ -76,7 +76,7 @@ Every PR must pass our CI matrix before merge:
 Packaged frontend and distribution
 ==================================
 
-Node 22 is a development/build dependency, not an installed Python requirement.
+Node (``.nvmrc``) is a development/build dependency, not an installed Python requirement.
 Use the locked npm dependencies and native targets:
 
 .. code-block:: bash

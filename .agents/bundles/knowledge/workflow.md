@@ -29,7 +29,7 @@ sources:
 - Task worksheets under `.agents/bundles/specs/<flow_id>/tasks/<id>-<slug>.md` and `spec.md` checklists are the sole authority for task state and commits.
 - Setup `make install`; focused test `uv run pytest <path> -q --no-cov`; lint + types `make lint`; aggregate gate `make check-all`.
 - Focused runs need `--no-cov`: the global `--cov-fail-under=80` addopt makes any partial run exit 1.
-- Frontend or packaging changes also run `make js-install build validate-asyncapi js-test browser-test` (Node 22).
+- Frontend or packaging changes also run `make js-install build validate-asyncapi js-test browser-test` (Node (`.nvmrc`)).
 - Every task worksheet declares one `verification_strategy` (`behavior_tdd`, `regression_tdd`, `characterization`, `static_validation`, `documentation_validation`, `integration_acceptance`).
 - Test through confirmed public seams in existing canonical module test files; never mock the System Under Test, write tautological assertions, or create standalone `test_*remediation*.py` / `test_*audit*.py` files.
 - Project-local domain and review skills live under `.agents/skills/` and paired subagents under `.agents/agents/`.
@@ -43,7 +43,7 @@ Verified on this host (uv 0.13, GNU Make 4.4, Node via npm). Prefer `Makefile` t
 ```bash
 # setup
 make install                                   # uv sync --all-extras --dev
-make js-install                                # npm ci (Node 22; build/test only)
+make js-install                                # npm ci (Node (`.nvmrc`); build/test only)
 
 # focused test (red-capable)
 uv run pytest src/tests/unit/test_generator.py::test_name -q --no-cov

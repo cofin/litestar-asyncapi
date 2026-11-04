@@ -16,11 +16,11 @@ How build, test and publish targets compose into the single tested artifact.
 | Static | `make lint` | prek hooks, `mypy` strict, `pyright`, `slotscheck`, `zizmor`, doc markers, PEP 723 blocks | `make install` |
 | Source tests | `make test` / `make coverage` | behavior in the checkout; coverage floor 80 | `make install` |
 | Focused tests | `uv run pytest <path> -q --no-cov` | one module without the global coverage floor | `make install` |
-| Packaged UI | `make js-install build js-test` | locked npm tree, Vite output, Vitest view logic, wheel+sdist asset completeness | Node 22 |
-| Official contract | `make validate-asyncapi` | `@asyncapi/specs` schemas + `@asyncapi/parser` accept exported 3.0/3.1 fixtures and reject isolated mutations | Node 22 |
+| Packaged UI | `make js-install build js-test` | locked npm tree, Vite output, Vitest view logic, wheel+sdist asset completeness | Node (`.nvmrc`) |
+| Official contract | `make validate-asyncapi` | `@asyncapi/specs` schemas + `@asyncapi/parser` accept exported 3.0/3.1 fixtures and reject isolated mutations | Node (`.nvmrc`) |
 | Browser | `make browser-test` | Playwright Chromium against `tools/frontend/tests/server.py` | `npx playwright install chromium` |
 | Installed Python | `make installed-test PYTHON_VERSION=X LITESTAR_BOUNDARY=minimum\|latest` | wheel imports from site-packages, minimal generation, full tests outside the checkout | built `dist/*.whl` |
-| Installed browser | `make browser-test-installed PYTHON_VERSION=X` | installed manifest hash equals source manifest; browser suite against installed wheel | built wheel, Node 22 |
+| Installed browser | `make browser-test-installed PYTHON_VERSION=X` | installed manifest hash equals source manifest; browser suite against installed wheel | built wheel, Node (`.nvmrc`) |
 | Docs | `make docs docs-linkcheck` | Sphinx HTML build and external links | docs group |
 
 ## `make build`

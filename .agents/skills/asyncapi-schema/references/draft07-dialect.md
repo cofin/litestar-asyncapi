@@ -45,4 +45,4 @@ When the root declares `$schema: http://json-schema.org/draft-07/schema#`, the c
 
 ## Official gate
 
-`tools/validate_asyncapi.mjs` compiles `@asyncapi/specs` 3.0.0/3.1.0 schemas with AJV and parses fixtures with `@asyncapi/parser`. It masks literal `$ref`/`__proto__` keys only in the parser's disposable input view; the original document is schema-validated unchanged. Run `make validate-asyncapi` (Node 22) after any wire-shape change; `make export-asyncapi-fixture` regenerates `.tmp/asyncapi-fixture.json`.
+`tools/validate_asyncapi.mjs` compiles `@asyncapi/specs` 3.0.0/3.1.0 schemas with AJV and parses fixtures with `@asyncapi/parser`. It masks literal `$ref`/`__proto__` keys only in the parser's disposable input view; the original document is schema-validated unchanged. Run `make validate-asyncapi` (Node (`.nvmrc`)) after any wire-shape change; `make export-asyncapi-fixture` regenerates `.tmp/asyncapi-fixture.json`.

@@ -32,7 +32,7 @@ You are the write-enabled specialist for the litestar-asyncapi schema domain: `s
 ### Gates
 
 - `make type-check`, `make slotscheck`, `make lint`, `make test`.
-- When wire output changes: `make export-asyncapi-fixture` and `make validate-asyncapi` (Node 22, after `make js-install`).
+- When wire output changes: `make export-asyncapi-fixture` and `make validate-asyncapi` (Node (`.nvmrc`), after `make js-install`).
 
 ### Invariants
 

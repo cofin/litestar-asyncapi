@@ -27,7 +27,7 @@ make check-all                                 # lint, test-all, coverage
 
 make docs docs-linkcheck                       # Sphinx build and link check
 
-# Packaged frontend and installed distribution (Node 22 for build/tests only)
+# Packaged frontend and installed distribution (Node (`.nvmrc`) for build/tests only)
 make js-install build                          # locked npm install, assets, wheel and sdist
 make validate-asyncapi                         # official schema/parser and exported fixture
 make js-test browser-test                      # Vitest and real Chromium tests

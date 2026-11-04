@@ -50,4 +50,4 @@ Existing files require `--overwrite`. Export also works with `DocsConfig(enabled
 
 See the [migration guide](docs/migration.rst), [runnable examples](docs/examples/README.md), and [usage guides](docs/usage/index.rst). Build documentation with `make docs`.
 
-Development uses `make lint`, `make test`, `make validate-asyncapi`, and the locked Node 22 frontend toolchain. CI tests installed wheels across supported Python versions. Release workflows publish the tested wheel and its accompanying source distribution.
+Development uses `make lint`, `make test`, `make validate-asyncapi`, and the locked Node (`.nvmrc`) frontend toolchain. CI tests installed wheels across supported Python versions. Release workflows publish the tested wheel and its accompanying source distribution.

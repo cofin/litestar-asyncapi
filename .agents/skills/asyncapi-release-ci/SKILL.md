@@ -8,7 +8,7 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 <!-- truth: start -->
 - One tested artifact: `.github/workflows/distribution.yml` (`workflow_call`) builds, validates and uploads `tested-distribution`; `test.yml` and `publish.yml` download it. Publishing never rebuilds.
 - `make build` = `js-build` (Vite into `src/litestar_asyncapi/assets/ui/`) + `uv build` + `tools/frontend/tests/distribution.py::check_assets` on wheel and sdist.
-- Built UI assets are committed and shipped through hatch `artifacts`; consumers need neither Node nor a CDN. Node 22 is build/test-only (`package.json::engines`).
+- Built UI assets are committed and shipped through hatch `artifacts`; consumers need neither Node nor a CDN. Node (`.nvmrc`) is build/test-only (`package.json::engines`).
 - Runtime dependency is `litestar>=2.24.0` with no upper cap; `installed-test` proves `minimum` (`litestar==2.24.0`) and `latest` (`litestar>=2.24,<3`) boundaries.
 - `installed-test` installs the wheel into a temp venv outside the checkout, asserts `litestar_asyncapi.__file__` is under `sys.prefix`, generates a 3.1.0 document, then runs `pytest tests --no-cov -q`.
 - CI matrix: Python 3.10–3.14 x `minimum`/`latest`; coverage XML only on 3.12/minimum.
