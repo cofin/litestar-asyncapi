@@ -13,23 +13,31 @@ __all__ = ("UNSET", "BaseSchemaObject")
 UNSET = Empty
 
 
-def _normalize_key(key: str) -> str:
-    """Normalize a dataclass field name into a spec dictionary key.
+def _normalize_key(field_: "Field[Any]") -> str:
+    """Return the spec dictionary key for a dataclass field.
+
+    An explicit ``metadata["alias"]`` always wins. Otherwise ``ref`` becomes
+    ``$ref`` and snake_case names become camelCase.
 
     Args:
-        key: The dataclass field name.
+        field_: The dataclass field.
 
     Returns:
-        The normalized key used in serialized output.
+        The key used in serialized output.
+
+    Raises:
+        TypeError: If the field declares a non-string alias.
     """
-    if key == "in_" or key.endswith("_in"):
-        return "in"
-    if key.startswith("schema_") and key != "schema_format":
-        return key.split("_", maxsplit=1)[1]
-    if "_" in key:
-        components = key.split("_")
-        return components[0] + "".join(component.title() for component in components[1:])
-    return "$ref" if key == "ref" else key
+    if "alias" in field_.metadata:
+        alias = field_.metadata["alias"]
+        if not isinstance(alias, str):
+            msg = 'metadata["alias"] must be a str'
+            raise TypeError(msg)
+        return alias
+    if field_.name == "ref":
+        return "$ref"
+    first, *rest = field_.name.split("_")
+    return first + "".join(component.title() for component in rest)
 
 
 def _normalize_value(value: Any) -> Any:
@@ -83,18 +91,7 @@ class BaseSchemaObject:
             if raw_value is UNSET or (raw_value is None and not field_.metadata.get("nullable")):
                 continue
 
-            value = _normalize_value(raw_value)
-
-            if "alias" in field_.metadata:
-                alias = field_.metadata["alias"]
-                if not isinstance(alias, str):
-                    msg = 'metadata["alias"] must be a str'
-                    raise TypeError(msg)
-                key = alias
-            else:
-                key = _normalize_key(field_.name)
-
-            result[key] = value
+            result[_normalize_key(field_)] = _normalize_value(raw_value)
 
         for key, value in getattr(self, "extensions", {}).items():
             if not isinstance(key, str) or not key.startswith("x-") or key in result:

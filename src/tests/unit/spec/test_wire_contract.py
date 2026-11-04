@@ -56,3 +56,49 @@ def test_deepcopy_omission_and_ordinary_enums() -> None:
     assert deepcopy(Schema()).to_schema() == {}
     assert deepcopy(MessageExample(payload=None)).to_schema() == {"payload": None}
     assert Schema(default=Choice.VALUE).to_schema() == {"default": "value"}
+
+
+def test_kafka_binding_keys_match_official_schema() -> None:
+    from litestar_asyncapi.spec.bindings import KafkaMessageBinding, KafkaServerBinding
+
+    assert KafkaServerBinding(
+        schema_registry_url="https://registry", schema_registry_vendor="confluent"
+    ).to_schema() == {"schemaRegistryUrl": "https://registry", "schemaRegistryVendor": "confluent"}
+    assert KafkaMessageBinding(
+        schema_id_location="payload", schema_id_payload_encoding="confluent", schema_lookup_strategy="TopicIdStrategy"
+    ).to_schema() == {
+        "schemaIdLocation": "payload",
+        "schemaIdPayloadEncoding": "confluent",
+        "schemaLookupStrategy": "TopicIdStrategy",
+    }
+
+
+def test_keys_without_alias_are_camel_cased() -> None:
+    from dataclasses import dataclass, field
+
+    from litestar_asyncapi.spec.base import BaseSchemaObject
+
+    @dataclass(slots=True)
+    class Session(BaseSchemaObject):
+        logged_in: bool
+        schema_name: str
+        location: str = field(metadata={"alias": "in"})
+
+    assert Session(logged_in=True, schema_name="orders", location="header").to_schema() == {
+        "loggedIn": True,
+        "schemaName": "orders",
+        "in": "header",
+    }
+
+
+def test_non_string_alias_is_rejected() -> None:
+    from dataclasses import dataclass, field
+
+    from litestar_asyncapi.spec.base import BaseSchemaObject
+
+    @dataclass(slots=True)
+    class Invalid(BaseSchemaObject):
+        value: int = field(default=1, metadata={"alias": 1})
+
+    with pytest.raises(TypeError, match=r'metadata\["alias"\] must be a str'):
+        Invalid().to_schema()

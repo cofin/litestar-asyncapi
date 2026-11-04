@@ -3,13 +3,13 @@ type: Spec
 flow_id: wire-contract-fixes
 title: Wire Keys and Conformance Fixture
 description: Make spec wire-key normalization alias-driven, export prefixItems as Draft07, and add a bindings, security, traits and extensions fixture to official validation.
-state: draft
+state: active
 parent_prd: contract-fixes
 research: []
-plan_revision: 2
-plan_commit: null
+plan_revision: 3
+plan_commit: 938a9e1
 state_revision: 0
-current_task: null
+current_task: t02
 last_verified_checkpoint: null
 created_at: 2026-11-04T00:00:00Z
 updated_at: 2026-11-04T00:00:00Z
@@ -44,3 +44,16 @@ Fix the two places where wire models emit invalid or ignored keys (audit B1, B6)
 - `make validate-asyncapi` validates the new fixture for both spec versions.
 - The Kafka binding keys match the official kafka 0.5.0 binding schema.
 - No emitted document contains `prefixItems`.
+
+## Implementation Plan
+
+- [x] t01 — official Kafka keys, alias-driven key normalization and the bindings conformance fixture (tasks/t01-kafka-keys-and-conformance-fixture.md)
+- [ ] t02 — export explicit `Schema.prefix_items` as Draft07 tuple items (tasks/t02-prefix-items-export.md)
+
+**Recovery checkpoint:** `make lint && make type-check && make test && make validate-asyncapi` exits `0`.
+
+## Continuity Snapshot
+
+- **Fixture naming.** The fixtures follow the existing `<name>-<full version>.json` convention: `bindings-3.0.0.json` and `bindings-3.1.0.json`.
+- **Extension reach.** Root and `info` extensions cannot be set through `AsyncAPIConfig` (Master PRD backlog), so the generated fixture covers extensions on servers, messages, traits and `components` channel/operation entries instead.
+- **Task split.** The fixture and the key fix share one task: the fixture is the gate-level failing check for B1, and committing it alone would leave `make validate-asyncapi` red.

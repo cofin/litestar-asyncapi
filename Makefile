@@ -295,9 +295,11 @@ validate-asyncapi: export-asyncapi-fixture          ## Validate offline AsyncAPI
 	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json
 
 .PHONY: export-asyncapi-fixture
-export-asyncapi-fixture:                           ## Export a headless application contract for the official gate
+export-asyncapi-fixture:                           ## Export application contracts for the official gate
 	@mkdir -p .tmp
 	@uv run litestar --app-dir src --app tests.fixtures.apps.cli:app asyncapi export --output .tmp/asyncapi-fixture.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.bindings:app_3_0 asyncapi export --output src/tests/fixtures/asyncapi/bindings-3.0.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.bindings:app_3_1 asyncapi export --output src/tests/fixtures/asyncapi/bindings-3.1.0.json --overwrite
 
 .PHONY: js-build js-test browser-test
 js-build:                                          ## Build packaged browser assets

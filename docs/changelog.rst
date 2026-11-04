@@ -4,6 +4,19 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
+Unreleased
+==========
+
+Fixed
+-----
+
+* Kafka binding keys now use their official names: ``schemaRegistryUrl`` and
+  ``schemaRegistryVendor`` on servers, and ``schemaIdLocation``,
+  ``schemaIdPayloadEncoding`` and ``schemaLookupStrategy`` on messages.
+  Documents using these bindings now pass official validation. This is a
+  breaking change for anyone matching the old ``registry_*``, ``id_*`` or
+  ``lookup_strategy`` keys.
+
 0.2.0
 =====
 

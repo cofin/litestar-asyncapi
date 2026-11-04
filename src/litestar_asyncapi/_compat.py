@@ -165,9 +165,7 @@ def normalize_native_schema(value: Any, null_fields: dict[int, set[str]] | None 
     """Serialize native spec objects without pruning null entries from literal data."""
     if isinstance(value, BaseSchemaObject):
         return {
-            field.metadata.get("alias", _normalize_key(field.name)): normalize_native_schema(
-                getattr(value, field.name), null_fields
-            )
+            _normalize_key(field): normalize_native_schema(getattr(value, field.name), null_fields)
             for field in value._iter_fields()
             if field.name not in value._exclude_fields
             and (getattr(value, field.name) is not None or field.name in (null_fields or {}).get(id(value), set()))

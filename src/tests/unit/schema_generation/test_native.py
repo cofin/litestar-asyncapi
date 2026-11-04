@@ -337,6 +337,25 @@ def test_native_projection_honors_excluded_fields() -> None:
     assert normalize_native_schema(FilteredSchema(default={"value": None})) == {"default": {"value": None}}
 
 
+def test_native_projection_uses_aliases_and_references() -> None:
+    from litestar.openapi.spec import Reference, Schema
+
+    from litestar_asyncapi._compat import normalize_native_schema
+
+    schema = Schema(
+        one_of=[Reference(ref="#/$defs/Item")],
+        schema_not=Schema(max_items=0),
+        prefix_items=[Schema(min_length=1)],
+        property_names=Schema(pattern="^[a-z]+$"),
+    )
+    assert normalize_native_schema(schema) == {
+        "oneOf": [{"$ref": "#/$defs/Item"}],
+        "not": {"maxItems": 0},
+        "prefixItems": [{"minLength": 1}],
+        "propertyNames": {"pattern": "^[a-z]+$"},
+    }
+
+
 def test_explicit_multiformat_bypasses_native_dialect_conversion() -> None:
     from litestar_asyncapi.spec import MultiFormatSchema
 

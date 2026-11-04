@@ -35,8 +35,8 @@ def test_to_schema_normalizes_keys_and_values() -> None:
     schema = dummy.to_schema()
     assert schema["snakeCase"] == 1
     assert schema["$ref"] == "#/components/schemas/Foo"
-    assert schema["type"] == "object"
-    assert schema["in"] == "query"
+    assert schema["schemaType"] == "object"
+    assert schema["parameterIn"] == "query"
     assert schema["x-aliased"] == "x"
     assert schema["items"] == [{"a_b": 1}, 2]
 
