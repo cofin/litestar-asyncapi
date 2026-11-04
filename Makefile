@@ -169,12 +169,6 @@ docs-clean:                                       ## Clean documentation artifac
 # Validation Targets
 # =============================================================================
 
-.PHONY: validate-examples
-validate-examples:                                  ## Validate docs/examples marker blocks
-	@echo "${INFO} Validating doc example markers... 🔍"
-	@uv run python tools/ci/validate_doc_markers.py
-	@echo "${OK} Doc example markers valid ✨"
-
 .PHONY: validate-pep723
 validate-pep723:                                    ## Validate PEP 723 blocks in runnable examples
 	@echo "${INFO} Validating PEP 723 script blocks... 🔍"
@@ -276,7 +270,7 @@ fix:                                               ## Fix linting issues
 	@echo "${OK} Linting issues fixed ✨"
 
 .PHONY: lint
-lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run all linting checks
+lint: prek type-check slotscheck zizmor validate-pep723 ## Run all linting checks
 
 .PHONY: check-all
 check-all: lint test                               ## Run lint, then the test suite once with coverage

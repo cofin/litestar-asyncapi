@@ -1,6 +1,6 @@
 ---
 name: asyncapi-release-ci
-description: Use when editing Makefile targets (build, release, pre-release, installed-test, browser-test-installed, js-*, validate-*, zizmor, docs), pyproject.toml build/dependency/pytest/coverage/slotscheck/ruff/bumpversion config, package.json or package-lock.json, vite.config.ts, playwright.config.ts, .github/workflows/*.yml, .pre-commit-config.yaml, tools/ci/*.py, tools/validate_asyncapi.mjs, tools/docs_audit.py, or PEP 723 blocks and doc markers in docs/examples.
+description: Use when editing Makefile targets (build, release, pre-release, installed-test, browser-test-installed, js-*, validate-*, zizmor, docs), pyproject.toml build/dependency/pytest/coverage/slotscheck/ruff/bumpversion config, package.json or package-lock.json, vite.config.ts, playwright.config.ts, .github/workflows/*.yml, .pre-commit-config.yaml, tools/ci/*.py, tools/validate_asyncapi.mjs, tools/docs/*.py, zensical.toml, lychee.toml, or PEP 723 blocks in docs/examples.
 ---
 
 # AsyncAPI Release & CI
@@ -16,10 +16,10 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - Every `actions/checkout` sets `persist-credentials: false`. Local reusable workflows use `uses: $/.github/workflows/<file>.yml`.
 - `make zizmor` reports zero high/medium findings.
 - Focused tests: `uv run pytest <path> -q --no-cov`. Global `--cov-fail-under=80` in `pyproject.toml::tool.pytest.ini_options.addopts` fails any partial run.
-- `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-examples, validate-pep723. `make check-all` = lint, then the suite once with coverage.
+- `make lint` = prek, mypy, pyright, slotscheck, zizmor, validate-pep723. `make check-all` = lint, then the suite once with coverage.
 - `make release` / `make pre-release` bump versions in `pyproject.toml` and `uv.lock` via bump-my-version (`commit = false`, `tag = false`). Run them only on explicit user request; never create, move or delete Git tags and never push.
 - Python code never uses `from __future__ import annotations` (ruff `flake8-tidy-imports.banned-api`, rule TID251) and package code carries zero inline comments.
-- Runnable `docs/examples/**/*.py` declare a PEP 723 block with `requires-python >=3.10` and a `litestar-asyncapi` dependency; `# start-example`/`# end-example` blocks compile standalone.
+- Runnable `docs/examples/**/*.py` declare a PEP 723 block with `requires-python >=3.10` and a `litestar-asyncapi` dependency and a module-level `app` that `src/tests/unit/docs/test_examples.py` serves; `make validate-asyncapi` validates each exported example document.
 <!-- truth: end -->
 
 ## Scope
@@ -28,8 +28,8 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 - `pyproject.toml`: `project.dependencies`, `tool.hatch.build.*`, `dependency-groups`, `tool.pytest.ini_options`, `tool.coverage.*`, `tool.bumpversion`, `tool.ruff*`, `tool.mypy`, `tool.pyright`, `tool.slotscheck`, `tool.codespell`.
 - `package.json`, `package-lock.json`, `vite.config.ts`, `playwright.config.ts`.
 - `.github/workflows/{ci,test,distribution,publish,docs,pr-title}.yml`, `.pre-commit-config.yaml`.
-- `tools/ci/validate_doc_markers.py`, `tools/ci/validate_pep723_blocks.py`, `tools/validate_asyncapi.mjs`, `tools/docs_audit.py`, `tools/frontend/tests/distribution.py`.
-- `docs/conf.py`, `docs/examples/**`.
+- `tools/ci/validate_pep723_blocks.py`, `tools/validate_asyncapi.mjs`, `tools/docs/*.py`, `tools/frontend/tests/distribution.py`.
+- `zensical.toml`, `lychee.toml`, `docs/examples/**`.
 
 ## Seams
 
@@ -40,7 +40,7 @@ description: Use when editing Makefile targets (build, release, pre-release, ins
 | Packaged UI | `src/litestar_asyncapi/assets/ui/manifest.json` | `vite.config.ts` entries `react`, `scalar` | hatch `artifacts`; `distribution.py::check_assets` |
 | Official contract gate | `make validate-asyncapi` | `tools/validate_asyncapi.mjs::validate`, `::verifyGate` | `export-asyncapi-fixture` via `litestar ... asyncapi export` on `tests.fixtures.apps.cli:app` |
 | Static gates | `make lint` | prek hooks, mypy strict, pyright standard, slotscheck exclusions | `.pre-commit-config.yaml`, `pyproject.toml` tool tables |
-| Doc examples | `make validate-examples`, `make validate-pep723` | `validate_doc_markers.py::validate_file`, `validate_pep723_blocks.py::validate_file` | `docs/examples/**/*.py` |
+| Doc examples | `make validate-pep723`, `make export-example-documents` | `validate_pep723_blocks.py::validate_file`, `export_example_documents.py::export` | `docs/examples/**/*.py` |
 
 Dependency categories:
 

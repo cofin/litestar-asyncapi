@@ -48,6 +48,6 @@ uv run litestar --app app:app asyncapi export --format yaml --output asyncapi.ya
 
 Existing files require `--overwrite`. Export also works with `DocsConfig(enabled=False)`.
 
-See the [migration guide](docs/migration.rst), [runnable examples](docs/examples/README.md), and [usage guides](docs/usage/index.rst). Build documentation with `make docs`.
+See the [documentation](https://cofin.github.io/litestar-asyncapi/), including the [migration guide](https://cofin.github.io/litestar-asyncapi/project/migration/), [runnable examples](https://cofin.github.io/litestar-asyncapi/learn/examples/) and [Learn guides](https://cofin.github.io/litestar-asyncapi/learn/). Build documentation with `make docs`.
 
 Development uses `make lint`, `make test`, `make validate-asyncapi`, and the locked Node (`.nvmrc`) frontend toolchain. CI tests installed wheels across supported Python versions. Release workflows publish the tested wheel and its accompanying source distribution.

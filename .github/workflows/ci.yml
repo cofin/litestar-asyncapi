@@ -35,9 +35,6 @@ jobs:
       - name: Execute prek
         run: uvx prek run --show-diff-on-failure --color=always --all-files
 
-      - name: Validate doc examples
-        run: make validate-examples
-
       - name: Validate PEP 723 script blocks
         run: make validate-pep723
 

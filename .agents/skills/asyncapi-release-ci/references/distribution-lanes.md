@@ -21,7 +21,7 @@ How build, test and publish targets compose into the single tested artifact.
 | Browser | `make browser-test` | Playwright Chromium against `tools/frontend/tests/server.py` | `npx playwright install chromium` |
 | Installed Python | `make installed-test PYTHON_VERSION=X LITESTAR_BOUNDARY=minimum\|latest` | wheel imports from site-packages, minimal generation, full tests outside the checkout | built `dist/*.whl` |
 | Installed browser | `make browser-test-installed PYTHON_VERSION=X` | installed manifest hash equals source manifest; browser suite against installed wheel | built wheel, Node (`.nvmrc`) |
-| Docs | `make docs docs-linkcheck` | Sphinx HTML build and external links | docs group |
+| Docs | `make docs docs-linkcheck` | Zensical strict build, redirect stubs, inventory and internal links; external links via lychee | docs group in `.venv-docs` |
 
 ## `make build`
 

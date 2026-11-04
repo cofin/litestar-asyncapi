@@ -31,7 +31,7 @@ For a new or replacement gate, demonstrate it fails on an isolated violation, th
 # Verification & Constraints
 
 - Focused tests: `uv run pytest <path> -q --no-cov`.
-- Run the lanes you touched: `make lint`, `make test`, `make zizmor`, `make validate-examples validate-pep723`, `make js-install build js-test validate-asyncapi browser-test`, `make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]`, `make browser-test-installed PYTHON_VERSION=3.12`, `make docs`.
+- Run the lanes you touched: `make lint`, `make test`, `make zizmor`, `make validate-pep723`, `make js-install build js-test validate-asyncapi browser-test`, `make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]`, `make browser-test-installed PYTHON_VERSION=3.12`, `make docs`.
 - Run `make release`, `make pre-release`, `bump-my-version` or any publish step only on explicit user instruction. Never create, move or delete Git tags and never push.
 - Python under `tools/` and `src/` uses docstrings, no inline comments, and no `from __future__ import annotations` in package code.
 - Stage only the paths you changed.

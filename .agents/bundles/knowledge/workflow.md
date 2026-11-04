@@ -49,12 +49,12 @@ make js-install                                # npm ci (Node (`.nvmrc`); build/
 uv run pytest src/tests/unit/test_generator.py::test_name -q --no-cov
 
 # lint & typecheck
-make lint                                      # prek, type-check, slotscheck, zizmor, validate-examples, validate-pep723
+make lint                                      # prek, type-check, slotscheck, zizmor, validate-pep723
 make prek                                      # ruff (incl. the future-annotations ban), codespell, file hygiene on tracked and untracked files
 make type-check                                # mypy and pyright
 make slotscheck                                # every class defines __slots__ unless excluded in pyproject.toml
 make zizmor                                    # workflow security scan
-make validate-examples validate-pep723         # docs/examples marker blocks and PEP 723 metadata
+make validate-pep723                           # PEP 723 metadata in docs/examples
 make fix                                       # ruff autofix + format
 
 # tests
@@ -64,13 +64,16 @@ make check-all                                 # lint, then the suite once
 
 # packaged frontend and installed distribution
 make build                                     # Vite assets, wheel and sdist, asset completeness check
-make validate-asyncapi                         # official schema/parser on exported fixtures
+make validate-asyncapi                         # official schema/parser on exported fixtures and every docs example document
 make js-test browser-test                      # Vitest and Playwright Chromium
 make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]
 make browser-test-installed PYTHON_VERSION=3.12
 
 # documentation
-make docs docs-linkcheck docs-audit
+make docs                                      # Zensical strict build, legacy redirects, artifact and internal link verification (.venv-docs, Python 3.12)
+make docs-serve                                # live preview
+make docs-linkcheck                            # external links with lychee; skips when lychee is absent
+make docs-clean                                # remove site/ and docs/_generated/
 ```
 
 The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `make test` and `make check-all` enforce it. Coverage traces both `multiprocessing` and `thread`, so handlers run in the `TestClient` worker thread are measured. CI splits these gates into `prek`, `mypy`, `pyright`, `slotscheck`, tested-distribution and per-Python test jobs[^ci].
@@ -90,7 +93,7 @@ The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `mak
 | `regression_tdd` | Defect correction | Focused reproduction demonstrates the defect; the narrow fix makes it green. |
 | `characterization` | Behavior-preserving refactor/deletion | Green focused baseline before and unchanged behavior after. |
 | `static_validation` | Manifest, config, workflows, tooling | Native parser/lint/type/build; an isolated violation proves a new gate fails with the expected diagnostic. |
-| `documentation_validation` | Links, examples, docs structure | `make docs docs-linkcheck validate-examples validate-pep723` before and after. |
+| `documentation_validation` | Links, examples, docs structure | `make docs docs-linkcheck validate-pep723` and `uv run pytest src/tests/unit/docs -q --no-cov` before and after. |
 | `integration_acceptance` | Composition of existing contracts | Green baseline; end-to-end scenario (official validator, browser or installed wheel) plus injected negative states. |
 
 Never manufacture a failing unit test for documentation, configuration, generated assets or behavior-preserving cleanup.

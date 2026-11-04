@@ -191,7 +191,7 @@ version = "{current_version}"
 
 # Ruff configuration
 [tool.ruff]
-extend-exclude = ["docs/_build"]
+extend-exclude = ["site"]
 line-length = 120
 src = ["src"]
 target-version = "py310"
@@ -258,7 +258,6 @@ ban-relative-imports = "all"
 "tools/frontend/tests/*.py" = ["INP001"]
 "tools/frontend/tests/distribution.py" = ["S101", "T201"]
 "src/litestar_asyncapi/_compat.py" = ["PLC0415", "SLF001", "S311"]
-"docs/conf.py" = ["A001", "INP001"]
 "docs/**/*.py" = ["A", "B", "D", "ERA", "S"]
 "src/litestar_asyncapi/spec/enums.py" = ["S105"]
 "src/litestar_asyncapi/config.py" = ["PLC0415"]

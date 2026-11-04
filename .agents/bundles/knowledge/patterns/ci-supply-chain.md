@@ -45,7 +45,7 @@ Anti-pattern: a publish job that runs `uv build`. Reason: the shipped wheel woul
 
 ## Audit
 
-`make zizmor` runs `uvx zizmor .github/workflows`[^zizmor]; CI runs it in the `prek` job alongside `validate-examples` and `validate-pep723`.
+`make zizmor` runs `uvx zizmor .github/workflows`[^zizmor]; CI runs it in the `prek` job alongside `validate-pep723`. The `build-docs` job checks external links with `lycheeverse/lychee-action`, pinned by SHA.
 
 [^ci]: `.github/workflows/ci.yml`
 [^dist]: `.github/workflows/distribution.yml`
