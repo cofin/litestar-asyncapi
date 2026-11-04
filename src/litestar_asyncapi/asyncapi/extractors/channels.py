@@ -39,8 +39,7 @@ def extract_channels_plugin_channels(
                 address=route.path_format,
                 source=DiscoverySource.CHANNELS_PLUGIN,
                 provenance=provenance,
-                parameters=_path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
-                or None,
+                parameters=_path_parameters_to_parameters(route.path_parameters) or None,
                 operations=[
                     DiscoveredOperation(
                         action=OperationAction.SEND,

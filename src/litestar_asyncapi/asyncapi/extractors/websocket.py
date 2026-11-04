@@ -2,9 +2,6 @@ import warnings
 from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any
 
-from litestar.types.builtin_types import NoneType
-from litestar.typing import FieldDefinition
-
 from litestar_asyncapi._compat import (
     generated_channels_mode,
     websocket_content_type,
@@ -65,7 +62,7 @@ def extract_websocket_channels(
         ):
             continue
 
-        parameters = _path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
+        parameters = _path_parameters_to_parameters(route.path_parameters)
         operations = _infer_operations_from_handler(
             route.route_handler, schema_generator=schema_generator, config=config, app=app
         )
@@ -89,23 +86,16 @@ def extract_websocket_channels(
 
 
 def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
-    """Determine if a websocket route handler should be included in the AsyncAPI schema.
-
-    Checks the 'include_in_schema' option in the handler's 'opt' dictionary, defaulting to True
-    if not explicitly set (mirroring Litestar's HTTP handler behavior).
+    """Honor the handler's resolved ``include_in_schema`` option, defaulting to inclusion.
 
     Returns:
-        True if the handler should be included in the schema, False otherwise.
+        ``False`` only when ``include_in_schema`` is explicitly ``False``.
     """
-    if hasattr(handler, "opt") and isinstance(handler.opt, dict):
-        include_in_schema = handler.opt.get("include_in_schema")
-        if isinstance(include_in_schema, bool):
-            return include_in_schema
-    return True
+    return handler.opt.get("include_in_schema") is not False
 
 
 def _path_parameters_to_parameters(
-    path_parameters: "dict[str, PathParameterDefinition]", *, schema_generator: "AsyncAPISchemaGenerator"
+    path_parameters: "dict[str, PathParameterDefinition]",
 ) -> dict[str, Parameter | Reference]:
     """Convert path parameters into AsyncAPI Parameter objects.
 
@@ -150,7 +140,7 @@ def _infer_operations_from_handler(
                 (OperationAction.RECEIVE, receive, receive_mode),
                 (OperationAction.SEND, send, send_mode),
             )
-            if field is not None and not (action is OperationAction.SEND and _is_none_return_type(field))
+            if field is not None and not (action is OperationAction.SEND and field.is_none_type)
         ]
         operations = _apply_decorator_overrides(
             route_handler, operations, schema_generator=schema_generator, config=config, app=app
@@ -318,12 +308,3 @@ def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
             stripped = opt_value.strip()
             return stripped or None
     return None
-
-
-def _is_none_return_type(field_definition: FieldDefinition) -> bool:
-    return (
-        field_definition.raw is None
-        or field_definition.annotation is None
-        or field_definition.is_subclass_of(NoneType)
-        or field_definition.raw is NoneType
-    )

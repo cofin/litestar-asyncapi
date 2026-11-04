@@ -274,3 +274,67 @@ def test_factory_listener_name_has_no_local_qualifier() -> None:
     document = AsyncAPIGenerator(Litestar([make_handler()]), AsyncAPIConfig()).build_schema()
     assert set(document["operations"]) == {"chat_receive", "chat_send"}
     assert "<locals>" not in str(document)
+
+
+def test_every_discovery_source_yields_one_channel_per_key() -> None:
+    from litestar import Litestar, Router, websocket, websocket_listener
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+    from litestar.handlers.websocket_handlers.stream import websocket_stream
+
+    from litestar_asyncapi import ChannelDefinition, MessageDefinition, OperationDefinition
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    @websocket_listener("/chat/{room:int}")
+    async def chat(data: str) -> str:
+        return data
+
+    @websocket_stream("/ticks")
+    async def ticks() -> "AsyncGenerator[int, None]":
+        yield 1
+
+    @websocket("/raw")
+    async def raw(socket: "WebSocket") -> None:
+        return None
+
+    @websocket_listener("/replaced")
+    async def replaced(data: int) -> None:
+        return None
+
+    plugin = ChannelsPlugin(MemoryChannelsBackend(), channels=["news"], create_ws_route_handlers=True)
+    app = Litestar([Router("/api", route_handlers=[chat, ticks, raw, replaced])], plugins=[plugin])
+    config = AsyncAPIConfig(
+        include_raw_websocket_routes=True,
+        strict_uniqueness=True,
+        channels=[
+            ChannelDefinition(
+                "/api/replaced",
+                "/api/replaced",
+                [OperationDefinition(action="send", messages=[MessageDefinition(name="Explicit", payload=str)])],
+            )
+        ],
+    )
+    with pytest.warns(UserWarning, match="cannot infer the raw WebSocket"):
+        document = AsyncAPIGenerator(app, config).build_schema()
+    assert set(document["channels"]) == {"/api/chat/{room}", "/api/ticks", "/api/raw", "/api/replaced", "/news"}
+    assert set(document["channels"]["/api/replaced"]["messages"]) == {"Explicit"}
+
+
+def test_handler_include_in_schema_false_excludes_raw_socket() -> None:
+    from litestar import Litestar, websocket
+
+    from litestar_asyncapi import asyncapi_message
+
+    @asyncapi_message(action="receive", payload=str)
+    @websocket("/included")
+    async def included_handler(socket: "WebSocket") -> None:
+        return None
+
+    @asyncapi_message(action="receive", payload=str)
+    @websocket("/excluded", include_in_schema=False)
+    async def excluded_handler(socket: "WebSocket") -> None:
+        return None
+
+    app = Litestar(route_handlers=[included_handler, excluded_handler])
+    channels = extract_websocket_channels(app, schema_generator=AsyncAPISchemaGenerator())
+    assert {channel.address for channel in channels} == {"/included"}

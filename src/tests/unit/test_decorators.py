@@ -122,3 +122,13 @@ def test_decorators_normalize_action_through_operation_definition() -> None:
     assert list(handler.opt[ASYNCAPI_OPT_KEY].operations) == [OperationAction.RECEIVE]
     with pytest.raises(ValueError, match="Invalid action 'publish'"):
         asyncapi_operation(action="publish")
+
+
+def test_decorators_require_route_handler_instance() -> None:
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    def plain() -> None:
+        return None
+
+    with pytest.raises(ImproperlyConfiguredException, match="must wrap a Litestar route handler"):
+        asyncapi_operation(action="send", summary="x")(plain)

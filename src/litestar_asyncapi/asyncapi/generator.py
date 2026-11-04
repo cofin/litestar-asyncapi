@@ -72,8 +72,10 @@ class AsyncAPIGenerator:
         _merge_components(document.components.operation_traits, self.config.to_operation_traits(), "operationTraits")
         _merge_components(document.components.message_traits, self.config.to_message_traits(), "messageTraits")
         discovered = _normalize_channels(_discover_channels(self.app, self.config, schema_generator))
-        _populate_channels(document, discovered)
-        _populate_operations(document, discovered, config=self.config, schema_generator=schema_generator, app=self.app)
+        channels = _populate_channels(document, discovered)
+        _populate_operations(
+            document, discovered, channels, config=self.config, schema_generator=schema_generator, app=self.app
+        )
 
         _merge_components(document.components.schemas, schema_generator.components(), "schemas")
         _validate_references(document.to_schema())
@@ -181,20 +183,22 @@ def _discover_channels(
     return discovered
 
 
-def _populate_channels(document: AsyncAPI, discovered: list[DiscoveredChannel]) -> None:
-    for discovered_channel in discovered:
-        channel_key = discovered_channel.key
-        document.channels[channel_key] = Channel(
-            address=discovered_channel.address,
-            parameters=discovered_channel.parameters,
-            servers=discovered_channel.servers,
-            bindings=discovered_channel.bindings,
+def _populate_channels(document: AsyncAPI, discovered: list[DiscoveredChannel]) -> dict[str, Channel]:
+    """Add one inline channel per discovered channel and return them by key."""
+    channels = {
+        channel.key: Channel(
+            address=channel.address, parameters=channel.parameters, servers=channel.servers, bindings=channel.bindings
         )
+        for channel in discovered
+    }
+    document.channels.update(channels)
+    return channels
 
 
 def _populate_operations(
     document: AsyncAPI,
     discovered: list[DiscoveredChannel],
+    channels: dict[str, Channel],
     *,
     config: "AsyncAPIConfig",
     schema_generator: AsyncAPISchemaGenerator,
@@ -210,10 +214,7 @@ def _populate_operations(
     for discovered_channel in discovered:
         channel_key = discovered_channel.key
         channel_ref = Reference(ref=f"#/channels/{_json_pointer_escape(channel_key)}")
-        channel = document.channels[channel_key]
-        if isinstance(channel, Reference):
-            msg = "Discovered channels must be inline Channel objects"
-            raise TypeError(msg)
+        channel = channels[channel_key]
         for discovered_operation, prepared_messages in _prepare_operations(
             discovered_channel, schema_generator=schema_generator, app=app, config=config, message_traits=message_traits
         ):
@@ -462,47 +463,14 @@ def _merge_components(target: dict[str, Any], additions: dict[str, Any], categor
 
 
 def _normalize_channels(channels: list[DiscoveredChannel]) -> list[DiscoveredChannel]:
+    """Order channels by key and reject two channels that claim the same key."""
     normalized: dict[str, DiscoveredChannel] = {}
     for channel in sorted(channels, key=lambda value: (value.key, value.provenance)):
         previous = normalized.get(channel.key)
-        if previous is None:
-            normalized[channel.key] = replace(channel, operations=list(channel.operations))
-            continue
-        if (
-            previous.route_identity is None
-            or previous.route_identity is not channel.route_identity
-            or previous.address != channel.address
-        ):
-            detail = f"Conflicting channel {channel.key!r}: {previous.provenance} and {channel.provenance} do not share a route identity"
+        if previous is not None:
+            detail = f"Conflicting channel {channel.key!r}: {previous.provenance} and {channel.provenance}"
             raise ImproperlyConfiguredException(detail)
-        for name in ("parameters", "servers", "bindings"):
-            old, new = getattr(previous, name), getattr(channel, name)
-            conflicting = old is not None and new is not None and _definition_key(old) != _definition_key(new)
-            if isinstance(old, dict) and isinstance(new, dict):
-                conflicting = any(
-                    _definition_key(old[key]) != _definition_key(new[key]) for key in old.keys() & new.keys()
-                )
-                setattr(previous, name, {**old, **new})
-            if conflicting:
-                detail = f"Conflicting channel {channel.key!r} {name}: {previous.provenance} and {channel.provenance}"
-                raise ImproperlyConfiguredException(detail)
-            if old is None:
-                setattr(previous, name, new)
-        previous.operations = [*previous.operations, *channel.operations]
-    for channel in normalized.values():
-        if channel.source is DiscoverySource.CONFIG:
-            continue
-        operations: dict[str, OperationDefinition] = {}
-        for operation in sorted(channel.operations, key=_definition_key):
-            key = _definition_key(replace(operation, messages=None))
-            previous_operation = operations.get(key)
-            if previous_operation is None:
-                operations[key] = replace(
-                    operation, messages=list(operation.messages) if operation.messages is not None else None
-                )
-            else:
-                previous_operation.messages = [*(previous_operation.messages or []), *(operation.messages or [])]
-        channel.operations = list(operations.values())
+        normalized[channel.key] = channel
     return list(normalized.values())
 
 
