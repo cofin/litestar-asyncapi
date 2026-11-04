@@ -3,7 +3,7 @@ type: Spec
 flow_id: docs-redesign
 title: Documentation Redesign on Zensical
 description: Move the litestar-asyncapi docs from Sphinx to Zensical with task-oriented navigation, curated API reference, and every example executed in tests.
-state: planned
+state: active
 parent_prd: null
 research: []
 plan_revision: 2
@@ -12,7 +12,7 @@ state_revision: 0
 current_task: null
 last_verified_checkpoint: null
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T23:25:00Z
 tags: [prd, docs, zensical, information-architecture]
 ---
 
@@ -88,7 +88,7 @@ A new user can install the plugin, watch a document appear for their own WebSock
 
 | Chapter | Flow ID | Title | Key Deliverables | Public Seams | Dependencies | State |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `docs-examples-verified` | Executed examples | Example tests, exported documents, official validation | `docs/examples/**::app`, `make validate-asyncapi` | none | draft |
+| 1 | `docs-examples-verified` | Executed examples | Example tests, exported documents, official validation | `docs/examples/**::app`, `make validate-asyncapi` | none | completed |
 | 2 | `docs-zensical-foundation` | Zensical site and full conversion | Config, full Markdown conversion at locked URLs, redirects, link checks, Sphinx removal | `make docs`, `.github/workflows/docs.yml` | none | draft |
 | 3 | `docs-reference-curation` | Curated API reference | Reference pages within budget, field docstrings, scanner gate, CLI page | `src/litestar_asyncapi` public API | 2 (pages only) | draft |
 | 4 | `docs-learn-content` | Learn and Integrations rewrite | Rewritten guides using the example-first structure, merged quickstart, examples gallery, migration/changelog/contributing in Markdown | `docs/**/*.md` | 1, 2, 3 | draft |
@@ -116,14 +116,14 @@ A new user can install the plugin, watch a document appear for their own WebSock
 
 ## Implementation Plan
 
-- [ ] docs-examples-verified — run every docs example app in pytest and validate its document (../docs-examples-verified/spec.md)
+- [x] [5b81e9e] docs-examples-verified — run every docs example app in pytest and validate its document (../docs-examples-verified/spec.md)
 - [ ] docs-zensical-foundation — Zensical config, theme, build/CI/Pages wiring, redirects, Sphinx removal (../docs-zensical-foundation/spec.md)
 - [ ] docs-reference-curation — budgeted API reference, field docstrings, scanner gate, CLI page (../docs-reference-curation/spec.md)
 - [ ] docs-learn-content — example-first Learn/Integrations/Project pages (../docs-learn-content/spec.md)
 
 ## Continuity Snapshot
 
-- **State:** planned. No child flow has started.
+- **State:** active. Chapter 1 (`docs-examples-verified`) completed at `5b81e9e`; chapter 2 is next.
 - **Decisions:** Zensical engine, four-tab navigation and `cofin` GitHub Pages hosting were chosen by the user on 2026-11-04. The hosting URLs are already updated in `pyproject.toml` and CI.
 - **Review:** round 1 of the independent review is adjudicated. All 13 findings were adopted.
 - **Discoveries:**
