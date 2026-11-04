@@ -83,4 +83,6 @@ def test_committed_bindings_fixtures_match_export(version: str) -> None:
     app = bindings.app_3_0 if version == "3.0.0" else bindings.app_3_1
     plugin = next(plugin for plugin in app.plugins if isinstance(plugin, AsyncAPIPlugin))
     committed = FIXTURE.parents[1] / "asyncapi" / f"bindings-{version}.json"
-    assert committed.read_text(encoding="utf-8") == plugin.get_asyncapi_json(app).decode("utf-8") + "\n"
+    exported = plugin.get_asyncapi_json(app).decode("utf-8")
+    assert "prefixItems" not in exported
+    assert committed.read_text(encoding="utf-8") == exported + "\n"

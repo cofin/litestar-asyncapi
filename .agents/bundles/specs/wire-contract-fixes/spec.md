@@ -3,16 +3,16 @@ type: Spec
 flow_id: wire-contract-fixes
 title: Wire Keys and Conformance Fixture
 description: Make spec wire-key normalization alias-driven, export prefixItems as Draft07, and add a bindings, security, traits and extensions fixture to official validation.
-state: active
+state: completed
 parent_prd: contract-fixes
 research: []
 plan_revision: 3
 plan_commit: 938a9e1
 state_revision: 0
-current_task: t02
+current_task: null
 last_verified_checkpoint: null
 created_at: 2026-11-04T00:00:00Z
-updated_at: 2026-11-04T00:00:00Z
+updated_at: 2026-11-04T17:48:54Z
 tags: [spec, conformance, validation]
 ---
 
@@ -47,8 +47,8 @@ Fix the two places where wire models emit invalid or ignored keys (audit B1, B6)
 
 ## Implementation Plan
 
-- [x] t01 — official Kafka keys, alias-driven key normalization and the bindings conformance fixture (tasks/t01-kafka-keys-and-conformance-fixture.md)
-- [ ] t02 — export explicit `Schema.prefix_items` as Draft07 tuple items (tasks/t02-prefix-items-export.md)
+- [x] [aba7e97] t01 — official Kafka keys, alias-driven key normalization and the bindings conformance fixture (tasks/t01-kafka-keys-and-conformance-fixture.md)
+- [x] t02 — export explicit `Schema.prefix_items` as Draft07 tuple items (tasks/t02-prefix-items-export.md)
 
 **Recovery checkpoint:** `make lint && make type-check && make test && make validate-asyncapi` exits `0`.
 

@@ -5,7 +5,17 @@ from litestar import Litestar
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition, MessageDefinition, OperationDefinition
-from litestar_asyncapi.spec import Channel, Components, MessageTrait, Operation, OperationTrait, Reference, Server
+from litestar_asyncapi.spec import (
+    Channel,
+    Components,
+    MessageTrait,
+    Operation,
+    OperationTrait,
+    Reference,
+    Schema,
+    SchemaType,
+    Server,
+)
 from litestar_asyncapi.spec.bindings import (
     AMQPChannelBinding,
     AMQPMessageBinding,
@@ -94,6 +104,29 @@ def create_app(spec_version: Literal["3.0.0", "3.1.0"]) -> Litestar:
                                     )
                                 },
                                 extensions={"x-partition-key": "order_id"},
+                            )
+                        ],
+                    )
+                ],
+            ),
+            ChannelDefinition(
+                key="positions",
+                address="positions",
+                servers=[Reference("#/servers/kafka")],
+                operations=[
+                    OperationDefinition(
+                        action="send",
+                        operation_id="publishPosition",
+                        messages=[
+                            MessageDefinition(
+                                payload=Schema(
+                                    type=SchemaType.ARRAY,
+                                    prefix_items=[Schema(type=SchemaType.STRING), Schema(type=SchemaType.NUMBER)],
+                                    additional_items=False,
+                                    min_items=2,
+                                ),
+                                name="position",
+                                examples=[["truck-7", 12.5]],
                             )
                         ],
                     )

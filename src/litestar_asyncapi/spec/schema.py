@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from litestar_asyncapi._draft07 import tuple_item_keywords
 from litestar_asyncapi.spec.base import UNSET, BaseSchemaObject
 
 if TYPE_CHECKING:
@@ -73,6 +74,31 @@ class Schema(BaseSchemaObject):
     discriminator: str | None = None
     external_docs: "ExternalDocumentation | Reference | None" = None
     extensions: dict[str, Any] = field(default_factory=dict)
+
+    def to_schema(self) -> dict[str, Any]:
+        """Serialize the schema with Draft07 tuple keywords.
+
+        ``prefix_items`` becomes a positional ``items`` array and ``items``
+        becomes ``additionalItems``, so no ``prefixItems`` reaches the document.
+
+        Returns:
+            A dictionary representation of the schema.
+
+        Raises:
+            ValueError: If ``items`` and ``additional_items`` are both set beside
+                ``prefix_items``, or ``items`` is a list beside ``prefix_items``.
+        """
+        wire = BaseSchemaObject.to_schema(self)
+        if "prefixItems" not in wire:
+            return wire
+        prefix_items = wire.pop("prefixItems")
+        keywords = tuple_item_keywords(prefix_items, wire.get("items"), wire.get("additionalItems"))
+        items = wire.pop("items", None)
+        if "items" in keywords:
+            wire[keywords["items"]] = items
+        if "prefixItems" in keywords:
+            wire["items"] = prefix_items
+        return wire
 
 
 @dataclass(slots=True)

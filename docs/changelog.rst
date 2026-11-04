@@ -16,6 +16,11 @@ Fixed
   Documents using these bindings now pass official validation. This is a
   breaking change for anyone matching the old ``registry_*``, ``id_*`` or
   ``lookup_strategy`` keys.
+* An explicit ``Schema(prefix_items=...)`` now exports Draft07 tuple items: the
+  positional schemas become an ``items`` array and ``items`` becomes
+  ``additionalItems``. Previously the Draft07 document carried ``prefixItems``,
+  which validators ignore. Setting ``items``, ``additional_items`` and
+  ``prefix_items`` together now raises ``ValueError``.
 
 0.2.0
 =====

@@ -33,7 +33,7 @@ last_verified_commit: 938a9e1
 verification_evidence: "RED: make validate-asyncapi exit 2 (official-schema/additionalProperties on servers/kafka/bindings/kafka and channels/orders/messages/order/bindings/kafka); 2 new wire tests failed. GREEN: make lint 0, make type-check 0, make test 0 (218 passed, 93.45%), make validate-asyncapi 0 (7 documents validated)"
 created_at: 2026-11-04T00:00:00Z
 updated_at: 2026-11-04T17:45:28Z
-commit: null
+commit: aba7e97
 tags: [conformance, bindings, wire-keys]
 ---
 

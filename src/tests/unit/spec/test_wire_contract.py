@@ -102,3 +102,33 @@ def test_non_string_alias_is_rejected() -> None:
 
     with pytest.raises(TypeError, match=r'metadata\["alias"\] must be a str'):
         Invalid().to_schema()
+
+
+def test_prefix_items_export_as_draft07_tuple_items() -> None:
+    from litestar_asyncapi.spec import SchemaType
+
+    pair = [Schema(type=SchemaType.STRING), Schema(type=SchemaType.INTEGER)]
+    wire_pair = [{"type": "string"}, {"type": "integer"}]
+
+    assert Schema(prefix_items=pair).to_schema() == {"items": wire_pair}
+    assert Schema(
+        type=SchemaType.ARRAY, prefix_items=pair, items=Schema(type=SchemaType.BOOLEAN), min_items=2
+    ).to_schema() == {"type": "array", "items": wire_pair, "additionalItems": {"type": "boolean"}, "minItems": 2}
+    assert Schema(prefix_items=pair, additional_items=False).to_schema() == {
+        "items": wire_pair,
+        "additionalItems": False,
+    }
+    assert Schema(prefix_items=[], items=Schema(type=SchemaType.STRING)).to_schema() == {"items": {"type": "string"}}
+    assert Schema(properties={"pair": Schema(prefix_items=pair)}).to_schema() == {
+        "properties": {"pair": {"items": wire_pair}}
+    }
+
+
+def test_prefix_items_reject_ambiguous_tuple_keywords() -> None:
+    from litestar_asyncapi.spec import SchemaType
+
+    pair = [Schema(type=SchemaType.STRING)]
+    with pytest.raises(ValueError, match="items and additionalItems cannot both accompany prefixItems"):
+        Schema(prefix_items=pair, items=Schema(type=SchemaType.STRING), additional_items=False).to_schema()
+    with pytest.raises(ValueError, match="items must be a single schema when prefixItems is present"):
+        Schema(prefix_items=pair, items=[Schema(type=SchemaType.STRING)]).to_schema()

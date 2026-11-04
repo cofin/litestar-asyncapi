@@ -174,7 +174,7 @@ Each candidate is classified by tracing its callers, re-exports, `opt` strings a
 ## Implementation Plan
 
 - [x] public-hygiene — remove leaked internals, green lint (../public-hygiene/spec.md)
-- [ ] wire-contract-fixes — key normalization, prefixItems export, conformance fixture (../wire-contract-fixes/spec.md)
+- [x] wire-contract-fixes — key normalization, prefixItems export, conformance fixture (../wire-contract-fixes/spec.md)
 - [ ] schema-fixes — tuple, bounds, example and null fidelity (../schema-fixes/spec.md)
 - [ ] discovery-fixes — listener naming, metadata order, decorator merging, discovery debloat (../discovery-fixes/spec.md)
 - [ ] docs-routing-fixes — single-plugin guard, root path, console unions, caching (../docs-routing-fixes/spec.md)
