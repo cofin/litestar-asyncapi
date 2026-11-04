@@ -34,7 +34,7 @@ test('opt-in console explains advisory validation and sends exact invalid text',
   const connected = await (await request.get('/probe')).json();
   expect(connected.connections).toBe(initial.connections+1);
   expect(connected.urls.at(-1)).toBe('ws://127.0.0.1:8917/echo/room');
-  await page.goto('/asyncapi/');
+  await page.goto('/asyncapi/docs/');
   await expect.poll(async () => (await (await request.get('/probe')).json()).closed).toBe(connected.closed + 1);
 });
 

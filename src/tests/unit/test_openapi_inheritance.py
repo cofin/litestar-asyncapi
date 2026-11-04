@@ -22,7 +22,7 @@ from litestar.openapi.spec import (
 from litestar.response import ServerSentEvent
 from litestar.security.jwt import JWTAuth
 
-from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
+from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, ChannelDefinition
 from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 from litestar_asyncapi.spec import Components as AsyncAPIComponents
 from litestar_asyncapi.spec import Contact as AsyncAPIContact
@@ -283,9 +283,23 @@ def test_absolute_openapi_servers_become_websocket_servers_when_enabled() -> Non
         ),
     )
 
-    document = AsyncAPIGenerator(app, AsyncAPIConfig(inherit_openapi_servers=True)).build_schema()
+    config = AsyncAPIConfig(
+        inherit_openapi_servers=True,
+        include_channels_plugin_topics=False,
+        servers={
+            "http": AsyncAPIServer(host="api.example.com", protocol="https"),
+            "broker": AsyncAPIServer(host="broker.example.com", protocol="amqp"),
+        },
+        channels=[
+            ChannelDefinition("/stream", "/stream", servers=["http"]),
+            ChannelDefinition("news", "news", servers=["broker"]),
+        ],
+    )
+    document = AsyncAPIGenerator(app, config).build_schema()
 
     assert document["servers"] == {
+        "http": {"host": "api.example.com", "protocol": "https"},
+        "broker": {"host": "broker.example.com", "protocol": "amqp"},
         "openapi": {"host": "api.example.com", "protocol": "wss", "pathname": "/v1", "description": "Production"},
         "openapi_2": {
             "host": "{env}.example.com:{port}",
@@ -297,8 +311,22 @@ def test_absolute_openapi_servers_become_websocket_servers_when_enabled() -> Non
         {"$ref": "#/servers/openapi"},
         {"$ref": "#/servers/openapi_2"},
     ]
-    assert "servers" not in document["channels"]["/stream"]
-    assert "servers" not in document["channels"]["news"]
+    assert document["channels"]["/stream"]["servers"] == [{"$ref": "#/servers/http"}]
+    assert document["channels"]["news"]["servers"] == [{"$ref": "#/servers/broker"}]
+
+
+@pytest.mark.parametrize("servers", [None, []])
+def test_derived_servers_require_explicit_servers_on_unrelated_channels(servers: list[str] | None) -> None:
+    app = Litestar([], openapi_config=openapi_config(servers=[Server(url="https://api.example.com")]))
+    config = AsyncAPIConfig(inherit_openapi_servers=True, channels=[ChannelDefinition("news", "news", servers=servers)])
+    with pytest.raises(ImproperlyConfiguredException, match=r"explicit servers.*inherit_openapi_servers"):
+        AsyncAPIGenerator(app, config).build_schema()
+
+
+def test_derived_servers_reject_unbound_discovered_channels() -> None:
+    app = server_app(Server(url="https://api.example.com"))
+    with pytest.raises(ImproperlyConfiguredException, match=r"explicit servers.*inherit_openapi_servers"):
+        AsyncAPIGenerator(app, AsyncAPIConfig(inherit_openapi_servers=True)).build_schema()
 
 
 def test_openapi_servers_are_not_inherited_by_default() -> None:

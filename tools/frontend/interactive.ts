@@ -6,14 +6,16 @@ const containers: unknown[] = ['object', 'array'];
 
 function isJsonContainer(schema: unknown, seen = new WeakSet<object>()): boolean {
   if (typeof schema !== 'object' || schema === null || seen.has(schema)) return false;
-  seen.add(schema);
   const { type, oneOf, anyOf } = schema as Record<string, unknown>;
   if (typeof type === 'string') return containers.includes(type);
   if (Array.isArray(type)) {
     return type.some(member => containers.includes(member)) && type.every(member => member === 'null' || containers.includes(member));
   }
+  seen.add(schema);
   const members = Array.isArray(oneOf) ? oneOf : anyOf;
-  return Array.isArray(members) && members.length > 0 && members.every(member => isJsonContainer(member, seen));
+  const supported = Array.isArray(members) && members.length > 0 && members.every(member => isJsonContainer(member, seen));
+  seen.delete(schema);
+  return supported;
 }
 
 export function supportsWire(context: ComponentSlotProps<PluginSlot.OPERATION>['context']): boolean {

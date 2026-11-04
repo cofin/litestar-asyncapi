@@ -10,6 +10,7 @@ from litestar_asyncapi._compat import (
     channels_plugin_topics,
     generated_channels_mode,
     generated_channels_plugin,
+    generated_channels_topic,
 )
 from litestar_asyncapi.asyncapi.datastructures import (
     DiscoveredChannel,
@@ -76,10 +77,8 @@ def extract_channels_plugin_channels(
         plugin = generated_channels_plugin(route.route_handler, app)
         if plugin is None:
             continue
-        index, snapshot = next((i, item[1]) for i, item in enumerate(configured) if item[0] is plugin)
-        route_topic = (
-            None if snapshot.arbitrary_channels_allowed else route.path_format.removeprefix(snapshot.root_path)
-        )
+        index = next(i for i, item in enumerate(configured) if item[0] is plugin)
+        route_topic = generated_channels_topic(route.route_handler)
         if route_topic is not None:
             routed.add((index, route_topic))
         if not _should_include_handler(route.route_handler):

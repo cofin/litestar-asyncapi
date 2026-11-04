@@ -34,7 +34,9 @@ This release fixes generated contracts and the published import, inherits docume
 - `AsyncAPIConfig(inherit_openapi_servers=True)` turns absolute OpenAPI server
   URLs into `ws` and `wss` servers, with their path, description and
   variables. Only channels discovered from WebSocket routes are bound to them.
-  Relative URLs are skipped. It is off by default.
+  Relative URLs are skipped. Other channels require explicit nonempty server
+  lists when derived servers exist; an omitted or empty list would select every
+  document server. It is off by default.
 - Contracts can refer to things by name instead of JSON pointer.
   `OperationDefinition.security` takes scheme names such as `["BearerToken"]`,
   `ChannelDefinition.servers` takes server names, and the new

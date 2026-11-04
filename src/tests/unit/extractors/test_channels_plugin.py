@@ -7,6 +7,29 @@ from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channe
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
 
+@pytest.mark.parametrize(("root", "topic"), [("ws", "news"), ("/", "/news"), ("/ws/", "news/")])
+def test_generated_route_keeps_original_topic_identity(root: str, topic: str) -> None:
+    from litestar import Litestar
+    from litestar.channels import ChannelsPlugin
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.utils.path import normalize_path
+
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    channels = ChannelsPlugin(
+        MemoryChannelsBackend(), channels=[topic], ws_handler_base_path=root, create_ws_route_handlers=True
+    )
+    document = AsyncAPIGenerator(
+        Litestar([], plugins=[channels]), AsyncAPIConfig(channel_payloads={topic: int})
+    ).build_schema()
+    key = normalize_path(root.rstrip("/") + "/" + topic)
+    assert set(document["channels"]) == {key}
+    message = next(iter(document["channels"][key]["messages"].values()))
+    assert message["payload"]["type"] == "integer"
+    assert message["contentType"] == "application/json"
+
+
 def test_configured_topics_without_routes_become_topic_channels() -> None:
     from litestar import Litestar
     from litestar.channels.backends.memory import MemoryChannelsBackend

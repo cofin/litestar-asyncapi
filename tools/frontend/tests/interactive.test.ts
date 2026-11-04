@@ -24,6 +24,10 @@ describe('upstream wire-format boundary', () => {
     expect(await supported({oneOf:[{type:'object',properties:{a:{type:'string'}}},{type:'object'}]})).toBe(true);
     expect(await supported({anyOf:[{type:'object'},{type:'array'}]})).toBe(true);
   });
+  it('accepts shared container references across union branches', async () => {
+    const reference = {$ref:'#/components/schemas/Object'};
+    expect(await supported({anyOf:[reference,{type:'array'},{anyOf:[reference,{type:'array'}]}]}, {}, undefined, {Object:{type:'object'}})).toBe(true);
+  });
   it('declines unions and type arrays with scalar or empty members', async () => {
     expect(await supported({type:['object','string']})).toBe(false);
     expect(await supported({type:['null']})).toBe(false);

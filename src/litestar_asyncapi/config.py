@@ -146,7 +146,8 @@ class AsyncAPIConfig:
 
     ``http`` becomes ``ws`` and ``https`` becomes ``wss``; relative URLs are skipped. Derived servers are
     named ``openapi``, ``openapi_2``, … and bound only to channels discovered from WebSocket routes,
-    so other channels do not appear to be served by them. Requires ``inherit_openapi``.
+    so other channels do not appear to be served by them. Other channels require an explicit nonempty
+    ``servers`` list, since an omitted or empty list means all document servers. Requires ``inherit_openapi``.
     """
     default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""

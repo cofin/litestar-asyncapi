@@ -239,6 +239,15 @@ def _populate_channels(
     Discovered channels carry an ``x-litestar-source`` transport marker unless their own extensions set one.
     WebSocket channels without explicit servers are bound to ``websocket_servers``.
     """
+    if websocket_servers:
+        for channel in discovered:
+            if channel.source is not DiscoverySource.WEBSOCKET and not channel.servers:
+                message = (
+                    f"Channel {channel.key!r} ({channel.provenance}) requires explicit servers when "
+                    "inherit_openapi_servers=True; omitted or empty servers would also include the derived "
+                    "WebSocket servers. Set ChannelDefinition.servers or disable inherit_openapi_servers."
+                )
+                raise ImproperlyConfiguredException(message)
     channels = {
         channel.key: Channel(
             address=channel.address,

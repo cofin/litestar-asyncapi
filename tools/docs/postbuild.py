@@ -11,6 +11,7 @@ whitespace is significant. This keeps API reference pages within their size budg
 """
 
 import html
+import importlib
 import json
 import posixpath
 import re
@@ -62,7 +63,7 @@ STUB = """<!DOCTYPE html>
 <title>Redirecting</title>
 <meta name="robots" content="noindex">
 <link rel="canonical" href="{href}">
-<script>location.replace({target} + location.hash);</script>
+<script>const fragments = {fragments}; let fragment = location.hash.slice(1); while (fragment && !Object.hasOwn(fragments, fragment)) fragment = fragment.includes('.') ? fragment.slice(0, fragment.lastIndexOf('.')) : ''; location.replace(fragments[fragment] || {target} + location.hash);</script>
 <meta http-equiv="refresh" content="0; url={href}">
 </head>
 <body>
@@ -78,9 +79,43 @@ def relative_target(source: str, target: str) -> str:
     return "./" if relative == "." else f"{relative}/"
 
 
+def legacy_api_fragments(site: Path) -> dict[str, tuple[str, str]]:
+    """Map former implementation-module API anchors to the public anchors actually rendered."""
+    modules = [
+        importlib.import_module(name)
+        for name in (
+            "litestar_asyncapi.asyncapi.schema_generation",
+            "litestar_asyncapi.asyncapi.extractors",
+            "litestar_asyncapi.spec",
+            "litestar_asyncapi",
+        )
+    ]
+    fragments = {}
+    for page in sorted(site.rglob("index.html")):
+        target = page.parent.relative_to(site).as_posix() + "/"
+        for encoded in re.findall(r'\bid="([^"]+)"', page.read_text(encoding="utf-8")):
+            anchor = html.unescape(encoded)
+            if anchor.startswith("litestar_asyncapi."):
+                fragments[anchor] = (target, anchor)
+            for module in modules:
+                if not anchor.startswith(module.__name__ + "."):
+                    continue
+                name, _, member = anchor.removeprefix(module.__name__ + ".").partition(".")
+                value = getattr(module, name, None)
+                origin = getattr(value, "__module__", None)
+                if origin:
+                    suffix = f".{member}" if member else ""
+                    fragments[f"{origin}.{name}{suffix}"] = (target, anchor)
+                    if name in {"AsyncAPIPlugin", "AsyncAPIUIRenderPlugin"}:
+                        fragments[f"litestar_asyncapi.plugins.{name}{suffix}"] = (target, anchor)
+                break
+    return fragments
+
+
 def write_redirects(site: Path) -> list[Path]:
     """Write one stub per former URL and return the written files."""
     written = []
+    fragments = legacy_api_fragments(site)
     for source, target in REDIRECTS.items():
         path = site / source
         if path.exists():
@@ -88,7 +123,19 @@ def write_redirects(site: Path) -> list[Path]:
             raise FileExistsError(msg)
         href = relative_target(source, target)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(STUB.format(href=html.escape(href, quote=True), target=json.dumps(href)), encoding="utf-8")
+        targets = {
+            old: relative_target(source, destination) + "#" + anchor
+            for old, (destination, anchor) in fragments.items()
+            if source.startswith("reference/")
+        }
+        path.write_text(
+            STUB.format(
+                href=html.escape(href, quote=True),
+                target=json.dumps(href),
+                fragments=json.dumps(targets).replace("<", "\\u003c"),
+            ),
+            encoding="utf-8",
+        )
         written.append(path)
     return written
 

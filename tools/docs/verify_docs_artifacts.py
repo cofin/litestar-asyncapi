@@ -11,13 +11,14 @@ The check fails when:
 External URLs are left to the separate ``lychee`` link check.
 """
 
+import json
 import sys
 from functools import cache
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
-from tools.docs.postbuild import REDIRECTS, relative_target
+from tools.docs.postbuild import REDIRECTS, legacy_api_fragments, relative_target
 
 ROOT = Path(__file__).resolve().parents[2]
 SITE = ROOT / "site"
@@ -96,6 +97,7 @@ def check_inventory(site: Path) -> list[str]:
 def check_redirects(site: Path) -> list[str]:
     """Check that every former URL has a stub that resolves to its locked page."""
     errors = []
+    fragments = legacy_api_fragments(site)
     for source, target in REDIRECTS.items():
         stub = site / source
         if not stub.is_file():
@@ -107,6 +109,12 @@ def check_redirects(site: Path) -> list[str]:
         destination = site / target / "index.html"
         if not destination.is_file():
             errors.append(f"{source}: redirect target {target} does not exist")
+        _, marker, script = stub.read_text(encoding="utf-8").partition("const fragments = ")
+        actual = json.JSONDecoder().raw_decode(script)[0] if marker else {}
+        for old, (page, anchor) in fragments.items() if source.startswith("reference/") else ():
+            expected = relative_target(source, page) + "#" + anchor
+            if actual.get(old) != expected:
+                errors.append(f"{source}: legacy fragment {old} does not redirect to {expected}")
     return errors
 
 

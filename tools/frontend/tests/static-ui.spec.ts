@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const route of ['asyncapi', 'v30/asyncapi', 'scalar', 'v30/scalar', 'mounted/docs']) {
+for (const route of ['asyncapi/docs', 'v30/asyncapi/docs', 'scalar/docs', 'v30/scalar/docs', 'mounted/docs']) {
   test(`${route} renders packaged UI with external network blocked`, async ({ page }) => {
     const errors: string[] = [];
     const requested: string[] = [];
@@ -65,7 +65,7 @@ for (const route of ['asyncapi', 'v30/asyncapi', 'scalar', 'v30/scalar', 'mounte
 
 test('failed schema fetch and missing renderer asset have readable error states', async ({ page }) => {
   await page.route('**/asyncapi.json', route => route.fulfill({ status: 503, body: 'unavailable' }));
-  await page.goto('/asyncapi/');
+  await page.goto('/asyncapi/docs/');
   await expect(page.getByRole('alert')).toContainText('Documentation could not be loaded');
   await expect(page.getByRole('link', { name: 'JSON', exact: true })).toBeVisible();
   await page.unroute('**/asyncapi.json');
@@ -76,16 +76,16 @@ test('failed schema fetch and missing renderer asset have readable error states'
 
 test('invalid downloaded document exposes an accessible failure', async ({ page }) => {
   await page.route('**/asyncapi.json', route => route.fulfill({ contentType: 'application/json', body: '{"wrong":"document"}' }));
-  await page.goto('/asyncapi/');
+  await page.goto('/asyncapi/docs/');
   await expect(page.getByRole('alert')).toContainText('Documentation could not be loaded');
 });
 
 test('restrictive CSP retains the schema download and readable fallback', async ({ page }) => {
-  await page.route('**/asyncapi/', async route => {
+  await page.route('**/asyncapi/docs/', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': "script-src 'none'; style-src 'self'" } });
   });
-  await page.goto('/asyncapi/');
+  await page.goto('/asyncapi/docs/');
   await expect(page.getByRole('status')).toContainText('use the JSON download');
   await expect(page.getByRole('link', { name: 'JSON', exact: true })).toBeVisible();
 });
@@ -112,7 +112,7 @@ test('literal reference keys display without external resolution', async ({ page
     }
     return route.continue();
   });
-  await page.goto('/asyncapi/');
+  await page.goto('/asyncapi/docs/');
   await expect(page.locator('#asyncapi')).toContainText('TupleMessage');
   for (let round = 0; round < 3; round++) await page.getByText('Expand all', { exact: true }).evaluateAll(elements => {
     for (const element of elements) if (element.getClientRects().length) (element as HTMLElement).click();

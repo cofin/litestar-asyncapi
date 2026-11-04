@@ -26,6 +26,12 @@ Register one `AsyncAPIPlugin` per application. `AsyncAPIConfig` holds the docume
         - title
         - version
         - description
+        - contact
+        - license
+        - terms_of_service
+        - external_docs
+        - inherit_openapi
+        - inherit_openapi_servers
         - spec_version
         - default_content_type
         - use_handler_docstrings

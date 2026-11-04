@@ -137,3 +137,28 @@ def test_named_payload_annotation_generates_example() -> None:
         document = AsyncAPIGenerator(app, AsyncAPIConfig(create_examples=True)).build_schema()
     examples = next(iter(document["channels"]["/named"]["messages"].values()))["examples"]
     assert isinstance(examples[0]["payload"]["value"], int)
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_optional_field_examples_precede_member_and_generated_examples(enabled: bool) -> None:
+    from litestar.openapi.spec import Example
+    from litestar.params import Parameter
+    from litestar.typing import FieldDefinition
+
+    from litestar_asyncapi import ChannelDefinition, MessageDefinition, OperationDefinition
+
+    payload = FieldDefinition.from_annotation(int | None, kwarg_definition=Parameter(examples=[Example(value=7)]))
+    config = AsyncAPIConfig(
+        create_examples=enabled,
+        channels=[
+            ChannelDefinition(
+                "events",
+                "events",
+                operations=[
+                    OperationDefinition(action="send", messages=[MessageDefinition(name="Event", payload=payload)])
+                ],
+            )
+        ],
+    )
+    document = AsyncAPIGenerator(Litestar([]), config).build_schema()
+    assert document["channels"]["events"]["messages"]["Event"]["examples"] == [{"payload": 7}]

@@ -49,6 +49,8 @@ A `Server` splits a connection URL into `protocol` (such as `ws`, `wss` or `amqp
 
 `AsyncAPIConfig(inherit_openapi_servers=True)` derives servers from the application's `OpenAPIConfig.servers`. Absolute `http` URLs become `ws` servers and `https` URLs `wss` servers, keeping the path, description and variables. Relative URLs, including Litestar's default `/`, are skipped. The derived servers are named `openapi`, `openapi_2`, and so on, and only channels discovered from WebSocket routes list them, because a channel without `servers` belongs to every server. It is off by default because WebSocket routes may be served from another host.
 
+When derived servers are present, SSE, ChannelsPlugin and explicit channels must each declare a nonempty `ChannelDefinition.servers` list. Building the document raises a configuration error otherwise: an omitted or empty list would advertise those channels on every derived WebSocket server too. Declare the full explicit contracts in `AsyncAPIConfig.channels`, including each channel's operations and messages, because an explicit definition replaces discovery. Set `include_channels_plugin_topics=False` when supplying explicit broker-topic contracts.
+
 ## Security schemes
 
 Operations name the schemes they need, as `security=["BearerToken"]` does above. A name can refer to an inherited scheme or to one in `Components(security_schemes=...)`; an unknown name raises an error that lists the valid names. Scheme objects and `Reference`s are also accepted. In the same way, `ChannelDefinition(servers=["broker"])` names the servers that host a channel.

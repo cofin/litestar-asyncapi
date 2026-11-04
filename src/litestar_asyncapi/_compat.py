@@ -189,9 +189,6 @@ def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) ->
 
     A single-member ``Optional`` payload reads the examples declared on its non-null member.
     """
-    members = [inner for inner in field.inner_types if not inner.is_none_type] if field.is_optional else []
-    if len(members) == 1:
-        field = members[0]
     native = creator.for_field_definition(field)
     if isinstance(native, Reference):
         native = creator.schema_registry.get_schema_for_field_definition(field)
@@ -199,6 +196,9 @@ def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) ->
         return list(native.examples)
     if native.example is not None:
         return [native.example]
+    members = [inner for inner in field.inner_types if not inner.is_none_type] if field.is_optional else []
+    if len(members) == 1:
+        return declared_schema_examples(members[0], creator)
     model_config = getattr(field.type_, "model_config", {})
     extra = model_config.get("json_schema_extra") if isinstance(model_config, dict) else None
     if isinstance(extra, dict) and "examples" in extra:
@@ -268,15 +268,14 @@ def websocket_handler_name(handler: Any) -> str:
 
 @dataclass(slots=True, frozen=True)
 class ChannelsPluginTopics:
-    """Topics a ``ChannelsPlugin`` was constructed with, and how it names its generated routes."""
+    """Topics a ``ChannelsPlugin`` was constructed with, and its arbitrary-channel setting."""
 
     topics: tuple[str, ...]
-    root_path: str
     arbitrary_channels_allowed: bool
 
 
 def channels_plugin_topics(plugin: ChannelsPlugin, *, at_init: bool = False) -> ChannelsPluginTopics:
-    """Read a plugin's configured topics, handler root path and arbitrary-channel setting.
+    """Read a plugin's configured topics and arbitrary-channel setting.
 
     With ``arbitrary_channels_allowed``, ``ChannelsPlugin.subscribe`` adds runtime topic names to the
     same private mapping as the configured ones. Those names are returned only during application
@@ -292,9 +291,7 @@ def channels_plugin_topics(plugin: ChannelsPlugin, *, at_init: bool = False) -> 
     """
     arbitrary = plugin._arbitrary_channels_allowed
     return ChannelsPluginTopics(
-        topics=tuple(plugin._channels) if at_init or not arbitrary else (),
-        root_path=plugin._handler_root_path,
-        arbitrary_channels_allowed=arbitrary,
+        topics=tuple(plugin._channels) if at_init or not arbitrary else (), arbitrary_channels_allowed=arbitrary
     )
 
 
@@ -319,6 +316,14 @@ def generated_channels_mode(handler: Any, app: Litestar) -> str | None:
     """Return the frame send mode of a ChannelsPlugin-generated handler, or ``None`` for other handlers."""
     plugin = generated_channels_plugin(handler, app)
     return plugin._socket_send_mode if plugin is not None else None
+
+
+def generated_channels_topic(handler: Any) -> str | None:
+    """Read the fixed topic captured by an identified native ChannelsPlugin callback."""
+    callback = handler.fn
+    if getattr(callback, "__closure__", None) is None:
+        return None
+    return cast("str | None", getclosurevars(callback).nonlocals.get("channel_name"))
 
 
 def websocket_content_type(handler: Any, field: FieldDefinition, *, sending: bool) -> str | None:
