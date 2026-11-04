@@ -5,6 +5,8 @@ from urllib.parse import quote, unquote
 
 from litestar.exceptions import ImproperlyConfiguredException
 
+from litestar_asyncapi._draft07 import tuple_item_keywords
+
 __all__ = ("to_asyncapi_schema",)
 
 _SCHEMA_MAPS = {"properties", "patternProperties", "definitions", "$defs"}
@@ -34,6 +36,14 @@ def _pointer(path: tuple[str, ...]) -> str:
 def _fail(path: tuple[str, ...], message: str) -> NoReturn:
     detail = f"Cannot export AsyncAPI Draft07 schema at {_pointer(path)}: {message}"
     raise ImproperlyConfiguredException(detail)
+
+
+def _tuple_keyword(schema: Mapping[str, Any], key: str, source: tuple[str, ...]) -> str | None:
+    try:
+        keywords = tuple_item_keywords(schema["prefixItems"], schema.get("items"))
+    except ValueError as exc:
+        _fail((*source, "items"), str(exc))
+    return keywords.get(key)
 
 
 class _Converter:
@@ -153,17 +163,15 @@ class _Converter:
         elif key in _SCHEMA_LISTS or key == "prefixItems":
             if not isinstance(item, list):
                 _fail(current, f"{key} must be an array of schemas")
-            output_key = "items" if key == "prefixItems" else key
-            if item or key != "prefixItems":
-                result[output_key] = [
-                    self.convert(child, (*current, str(index)), (*target, output_key, str(index)))
+            list_key = _tuple_keyword(schema, key, source) if key == "prefixItems" else key
+            if list_key is not None:
+                result[list_key] = [
+                    self.convert(child, (*current, str(index)), (*target, list_key, str(index)))
                     for index, child in enumerate(item)
                 ]
         elif key == "items":
             if "prefixItems" in schema:
-                if isinstance(item, list):
-                    _fail(current, "modern items must be a schema when prefixItems is present")
-                output_key = "additionalItems" if schema["prefixItems"] else "items"
+                output_key = _tuple_keyword(schema, key, source) or key
                 result[output_key] = self.convert(item, current, (*target, output_key))
             elif isinstance(item, list):
                 result[key] = [

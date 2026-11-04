@@ -2,8 +2,6 @@ import pytest
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
 
-pytestmark = pytest.mark.anyio
-
 
 def test_plugin_caches_document_and_schema() -> None:
     from litestar import Litestar, websocket_listener
@@ -37,7 +35,7 @@ def test_public_schema_mutation_cannot_poison_cache() -> None:
     app = Litestar([], plugins=[plugin])
     schema = plugin.get_asyncapi_schema(app)
     schema["info"]["title"] = "poisoned"
-    assert plugin.get_asyncapi_schema(app)["info"]["title"] == "AsyncAPI"
+    assert plugin.get_asyncapi_schema(app)["info"]["title"] == "Litestar API"
 
 
 @pytest.mark.parametrize("use_cache", [False, True])
@@ -73,12 +71,12 @@ def test_all_document_accessors_are_defensive_and_clear_preserves_binding(use_ca
     schema["servers"]["main"]["host"] = "poisoned"
     schema["info"]["title"] = "poisoned"
     assert plugin.get_asyncapi(app).servers["main"].host == "original"
-    assert plugin.get_asyncapi_schema(app)["info"]["title"] == "AsyncAPI"
+    assert plugin.get_asyncapi_schema(app)["info"]["title"] == "Litestar API"
     assert json.loads(plugin.get_asyncapi_json(app))["servers"]["main"]["host"] == "original"
     plugin.clear_cache()
     with pytest.raises(ImproperlyConfiguredException, match="one application"):
         plugin.get_asyncapi(Litestar([]))
-    assert plugin.get_asyncapi(app).info.title == "AsyncAPI"
+    assert plugin.get_asyncapi(app).info.title == "Litestar API"
 
 
 @pytest.mark.parametrize("use_cache", [False, True])

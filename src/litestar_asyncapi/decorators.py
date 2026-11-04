@@ -1,10 +1,11 @@
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from litestar.exceptions import ImproperlyConfiguredException
 
-from litestar_asyncapi.asyncapi.datastructures import MessageDefinition, OperationDefinition
+from litestar_asyncapi._compat import websocket_handler_name
+from litestar_asyncapi.asyncapi.datastructures import MessageDefinition, OperationDefinition, ReplyDefinition
 from litestar_asyncapi.spec import (
     CorrelationId,
     MessageTrait,
@@ -33,18 +34,7 @@ class AsyncAPIMetadata:
     """Typed operation definitions attached to the native handler option layer."""
 
     operations: dict[OperationAction, OperationDefinition] = field(default_factory=dict)
-
-
-def _coerce_action(action: OperationAction | str) -> OperationAction:
-    if isinstance(action, OperationAction):
-        return action
-    value = action.strip().lower()
-    if value == OperationAction.SEND.value:
-        return OperationAction.SEND
-    if value == OperationAction.RECEIVE.value:
-        return OperationAction.RECEIVE
-    msg = f"Invalid action {action!r}. Expected 'send' or 'receive'."
-    raise ValueError(msg)
+    """Operation definitions keyed by action, written by the AsyncAPI decorators."""
 
 
 def _get_route_handler(obj: object) -> "BaseRouteHandler":
@@ -74,43 +64,44 @@ def asyncapi_operation(
     traits: list[str | OperationTrait | Reference] | None = None,
     messages: list[MessageDefinition] | None = None,
     tags: list[Tag | Reference] | None = None,
-    security: list[SecurityScheme | Reference] | None = None,
+    security: list[str | SecurityScheme | Reference] | None = None,
     bindings: dict[str, Any] | Reference | None = None,
-    reply: Reply | Reference | None = None,
+    reply: ReplyDefinition | Reply | Reference | None = None,
 ) -> Callable[[T], T]:
-    """Attach AsyncAPI operation metadata to a websocket route handler.
+    """Declare the operation for one action on a WebSocket or Server-Sent Event route handler.
+
+    Keyword arguments match the fields of ``OperationDefinition``; ``None`` keeps the discovered value.
+    Decorating the same handler again for the same action updates the declaration and appends messages.
 
     Returns:
         A decorator that mutates the Litestar route handler metadata in-place.
     """
 
-    op_action = _coerce_action(action)
+    op_action = OperationAction(OperationDefinition(action=action, security=security).action)
 
     def decorator(obj: T) -> T:
         route_handler = _get_route_handler(obj)
         metadata = _get_or_create_metadata(route_handler)
 
         existing = metadata.operations.get(op_action) or OperationDefinition(action=op_action)
-        if operation_id is not None:
-            existing.operation_id = operation_id
-        if title is not None:
-            existing.title = title
-        if summary is not None:
-            existing.summary = summary
-        if description is not None:
-            existing.description = description
-        if traits is not None:
-            existing.traits = traits
-        for key, value in {
-            "messages": messages,
-            "tags": tags,
-            "security": security,
-            "bindings": bindings,
-            "reply": reply,
-        }.items():
-            if value is not None:
-                setattr(existing, key, value)
-        metadata.operations[op_action] = existing
+        changes: dict[str, Any] = {
+            key: value
+            for key, value in {
+                "operation_id": operation_id,
+                "title": title,
+                "summary": summary,
+                "description": description,
+                "traits": traits,
+                "tags": tags,
+                "security": security,
+                "bindings": bindings,
+                "reply": reply,
+            }.items()
+            if value is not None
+        }
+        if messages is not None:
+            changes["messages"] = [*(existing.messages or []), *messages]
+        metadata.operations[op_action] = replace(existing, **changes)
         return obj
 
     return decorator
@@ -133,13 +124,16 @@ def asyncapi_message(
     tags: list[Tag | Reference] | None = None,
     extensions: dict[str, Any] | None = None,
 ) -> Callable[[T], T]:
-    """Attach AsyncAPI message metadata to a websocket route handler.
+    """Add a message to the operation for one action on a WebSocket or Server-Sent Event route handler.
+
+    Keyword arguments match the fields of ``MessageDefinition``. A message without a ``name`` is
+    rejected when the operation already has messages.
 
     Returns:
         A decorator that mutates the Litestar route handler metadata in-place.
     """
 
-    op_action = _coerce_action(action)
+    op_action = OperationAction(OperationDefinition(action=action).action)
 
     def decorator(obj: T) -> T:
         route_handler = _get_route_handler(obj)
@@ -147,7 +141,7 @@ def asyncapi_message(
 
         operation = metadata.operations.get(op_action) or OperationDefinition(action=op_action)
         if name is None and operation.messages:
-            msg = f"Ambiguous unnamed AsyncAPI message on {sorted(route_handler.paths)!r} handler {route_handler.handler_name}: assign explicit message names"
+            msg = f"Ambiguous unnamed AsyncAPI message on {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}: assign explicit message names"
             raise ImproperlyConfiguredException(msg)
         message = MessageDefinition(
             payload=payload,
@@ -164,9 +158,7 @@ def asyncapi_message(
             tags=tags,
             extensions=extensions or {},
         )
-        operation.messages = [existing for existing in operation.messages or [] if existing.name != name]
-        operation.messages.append(message)
-        metadata.operations[op_action] = operation
+        metadata.operations[op_action] = replace(operation, messages=[*(operation.messages or []), message])
         return obj
 
     return decorator

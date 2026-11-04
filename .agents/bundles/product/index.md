@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Product Index
 description: Product definition, engineering guidelines and technology stack for litestar-asyncapi.
 tags: [product, index]

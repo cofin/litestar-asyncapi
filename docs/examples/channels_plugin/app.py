@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = [
 #     "litestar[standard]",
 #     "litestar-asyncapi",
@@ -59,6 +59,7 @@ channels_plugin = ChannelsPlugin(MemoryChannelsBackend(), channels=["news", "ale
 
 config = AsyncAPIConfig(
     title="Channels Plugin",
+    channel_payloads={"news": PublishPayload},
     docs=DocsConfig(interactive=True),
     servers={"local": Server(host="localhost:8000", protocol="ws")},
 )

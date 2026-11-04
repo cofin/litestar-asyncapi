@@ -8,7 +8,7 @@ Validation is advisory: Send transmits entered text even when malformed or schem
 
 Configure explicit ws/wss servers and concrete channel parameter defaults, examples or enum values. Missing or unresolved endpoints do not connect. Query authentication is supported by the upstream plugin; browsers cannot set arbitrary WebSocket authentication headers. CSP is never relaxed automatically. Failed connections preserve download links and show an accessible error. Leaving the page disposes the React root and upstream sockets; receive/send panels for the same URL share their connection.
 
-Build tooling requires Node 22.12 or newer in the Node 22 release line:
+Build tooling requires Node (`.nvmrc`).12 or newer in the Node (`.nvmrc`) release line:
 
 ```sh
 npm ci

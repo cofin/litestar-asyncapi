@@ -41,9 +41,10 @@ dist/
 *.egg-info/
 .eggs/
 
-# Documentation output
-docs/_build/
-docs-build/
+# Documentation output and its Python 3.11+ build environment
+site/
+docs/_generated/
+docs/reference/cli.md
 
 # Editors and operating systems
 .idea/
@@ -80,3 +81,7 @@ node_modules/
 # Browser test artifacts
 test-results/
 playwright-report/
+
+# Local developer overrides
+Makefile.local
+uv.toml

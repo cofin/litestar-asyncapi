@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Knowledge Base Index
 description: Routing index for architecture, patterns, domains, testing, gotchas, decisions and workflow knowledge of litestar-asyncapi.
 tags: [knowledge, asyncapi, litestar, index]
@@ -33,3 +32,5 @@ tags: [knowledge, asyncapi, litestar, index]
 | Decisions | [decisions/index.md](./decisions/index.md) | ADRs |
 | Style guides | [styleguides/index.md](./styleguides/index.md) | Python and Bash style |
 | Workflow | [workflow.md](./workflow.md) | Canonical commands and Flow execution |
+
+Documentation artifacts and legacy links: [testing/documentation-site](./testing/documentation-site.md).

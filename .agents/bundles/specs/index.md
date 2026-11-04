@@ -1,12 +1,9 @@
 ---
-type: Index
 title: Flow Specifications Index
-description: Current and completed Flow specifications and task worksheets.
+description: Active and planned Flow specifications.
 tags: [specs, flows, worksheets, index]
 ---
 
 # Flow Specifications
 
-Active and planned Flow specifications and task worksheets.
-
-_No active or planned flow specifications. Completed flows are recorded in [bundles/log.md](../log.md)._
+No active flows. Completed work is contracted into [knowledge](../knowledge/index.md) and recorded in [the archive log](../log.md); original task worksheets remain in Git history.

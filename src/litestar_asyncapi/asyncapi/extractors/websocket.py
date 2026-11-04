@@ -2,9 +2,6 @@ import warnings
 from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any
 
-from litestar.types.builtin_types import NoneType
-from litestar.typing import FieldDefinition
-
 from litestar_asyncapi._compat import (
     generated_channels_mode,
     websocket_content_type,
@@ -20,6 +17,7 @@ from litestar_asyncapi.asyncapi.datastructures import (
     OperationDefinition,
 )
 from litestar_asyncapi.spec import OperationAction, Parameter, Reference
+from litestar_asyncapi.spec.bindings import WebSocketChannelBinding
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -65,7 +63,7 @@ def extract_websocket_channels(
         ):
             continue
 
-        parameters = _path_parameters_to_parameters(route.path_parameters, schema_generator=schema_generator)
+        parameters = _path_parameters_to_parameters(route.path_parameters)
         operations = _infer_operations_from_handler(
             route.route_handler, schema_generator=schema_generator, config=config, app=app
         )
@@ -81,6 +79,7 @@ def extract_websocket_channels(
                 provenance=f"route {route.path_format} handler {websocket_handler_name(route.route_handler)}",
                 source=DiscoverySource.WEBSOCKET,
                 parameters=parameters or None,
+                bindings={"ws": WebSocketChannelBinding()},
                 operations=operations,
             )
         )
@@ -89,23 +88,16 @@ def extract_websocket_channels(
 
 
 def _should_include_handler(handler: "WebsocketRouteHandler") -> bool:
-    """Determine if a websocket route handler should be included in the AsyncAPI schema.
-
-    Checks the 'include_in_schema' option in the handler's 'opt' dictionary, defaulting to True
-    if not explicitly set (mirroring Litestar's HTTP handler behavior).
+    """Honor the handler's resolved ``include_in_schema`` option, defaulting to inclusion.
 
     Returns:
-        True if the handler should be included in the schema, False otherwise.
+        ``False`` only when ``include_in_schema`` is explicitly ``False``.
     """
-    if hasattr(handler, "opt") and isinstance(handler.opt, dict):
-        include_in_schema = handler.opt.get("include_in_schema")
-        if isinstance(include_in_schema, bool):
-            return include_in_schema
-    return True
+    return handler.opt.get("include_in_schema") is not False
 
 
 def _path_parameters_to_parameters(
-    path_parameters: "dict[str, PathParameterDefinition]", *, schema_generator: "AsyncAPISchemaGenerator"
+    path_parameters: "dict[str, PathParameterDefinition]",
 ) -> dict[str, Parameter | Reference]:
     """Convert path parameters into AsyncAPI Parameter objects.
 
@@ -135,7 +127,7 @@ def _infer_operations_from_handler(
             DiscoveredOperation(
                 action=action,
                 provenance=websocket_handler_name(route_handler),
-                operation_id=f"{route_handler.handler_name}_{action.value}",
+                operation_id=f"{websocket_handler_name(route_handler)}_{action.value}",
                 messages=[
                     MessageDefinition(
                         payload=websocket_payload(route_handler, field, sending=action is OperationAction.SEND),
@@ -150,29 +142,31 @@ def _infer_operations_from_handler(
                 (OperationAction.RECEIVE, receive, receive_mode),
                 (OperationAction.SEND, send, send_mode),
             )
-            if field is not None and not (action is OperationAction.SEND and _is_none_return_type(field))
+            if field is not None and not (action is OperationAction.SEND and field.is_none_type)
         ]
-        _apply_handler_metadata(route_handler, operations, include_action_suffix=receive is not None)
-        _apply_docstring_descriptions(route_handler, operations, config=config)
-        return _apply_decorator_overrides(
+        operations = _apply_decorator_overrides(
             route_handler, operations, schema_generator=schema_generator, config=config, app=app
         )
-
-    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
-    explicit = isinstance(metadata, AsyncAPIMetadata) and bool(metadata.operations)
-    if not explicit and not config.include_raw_websocket_routes:
-        return []
-    operations = _infer_raw_websocket_operations(route_handler)
-    _apply_handler_metadata(route_handler, operations, include_action_suffix=True)
-    _apply_docstring_descriptions(route_handler, operations, config=config)
-    operations = _apply_decorator_overrides(
-        route_handler, operations, schema_generator=schema_generator, config=config, app=app, replace_placeholders=True
-    )
-    if any(message.payload is None for operation in operations for message in operation.messages or []):
-        warnings.warn(
-            f"AsyncAPI cannot infer the raw WebSocket payload for {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}; emitting an unconstrained message",
-            stacklevel=2,
+    else:
+        metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+        explicit = isinstance(metadata, AsyncAPIMetadata) and bool(metadata.operations)
+        if not explicit and not config.include_raw_websocket_routes:
+            return []
+        operations = _apply_decorator_overrides(
+            route_handler,
+            _infer_raw_websocket_operations(route_handler),
+            schema_generator=schema_generator,
+            config=config,
+            app=app,
+            replace_placeholders=True,
         )
+        if any(message.payload is None for operation in operations for message in operation.messages or []):
+            warnings.warn(
+                f"AsyncAPI cannot infer the raw WebSocket payload for {sorted(route_handler.paths)!r} handler {websocket_handler_name(route_handler)}; emitting an unconstrained message",
+                stacklevel=2,
+            )
+    _apply_handler_metadata(route_handler, operations)
+    _apply_docstring_descriptions(route_handler, operations, config=config)
     return operations
 
 
@@ -259,26 +253,33 @@ def _infer_raw_websocket_operations(route_handler: Any) -> list[DiscoveredOperat
     ]
 
 
-def _apply_handler_metadata(
-    route_handler: Any, operations: list[DiscoveredOperation], *, include_action_suffix: bool
-) -> None:
+def _apply_handler_metadata(route_handler: Any, operations: list[DiscoveredOperation]) -> None:
+    """Fill operation fields the decorators left empty from the handler's own metadata.
+
+    The handler ``operation_id`` replaces the inferred id of every operation without a decorator
+    ``operation_id`` and is suffixed with the action when the handler documents several operations.
+    """
+    from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata
+
     summary = _get_handler_string_attribute(route_handler, "summary")
     description = _get_handler_string_attribute(route_handler, "description")
     operation_id = _get_handler_string_attribute(route_handler, "operation_id")
-
-    if not any((summary, description, operation_id)):
-        return
+    metadata = route_handler.opt.get(ASYNCAPI_OPT_KEY)
+    decorated_ids = (
+        {action for action, override in metadata.operations.items() if override.operation_id is not None}
+        if isinstance(metadata, AsyncAPIMetadata)
+        else set()
+    )
 
     for operation in operations:
         if summary is not None and operation.summary is None:
             operation.summary = summary
         if description is not None and operation.description is None:
             operation.description = description
-        if operation_id is not None:
-            if include_action_suffix and len(operations) > 1:
-                operation.operation_id = f"{operation_id}_{OperationAction(operation.action).value}"
-            else:
-                operation.operation_id = operation_id
+        if operation_id is not None and operation.action not in decorated_ids:
+            operation.operation_id = (
+                f"{operation_id}_{OperationAction(operation.action).value}" if len(operations) > 1 else operation_id
+            )
 
 
 def _apply_docstring_descriptions(
@@ -309,12 +310,3 @@ def _get_handler_string_attribute(route_handler: Any, name: str) -> str | None:
             stripped = opt_value.strip()
             return stripped or None
     return None
-
-
-def _is_none_return_type(field_definition: FieldDefinition) -> bool:
-    return (
-        field_definition.raw is None
-        or field_definition.annotation is None
-        or field_definition.is_subclass_of(NoneType)
-        or field_definition.raw is NoneType
-    )

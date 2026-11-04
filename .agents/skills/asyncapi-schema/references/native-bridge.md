@@ -15,7 +15,7 @@ How `src/litestar_asyncapi/_compat.py` and `asyncapi/schema_generation/schema.py
 
 - `plugins=app.plugins.openapi`: app schema plugins participate even with OpenAPI disabled (`test_native.py::test_application_plugin_works_with_openapi_disabled_and_preserves_literals`).
 - `schema_registry=SchemaRegistry()`: fresh per generator; `test_native.py::test_generation_registry_is_independent_from_application_openapi` guards isolation.
-- `prefer_alias` read from the app's `PydanticSchemaPlugin`, default `True`; `test_examples.py::test_generated_decimal_uuid_and_pydantic_aliases` covers both values.
+- `prefer_alias` read from the app's `PydanticSchemaPlugin`, which Litestar registers with `prefer_alias=False`; the `True` fallback applies only without a Pydantic plugin; `test_examples.py::test_generated_decimal_uuid_and_pydantic_aliases` covers both values.
 - `generate_examples=False`: examples are produced separately by `asyncapi/utils/examples.py`.
 - `signature_namespace=app.signature_namespace`: resolves string and forward references.
 
@@ -53,3 +53,7 @@ Order in `generator.py::_build_message`:
 ## Error context
 
 `AsyncAPISchemaGenerator.generate` converts `ImproperlyConfiguredException`, `NameError`, `TypeError`, `ValueError` into `ImproperlyConfiguredException("Cannot generate AsyncAPI payload ... for <provenance>: ...")`. `components()` wraps export failures with the list of payload origins. `resolve_annotation` raises `TypeError` for unresolved string annotations. Tests: `test_unsupported_native_output_has_payload_and_handler_context`, `test_unresolved_namespace_has_payload_and_handler_context`.
+
+## Optional example precedence
+
+declared_schema_examples reads the outer FieldDefinition schema before descending into a single non-null member. Otherwise Parameter(examples=...) on int | None disappears. Keep the public document regression in test_example_precedence.py. native_example_value imports ExampleFactory lazily so basic package import does not require Pydantic.

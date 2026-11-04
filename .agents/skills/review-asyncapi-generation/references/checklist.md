@@ -67,7 +67,7 @@ All paths are relative to `src/litestar_asyncapi/` unless prefixed with `src/tes
 ## GEN-12 — **Action direction is application-perspective.**
 - Why: Listener input is `receive`, listener output and streams are `send`; inverting it misleads clients.
 - Check: New inference maps receive fields to `OperationAction.RECEIVE` and send/return fields to `SEND`; `None` returns emit no send.
-- Anchor: `asyncapi/extractors/websocket.py::_infer_operations_from_handler`, `_is_none_return_type`
+- Anchor: `asyncapi/extractors/websocket.py::_infer_operations_from_handler`
 
 ## GEN-13 — **AsyncAPI 3 `Parameter` has no nested schema.**
 - Why: The 3.0/3.1 schemas reject `schema` on Parameter.
@@ -94,3 +94,7 @@ All paths are relative to `src/litestar_asyncapi/` unless prefixed with `src/tes
 - Behavior tests live in the canonical file for the seam (see `../../asyncapi-generation/references/contracts-and-discovery.md` and `assembly-and-identity.md` test maps).
 - Tests build a real `Litestar` app; they do not mock `AsyncAPIGenerator` or extractors.
 - Each new raise path has a `pytest.raises(ImproperlyConfiguredException, match=...)` test.
+
+## Server and topic identity checks
+
+When derived root servers exist, omitted and empty channel servers both select them. Require explicit nonempty lists on unrelated channels. Verify fixed ChannelsPlugin topic identity through native callbacks rather than normalized URL prefixes; include relative base paths and slash-bearing topics.

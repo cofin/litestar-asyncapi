@@ -35,10 +35,10 @@ You are the implementation specialist for the asyncapi-generation domain of lite
 ### Required gates
 - `uv run pytest <focused paths> -q --no-cov`
 - `make type-check`, `make slotscheck`, `make lint`, `make test`
-- `make validate-asyncapi` (Node 22) when the wire shape changes.
+- `make validate-asyncapi` (Node (`.nvmrc`)) when the wire shape changes.
 
 ### Code constraints
-- Python >=3.10, PEP 604/585 annotations, Google-style docstrings, no inline comments.
+- Python >=3.11, PEP 604/585 annotations, Google-style docstrings, no inline comments.
 - Owned classes `@dataclass(slots=True)`; spec models subclass `BaseSchemaObject`.
 - `.casefold()` uniqueness, `_json_pointer_escape` on every ref token, no wire `operationId`, no nested schema on `Parameter`.
 - Deterministic output via `_definition_key`.

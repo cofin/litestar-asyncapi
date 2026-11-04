@@ -29,7 +29,7 @@ sources:
 - Task worksheets under `.agents/bundles/specs/<flow_id>/tasks/<id>-<slug>.md` and `spec.md` checklists are the sole authority for task state and commits.
 - Setup `make install`; focused test `uv run pytest <path> -q --no-cov`; lint + types `make lint`; aggregate gate `make check-all`.
 - Focused runs need `--no-cov`: the global `--cov-fail-under=80` addopt makes any partial run exit 1.
-- Frontend or packaging changes also run `make js-install build validate-asyncapi js-test browser-test` (Node 22).
+- Frontend or packaging changes also run `make js-install build validate-asyncapi js-test browser-test` (Node (`.nvmrc`)).
 - Every task worksheet declares one `verification_strategy` (`behavior_tdd`, `regression_tdd`, `characterization`, `static_validation`, `documentation_validation`, `integration_acceptance`).
 - Test through confirmed public seams in existing canonical module test files; never mock the System Under Test, write tautological assertions, or create standalone `test_*remediation*.py` / `test_*audit*.py` files.
 - Project-local domain and review skills live under `.agents/skills/` and paired subagents under `.agents/agents/`.
@@ -38,33 +38,46 @@ sources:
 
 ## Canonical Commands
 
-Verified on this host (uv 0.13, GNU Make 4.4, Node via npm). Prefer `Makefile` targets[^make]; run Python tools through `uv run`.
+This is the single command reference for the repository; other `.agents` files and `AGENTS.md` point here. Prefer `Makefile` targets[^make]; run Python tools through `uv run`.
 
 ```bash
 # setup
 make install                                   # uv sync --all-extras --dev
-make js-install                                # npm ci (Node 22; build/test only)
+make js-install                                # npm ci (Node (`.nvmrc`); build/test only)
 
 # focused test (red-capable)
 uv run pytest src/tests/unit/test_generator.py::test_name -q --no-cov
 
 # lint & typecheck
-make lint                                      # prek, type-check, slotscheck, zizmor, validate-examples, validate-pep723
-make type-check                                # mypy src && pyright
-make slotscheck
+make lint                                      # prek, type-check, slotscheck, zizmor, validate-pep723, scan-docstrings
+make prek                                      # ruff (incl. the future-annotations ban), codespell, file hygiene on tracked and untracked files
+make type-check                                # mypy and pyright
+make slotscheck                                # every class defines __slots__ unless excluded in pyproject.toml
+make zizmor                                    # workflow security scan
+make validate-pep723                           # PEP 723 metadata in docs/examples
+make scan-docstrings                           # inline docstring on every public dataclass field; no planning labels in public docstrings
 make fix                                       # ruff autofix + format
 
-# full verification gate
-make check-all                                 # lint, test-all, coverage
-make build validate-asyncapi js-test browser-test
+# tests
+make test                                      # full suite once, coverage floor 80
+make coverage                                  # same suite under xdist, plus HTML and XML reports
+make check-all                                 # lint, then the suite once
+
+# packaged frontend and installed distribution
+make build                                     # Vite assets, wheel and sdist, asset completeness check
+make validate-asyncapi                         # official schema/parser on exported fixtures and every docs example document
+make js-test browser-test                      # Vitest and Playwright Chromium
 make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]
 make browser-test-installed PYTHON_VERSION=3.12
 
 # documentation
-make docs docs-linkcheck docs-audit
+make docs                                      # generated CLI page and example documents, Zensical strict build, compaction and redirects, link and Reference budget verification
+make docs-serve                                # live preview
+make docs-linkcheck                            # external links with lychee; skips when lychee is absent
+make docs-clean                                # remove site/, docs/_generated/ and the generated CLI page
 ```
 
-The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `make test` and `make check-all` enforce it. CI splits these gates into `prek`, `mypy`, `pyright`, `slotscheck`, tested-distribution and per-Python test jobs[^ci].
+The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `make test` and `make check-all` enforce it. Coverage traces both `multiprocessing` and `thread`, so handlers run in the `TestClient` worker thread are measured. CI splits these gates into `prek`, `mypy`, `pyright`, `slotscheck`, tested-distribution and per-Python test jobs[^ci].
 
 ## Direct Markdown Continuity & Execution Loop
 
@@ -81,7 +94,7 @@ The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `mak
 | `regression_tdd` | Defect correction | Focused reproduction demonstrates the defect; the narrow fix makes it green. |
 | `characterization` | Behavior-preserving refactor/deletion | Green focused baseline before and unchanged behavior after. |
 | `static_validation` | Manifest, config, workflows, tooling | Native parser/lint/type/build; an isolated violation proves a new gate fails with the expected diagnostic. |
-| `documentation_validation` | Links, examples, docs structure | `make docs docs-linkcheck validate-examples validate-pep723` before and after. |
+| `documentation_validation` | Links, examples, docs structure | `make docs docs-linkcheck validate-pep723` and `uv run pytest src/tests/unit/docs -q --no-cov` before and after. |
 | `integration_acceptance` | Composition of existing contracts | Green baseline; end-to-end scenario (official validator, browser or installed wheel) plus injected negative states. |
 
 Never manufacture a failing unit test for documentation, configuration, generated assets or behavior-preserving cleanup.

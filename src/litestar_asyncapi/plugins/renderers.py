@@ -17,7 +17,19 @@ AsyncAPIRenderPlugin = OpenAPIRenderPlugin
 
 
 class AsyncAPIUIRenderPlugin(AsyncAPIRenderPlugin):
-    """Render an HTML UI using AsyncAPI's React component."""
+    """Serve the packaged documentation UI as an HTML page.
+
+    Args:
+        path: Route path or paths relative to ``DocsConfig.path``.
+        renderer: UI to load: the AsyncAPI React component or Scalar.
+        interactive: Whether the React view offers the WebSocket console; Scalar does not support it.
+        role: ``playground`` marks the console page that ``DocsConfig.interactive`` adds.
+        config: Options passed to the UI component.
+        **kwargs: Other ``OpenAPIRenderPlugin`` arguments, such as ``favicon`` or ``style``.
+
+    Raises:
+        ValueError: If ``renderer`` is ``scalar`` and ``interactive`` is true.
+    """
 
     __slots__ = ("_config", "interactive", "renderer", "role")
 

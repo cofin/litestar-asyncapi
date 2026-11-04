@@ -1,14 +1,11 @@
-from dataclasses import dataclass
-
-import pytest
+from litestar import websocket, websocket_listener
 
 from litestar_asyncapi.asyncapi.utils.docstrings import get_handler_docstring
 
-pytestmark = pytest.mark.anyio
 
-
-def test_get_handler_docstring_normalizes_docstring() -> None:
-    def handler() -> None:
+def test_get_handler_docstring_reads_the_unwrapped_listener_callback() -> None:
+    @websocket_listener("/ws")
+    async def handler(data: str) -> None:
         """Summary line.
 
         Additional details.
@@ -17,20 +14,9 @@ def test_get_handler_docstring_normalizes_docstring() -> None:
     assert get_handler_docstring(handler) == "Summary line.\n\nAdditional details."
 
 
-def test_get_handler_docstring_reads_handler_fn_attribute() -> None:
-    def handler() -> None:
-        """Handler documentation."""
-
-    @dataclass
-    class Dummy:
-        fn: object
-
-    wrapper = Dummy(handler)
-    assert get_handler_docstring(wrapper) == "Handler documentation."
-
-
 def test_get_handler_docstring_returns_none_when_missing() -> None:
-    def handler() -> None:
+    @websocket("/raw")
+    async def handler(socket: object) -> None:
         return None
 
     assert get_handler_docstring(handler) is None

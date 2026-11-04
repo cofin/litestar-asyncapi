@@ -19,8 +19,19 @@ def register_commands(cli: click.Group, plugin: "AsyncAPIPlugin") -> None:
         """Export AsyncAPI documents without starting a server."""
 
     @asyncapi_group.command(name="export")
-    @click.option("--format", "format_", type=click.Choice(["json", "yaml"]), default="json", show_default=True)
-    @click.option("--output", type=click.Path(path_type=Path, dir_okay=False))
+    @click.option(
+        "--format",
+        "format_",
+        type=click.Choice(["json", "yaml"]),
+        default="json",
+        show_default=True,
+        help="Serialization of the written document.",
+    )
+    @click.option(
+        "--output",
+        type=click.Path(path_type=Path, dir_okay=False),
+        help="File to write the document to; the document goes to stdout when omitted.",
+    )
     @click.option("--overwrite", is_flag=True, help="Replace an existing output file.")
     def export(app: Litestar, format_: str, output: Path | None, overwrite: bool) -> None:
         """Write the canonical application document to a file or stdout."""

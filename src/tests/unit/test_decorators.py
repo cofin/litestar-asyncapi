@@ -6,8 +6,6 @@ from litestar import websocket_listener
 from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata, asyncapi_message, asyncapi_operation
 from litestar_asyncapi.spec import OperationAction
 
-pytestmark = pytest.mark.anyio
-
 
 def test_decorators_attach_metadata_to_handler_opt() -> None:
     def fn(socket: Any, data: Any) -> Any:
@@ -44,7 +42,7 @@ def test_named_messages_are_preserved_as_choices() -> None:
     assert {message["name"] for message in schema["channels"]["/choices"]["messages"].values()} == {"Number", "Text"}
 
 
-def test_named_message_replaces_same_name_and_unnamed_repeat_fails() -> None:
+def test_repeated_message_name_and_unnamed_repeat_fail() -> None:
     from litestar.exceptions import ImproperlyConfiguredException
 
     async def fn(data: str) -> None:
@@ -52,12 +50,50 @@ def test_named_message_replaces_same_name_and_unnamed_repeat_fails() -> None:
 
     handler = websocket_listener("/names")(fn)
     asyncapi_message(action="receive", name="Value", payload=str)(handler)
-    asyncapi_message(action="receive", name="Value", payload=int)(handler)
+    with pytest.raises(ValueError, match="Conflicting message declarations for 'Value'"):
+        asyncapi_message(action="receive", name="Value", payload=int)(handler)
     messages = handler.opt[ASYNCAPI_OPT_KEY].operations[OperationAction.RECEIVE].messages
-    assert len(messages) == 1
-    assert messages[0].payload is int
-    with pytest.raises(ImproperlyConfiguredException, match=r"Ambiguous unnamed.*/names"):
+    assert [message.payload for message in messages] == [str]
+    with pytest.raises(ImproperlyConfiguredException, match=r"Ambiguous unnamed.*/names.*handler fn:"):
         asyncapi_message(action="receive", payload=bool)(handler)
+
+
+@pytest.mark.parametrize("message_first", [True, False])
+def test_operation_and_message_decorators_merge_in_either_order(message_first: bool) -> None:
+    from litestar import Litestar
+
+    from litestar_asyncapi import AsyncAPIConfig, MessageDefinition
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    async def fn(data: str) -> None:
+        return None
+
+    operation = asyncapi_operation(
+        action="receive", summary="in", messages=[MessageDefinition(name="Text", payload=str)]
+    )
+    message = asyncapi_message(action="receive", name="Number", payload=int)
+    first, second = (message, operation) if message_first else (operation, message)
+    handler = second(first(websocket_listener("/merge")(fn)))
+
+    schema = AsyncAPIGenerator(Litestar([handler]), AsyncAPIConfig()).build_schema()
+    assert {item["name"] for item in schema["channels"]["/merge"]["messages"].values()} == {"Number", "Text"}
+    assert schema["operations"]["fn_receive"]["summary"] == "in"
+    assert len(schema["operations"]["fn_receive"]["messages"]) == 2
+
+
+@pytest.mark.parametrize("message_first", [True, False])
+def test_conflicting_message_name_across_decorators_fails_in_either_order(message_first: bool) -> None:
+    from litestar_asyncapi import MessageDefinition
+
+    async def fn(data: str) -> None:
+        return None
+
+    operation = asyncapi_operation(action="receive", messages=[MessageDefinition(name="Value", payload=str)])
+    message = asyncapi_message(action="receive", name="Value", payload=int)
+    first, second = (message, operation) if message_first else (operation, message)
+    handler = first(websocket_listener("/conflict")(fn))
+    with pytest.raises(ValueError, match="Conflicting message declarations for 'Value' in operation 'receive'"):
+        second(handler)
 
 
 def test_empty_operation_messages_override_inference() -> None:
@@ -74,3 +110,50 @@ def test_empty_operation_messages_override_inference() -> None:
     document = AsyncAPIGenerator(Litestar([handler]), AsyncAPIConfig()).build_schema()
     assert next(iter(document["operations"].values()))["messages"] == []
     assert not document["channels"]["/no-messages"].get("messages")
+
+
+def test_decorators_normalize_action_through_operation_definition() -> None:
+    async def fn(data: str) -> None:
+        return None
+
+    handler = asyncapi_message(action=" Receive ", name="Text", payload=str)(websocket_listener("/actions")(fn))
+    assert list(handler.opt[ASYNCAPI_OPT_KEY].operations) == [OperationAction.RECEIVE]
+    with pytest.raises(ValueError, match="Invalid action 'publish'"):
+        asyncapi_operation(action="publish")
+
+
+def test_decorators_require_route_handler_instance() -> None:
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    def plain() -> None:
+        return None
+
+    with pytest.raises(ImproperlyConfiguredException, match="must wrap a Litestar route handler"):
+        asyncapi_operation(action="send", summary="x")(plain)
+
+
+def test_operation_decorator_accepts_security_and_reply_names() -> None:
+    from litestar import Litestar
+
+    from litestar_asyncapi import AsyncAPIConfig, ReplyDefinition
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+    from litestar_asyncapi.spec import Components, SecurityScheme
+
+    @asyncapi_operation(action="receive", security=["token"], reply=ReplyDefinition("/ask", messages=["answer"]))
+    @asyncapi_message(action="send", name="answer", payload=str)
+    @websocket_listener("/ask")
+    async def ask(data: str) -> str:
+        return data
+
+    config = AsyncAPIConfig(
+        components=Components(security_schemes={"token": SecurityScheme(type="httpApiKey", name="t", in_="query")})
+    )
+    operation = AsyncAPIGenerator(Litestar([ask]), config).build_schema()["operations"]["ask_receive"]
+
+    assert operation["security"] == [{"$ref": "#/components/securitySchemes/token"}]
+    assert operation["reply"] == {
+        "channel": {"$ref": "#/channels/~1ask"},
+        "messages": [{"$ref": "#/channels/~1ask/messages/answer"}],
+    }
+    with pytest.raises(TypeError, match="security must be a list of names"):
+        asyncapi_operation(action="receive", security="token")  # type: ignore[arg-type]

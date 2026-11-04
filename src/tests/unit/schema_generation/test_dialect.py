@@ -134,6 +134,11 @@ def test_invalid_schema_shapes_fail_instead_of_weakening() -> None:
             to_asyncapi_schema(schema)
 
 
+def test_prefix_items_with_item_array_reports_schema_path() -> None:
+    with pytest.raises(ImproperlyConfiguredException, match="properties/pair/items: items must be a single schema"):
+        to_asyncapi_schema({"properties": {"pair": {"prefixItems": [True], "items": [True]}}})
+
+
 def test_definition_references_escape_uri_tokens() -> None:
     source = {"$defs": {"%2F #": {"type": "string"}}, "allOf": [{"$ref": "#/$defs/%252F%20%23"}]}
     assert to_asyncapi_schema(source) == {

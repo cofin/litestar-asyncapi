@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: inst
     resource: Makefile::installed-test
@@ -31,11 +31,13 @@ sources:
 
 # Distribution, Installed-Wheel and Browser Lanes
 
+Commands live in [Project workflow](../workflow.md); this page records what each lane proves.
+
 <!-- truth: start -->
-- Node 22 is build/test-only: `make js-install build` produces assets, wheel and sdist; consumers need neither Node nor a CDN.
+- Node (`.nvmrc`) is build/test-only: `make js-install build` produces assets, wheel and sdist; consumers need neither Node nor a CDN.
 - `make validate-asyncapi` validates an exported fixture with the pinned official parser, spec schemas and Draft07 payload checks.
 - `make js-test browser-test` runs Vitest and Playwright against the source tree; artifacts go to `.tmp/test-results`.
-- `make installed-test PYTHON_VERSION=3.1x [LITESTAR_BOUNDARY=latest]` tests the built wheel outside the checkout on 3.10–3.14.
+- `make installed-test PYTHON_VERSION=3.1x [LITESTAR_BOUNDARY=latest]` tests the built wheel outside the checkout on 3.11–3.15.
 - `make browser-test-installed PYTHON_VERSION=3.12` compares installed and source manifest hashes before opening the packaged UI.
 - Nonempty output or a successful docs build is not evidence of schema or runtime fidelity.
 <!-- truth: end -->
@@ -53,6 +55,10 @@ Missing PyYAML fails Litestar import itself; disabled YAML routes are the suppor
 ## Browser acceptance
 
 Playwright covers generated 3.0/3.1 documents, recursive references, tuple/null/false/header content, hostile metadata, external-network blocking, malformed documents, missing assets, CSP fallbacks, and interactive valid/invalid frames, reconnects and page-departure cleanup[^pw]. The browser test server runs under `uvicorn`[^srv]; the installed lane adds `uvicorn` and `websockets` to the temporary venv[^binst]. Normal pages require zero browser errors and zero external requests.
+
+## Minimal imports and docs fixtures
+
+Run the pre-test wheel smoke before installing the test dependency group, so Pydantic added by tests cannot hide an unconditional optional import. Source-only documentation examples skip in installed tests. Browser fixtures use supported non-root docs paths under ASGI mounts and the readiness URL must follow those paths.[^inst][^srv]
 
 [^inst]: `Makefile::installed-test`
 [^val]: `tools/validate_asyncapi.mjs`

@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING, Any
+
 import pytest
 
 from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
-pytestmark = pytest.mark.anyio
+if TYPE_CHECKING:
+    from litestar_asyncapi import AsyncAPIConfig
 
 
 def test_generator_populates_components_schemas_for_attrs_payloads() -> None:
@@ -244,3 +247,115 @@ def test_explicit_component_cannot_overwrite_native_generated_schema() -> None:
     config.components = Components(schemas={key: Schema(type="string")})
     with pytest.raises(ImproperlyConfiguredException, match="Conflicting component schemas"):
         AsyncAPIGenerator(app, config).build_schema()
+
+
+def request_reply_config(**operation: Any) -> "AsyncAPIConfig":
+    from dataclasses import dataclass
+
+    from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition, MessageDefinition, OperationDefinition
+    from litestar_asyncapi.spec import Components, SecurityScheme, Server
+
+    @dataclass
+    class Order:
+        order_id: str
+
+    @dataclass
+    class Receipt:
+        order_id: str
+
+    return AsyncAPIConfig(
+        servers={"broker": Server(host="broker:5672", protocol="amqp")},
+        components=Components(security_schemes={"credentials": SecurityScheme(type="userPassword")}),
+        channels=[
+            ChannelDefinition(
+                key="orders",
+                address="orders.requests",
+                servers=["broker"],
+                operations=[
+                    OperationDefinition(
+                        action="receive", messages=[MessageDefinition(name="Order", payload=Order)], **operation
+                    )
+                ],
+            ),
+            ChannelDefinition(
+                key="receipts/v1",
+                address="orders.receipts",
+                operations=[
+                    OperationDefinition(action="send", messages=[MessageDefinition(name="Receipt", payload=Receipt)])
+                ],
+            ),
+        ],
+    )
+
+
+def test_security_server_and_reply_names_resolve_to_references() -> None:
+    from litestar import Litestar
+
+    from litestar_asyncapi import ReplyDefinition
+    from litestar_asyncapi.spec import ReplyAddress
+
+    config = request_reply_config(
+        security=["credentials"],
+        reply=ReplyDefinition(
+            "receipts/v1", messages=["Receipt"], address=ReplyAddress(location="$message.header#/replyTo")
+        ),
+    )
+
+    document = AsyncAPIGenerator(Litestar([]), config).build_schema()
+
+    assert document["channels"]["orders"]["servers"] == [{"$ref": "#/servers/broker"}]
+    operation = document["operations"]["orders_receive"]
+    assert operation["security"] == [{"$ref": "#/components/securitySchemes/credentials"}]
+    assert operation["reply"] == {
+        "address": {"location": "$message.header#/replyTo"},
+        "channel": {"$ref": "#/channels/receipts~1v1"},
+        "messages": [{"$ref": "#/channels/receipts~1v1/messages/Receipt"}],
+    }
+    receipt = document["channels"]["receipts/v1"]["messages"]["Receipt"]["payload"]["$ref"]
+    assert receipt.startswith("#/components/schemas/")
+
+
+@pytest.mark.parametrize(
+    ("security", "reply_channel", "reply_messages", "message"),
+    [
+        (["missing"], None, None, r"Unknown security scheme 'missing'.*valid names: \['credentials'\]"),
+        (None, "missing", None, r"Unknown reply channel 'missing'.*valid names: \['orders', 'receipts/v1'\]"),
+        (
+            None,
+            "receipts/v1",
+            ["Order"],
+            r"Unknown reply message 'Order' on channel 'receipts/v1'.*valid names: \['Receipt'\]",
+        ),
+    ],
+)
+def test_unknown_names_raise_listing_valid_names(
+    security: list[str] | None, reply_channel: str | None, reply_messages: list[str] | None, message: str
+) -> None:
+    from litestar import Litestar
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    from litestar_asyncapi import ReplyDefinition
+
+    reply = ReplyDefinition(reply_channel, messages=reply_messages) if reply_channel is not None else None
+    with pytest.raises(ImproperlyConfiguredException, match=message):
+        AsyncAPIGenerator(Litestar([]), request_reply_config(security=security, reply=reply)).build_schema()
+
+
+def test_unknown_server_name_raises_listing_valid_names() -> None:
+    from litestar import Litestar
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    config = request_reply_config()
+    config.channels[0].servers = ["missing"]
+
+    with pytest.raises(ImproperlyConfiguredException, match=r"Unknown server 'missing'.*valid names: \['broker'\]"):
+        AsyncAPIGenerator(Litestar([]), config).build_schema()
+
+
+def test_bare_string_in_place_of_a_name_list_is_rejected() -> None:
+    from litestar_asyncapi import ChannelDefinition, OperationDefinition
+
+    with pytest.raises(TypeError, match="security must be a list of names"):
+        OperationDefinition(action="send", security="credentials")  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="servers must be a list of names"):
+        ChannelDefinition("c", "c", servers="broker")  # type: ignore[arg-type]

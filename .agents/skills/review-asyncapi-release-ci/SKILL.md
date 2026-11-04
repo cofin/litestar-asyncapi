@@ -1,6 +1,6 @@
 ---
 name: review-asyncapi-release-ci
-description: Use when reviewing changes to Makefile, pyproject.toml build/test/lint/bumpversion config, package.json, package-lock.json, vite.config.ts, playwright.config.ts, .github/workflows/*.yml, .pre-commit-config.yaml, tools/ci/*.py, tools/validate_asyncapi.mjs, tools/docs_audit.py, tools/hooks/*.py, committed assets under src/litestar_asyncapi/assets/ui/, or PEP 723 blocks in docs/examples.
+description: Use when reviewing changes to Makefile, pyproject.toml build/test/lint/bumpversion config, package.json, package-lock.json, vite.config.ts, playwright.config.ts, .github/workflows/*.yml, .pre-commit-config.yaml, tools/ci/*.py, tools/validate_asyncapi.mjs, tools/docs/*.py, zensical.toml, committed assets under src/litestar_asyncapi/assets/ui/, or PEP 723 blocks in docs/examples.
 ---
 
 # Review: AsyncAPI Release & CI

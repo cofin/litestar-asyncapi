@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
-
-pytestmark = pytest.mark.anyio
 
 
 def test_full_document_schema_generation() -> None:

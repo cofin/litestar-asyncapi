@@ -2,7 +2,36 @@
 
 Date-grouped record of Flow lifecycle events, migrations, and completed work.
 
+## 2026-11-04 — archive: reviewed PR 12 flows
+
+Archived 17 completed specs and 41 task worksheets on feat/updates-1; reviewed range 23d1a4af332cd31651b871215b9638f708510594..d82dff3ce194db6d33273d227841299dfa8d15ca plus validated working-tree review corrections. Review corrections committed at dcc21c01b0e1e0bad5f4547dad61f075364629c2; the user authorized unsigned local commits. Flows: channel-source-markers, channels-plugin-topics, contract-ergonomics, contract-fixes, discovery-fixes, docs-examples-verified, docs-learn-content, docs-redesign, docs-reference-curation, docs-routing-fixes, docs-zensical-foundation, public-hygiene, realtime-discovery, schema-fixes, sse-discovery, test-gate-debloat, wire-contract-fixes.
+
+Correctness, quality and four domain reviewers completed isolated reviews. ADOPT: GEN-08 server isolation (explicit nonempty unrelated-channel servers, selected by user), GEN-10 fixed-topic identity, SCH-14 outer optional-field examples, UI-12 sibling shared references, REL-12 legacy API fragments, QUALITY-01 rendered configuration fields, public-hygiene continuity and browser fixture startup. CONTEST: SCH-10 was withdrawn because explicit Schema references address final Draft07 wire locations. Followup reviews found no unresolved blocking defects.
+
+Verification: make check-all (324 source tests, coverage above 80%); make build, 13 Vitest tests, official fixture and all 14 example validations, 19 source and 19 installed Chromium tests; Python 3.12 installed minimum/latest Litestar (309 tests each, source-only examples skipped); strict docs, inventory, local links, all legacy redirect maps and reference budgets. External link check skipped locally (lychee unavailable); original hosted docs job passed. Hosted CI on d82dff3 failed at the outdated browser fixture and skipped installed matrices. Fixes are local; no hosted publication, review, merge, or CI-success claim is made.
+
+Contracted into knowledge/architecture/01..05, domains/asyncapi-contracts, gotchas/runtime-and-tooling, testing/documentation-site and distribution-and-browser, styleguides/python, decisions/adr-004-openapi-inheritance, and domain engineering/review skill references. Task commits were checked against branch history before deletion; public-hygiene resolves to 7ed8631 and 938a9e1. Detailed original specifications and implementation notes remain in Git history.
+
+## 2026-11-05
+
+### Completed: `contract-ergonomics`
+- Document metadata and security scheme definitions are inherited from `app.openapi_config` through `asyncapi/openapi.py`; the default title is now the OpenAPI title (breaking). Requirements and tags are not inherited.
+- `inherit_openapi_servers=True` derives `ws`/`wss` servers from absolute OpenAPI URLs, bound only to WebSocket channels.
+- Security schemes, servers and replies (`ReplyDefinition`) are referenced by name; the contract example is split into a Learn request/reply and a JWTAuth security example; schema-name parity with Litestar OpenAPI is pinned.
+- The `jwt` extra joined the `tests` dependency group; `openapi-3.0.0`/`openapi-3.1.0` fixtures cover every mapped scheme type and derived servers.
+
 ## 2026-11-04
+
+### Completed: contract fixes, realtime discovery, docs migration
+- `contract-fixes` completed: leaked environment details removed, lint green, wire keys and Draft07 export corrected, payload schema fidelity, listener naming, decorator merging, single-plugin and root-path guards, console unions, and test/gate debloat (coverage now measures handler threads).
+- `realtime-discovery` completed (issue #11): `x-litestar-source` transport markers and bindings, Server-Sent Event discovery, ChannelsPlugin topics with `channel_payloads`; runtime-subscribed topics are never published.
+- `docs-redesign` completed: Zensical site with Learn, Integrations, Reference and Project tabs, executed examples, budgeted Reference pages, generated CLI page and redirects from the Sphinx URLs.
+- Also: frontend builds on Node 26 from `.nvmrc`; the package imports without pydantic; Python support is 3.11–3.15.
+
+### Planning: audit and three approved PRDs
+- Audited the tree at `23d1a4a` across generation, schema, docs UI and AsyncAPI 3.0/3.1 conformance; promoted the findings into `specs/contract-fixes/research/codebase-audit_20261104.md`.
+- Approved `docs-redesign` (Zensical migration, four tabs, executed examples), `contract-fixes` (verified bugs, leak removal, debloat ledger) and `realtime-discovery` (issue #11: transport markers, SSE discovery, typed ChannelsPlugin topics). Each passed one independent review round with all findings adopted.
+- Pointed project URLs and the Codecov slug at `cofin/litestar-asyncapi`; closed four superseded Dependabot PRs.
 
 ### Setup alignment (`synthesize` / `verify` at 49bc3c8)
 - Verified knowledge against the current tree and corrected drift: Litestar bound is `>=2.24.0` with no cap; application-encoder normalization lives in `AsyncAPIPlugin` and `normalize_examples`; JSON Pointer tokens are also percent-encoded; removed the unused `litestar.utils.predicates` pattern.
@@ -31,7 +60,7 @@ Verification:212source tests93.34%, five installed Python3.10–3.14 lanes212eac
 ### Flow: Modernize Project Tooling, CI, and Configuration (`modernize-project-tooling`)
 - Migrated hook execution from `pre-commit` to `uvx prek` with standardized `tools/hooks/no_future_annotations.py`.
 - Modernized packaging and dependencies in `pyproject.toml`: Python 3.14 classifier, updated dependency groups, `[tool.ruff.format]`, `[tool.ruff.lint.per-file-ignores]`, `[tool.pyright]` configuration, and fixed 9 typing discrepancies.
-- Modernized `Makefile` with `.SHELLFLAGS := -euo pipefail -c`, Rodete OS detection, `prek`, `zizmor`, `WORKING_TREE_FILES`, `docs-audit`, `release`, and `check-all`.
+- Modernized `Makefile` with `.SHELLFLAGS := -euo pipefail -c`, `prek`, `zizmor`, `WORKING_TREE_FILES`, `docs-audit`, `release`, and `check-all`.
 - Hardened all GitHub Actions workflows (`ci.yml`, `test.yml`, `docs.yml`, `pr-title.yml`, `publish.yml`): full commit SHA pins, `persist-credentials: false`, `permissions: contents: read`, `pull_request` trigger, disabled uv cache on publish, and `$/` self-repository syntax.
 - Configured `.vscode/settings.json` and `.vscode/launch.json` adhering to modern workspace standards.
 - Rebuilt Sphinx documentation architecture: modernized `conf.py` (pruned 18 unused extensions), created `tools/docs_audit.py`, overhauled all guides across `docs/usage/`, created examples gallery indexing all 6 runnable PEP 723 applications, modularized `docs/reference/`, and verified clean build under `make docs`, `make docs-audit`, `make docs-linkcheck`.

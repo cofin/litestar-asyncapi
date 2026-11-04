@@ -51,8 +51,8 @@ Dependency categories: in-process (generator, spec, dialect), local-substitutabl
 
 ## Documentation
 
-- Sphinx autodoc reference from docstrings; every public method and config field documented.
-- Runnable examples under `docs/examples/` with PEP 723 metadata[^ex]; compile/metadata gates do not prove execution.
+- `mkdocstrings-python` reference from docstrings; every public method and config field documented.
+- Runnable examples under `docs/examples/` with PEP 723 metadata[^ex]; `src/tests/unit/docs/test_examples.py` serves each example's document and `make validate-asyncapi` validates it.
 - Conceptual diagrams use Mermaid with 4–6 nodes.
 - Prose is present tense and states current behavior; history belongs in the changelog.
 

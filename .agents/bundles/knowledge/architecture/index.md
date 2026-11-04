@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Architecture Knowledge Index
 description: Living system architecture chapters for litestar-asyncapi.
 tags: [architecture, asyncapi, litestar, index]

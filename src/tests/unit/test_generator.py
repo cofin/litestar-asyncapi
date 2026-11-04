@@ -4,14 +4,12 @@ from typing import TYPE_CHECKING
 import pytest
 
 from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
-from litestar_asyncapi.spec import AsyncAPI, OperationAction, Reference
+from litestar_asyncapi.spec import AsyncAPI, OperationAction, Reference, Schema, SchemaType
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     from litestar import WebSocket
-
-pytestmark = pytest.mark.anyio
 
 
 def test_generator_builds_document_with_channels_and_operations() -> None:
@@ -73,114 +71,164 @@ def test_generator_ensures_unique_operation_ids_for_channels_plugin() -> None:
     assert len(operation_ids) == len(set(operation_ids))
 
 
-def test_conflicting_discovered_channels_do_not_overwrite(monkeypatch) -> None:
-    from litestar import Litestar
+def test_conflicting_discovered_channels_do_not_overwrite() -> None:
+    from litestar import Litestar, websocket_listener
     from litestar.exceptions import ImproperlyConfiguredException
 
     from litestar_asyncapi import AsyncAPIConfig
-    from litestar_asyncapi.asyncapi.datastructures import DiscoveredChannel, DiscoverySource
-    from litestar_asyncapi.spec import Parameter
 
-    channels = [
-        DiscoveredChannel(
-            route_identity=None,
-            key="same",
-            address="/same",
-            source=DiscoverySource.WEBSOCKET,
-            provenance="first handler",
-            parameters={"id": Parameter(description="first")},
-        ),
-        DiscoveredChannel(
-            route_identity=None,
-            key="same",
-            address="/same",
-            source=DiscoverySource.WEBSOCKET,
-            provenance="second handler",
-            parameters={"id": Parameter(description="second")},
-        ),
-    ]
-    monkeypatch.setattr(
-        "litestar_asyncapi.asyncapi.generator.extract_websocket_channels", lambda *args, **kwargs: channels
-    )
-    with pytest.raises(ImproperlyConfiguredException, match=r"first handler.*second handler"):
-        AsyncAPIGenerator(Litestar([]), AsyncAPIConfig()).build_schema()
+    @websocket_listener("/same")
+    async def first(data: str) -> None:
+        return None
+
+    @websocket_listener("/same")
+    async def second(data: int) -> None:
+        return None
+
+    with pytest.raises(
+        ImproperlyConfiguredException,
+        match=r"Conflicting channel '/same': route /same handler first and route /same handler second",
+    ):
+        AsyncAPIGenerator(Litestar([second, first]), AsyncAPIConfig()).build_schema()
 
 
-def test_same_route_merge_is_stable_and_selects_only_its_messages(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    ("payload", "content_type"),
+    [
+        (Reference(ref="#/components/schemas/User"), "application/json"),
+        (Schema(type=SchemaType.OBJECT, properties={"id": Schema(type=SchemaType.INTEGER)}), "application/json"),
+        (Schema(type=SchemaType.ARRAY), "application/json"),
+        (Schema(), None),
+    ],
+)
+def test_message_content_type_is_inferred_only_for_structured_payloads(
+    payload: Schema | Reference, content_type: str | None
+) -> None:
     from litestar import Litestar
 
-    from litestar_asyncapi import AsyncAPIConfig, MessageDefinition
-    from litestar_asyncapi.asyncapi.datastructures import DiscoveredChannel, DiscoveredOperation, DiscoverySource
+    from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition, MessageDefinition, OperationDefinition
+    from litestar_asyncapi.spec import Components
 
-    route = object()
-    channels = [
-        DiscoveredChannel(
-            key="path/~key",
-            address="/socket",
-            route_identity=route,
-            source=DiscoverySource.WEBSOCKET,
-            provenance=source,
-            operations=[
-                DiscoveredOperation(
-                    action="send",
-                    operation_id="same / id",
-                    provenance=source,
-                    messages=[MessageDefinition(name=name, payload=payload)],
-                )
-            ],
-        )
-        for source, name, payload in [("second", "b/~", str), ("first", "a", int)]
-    ]
-    monkeypatch.setattr(
-        "litestar_asyncapi.asyncapi.generator.extract_websocket_channels", lambda *args, **kwargs: channels
+    config = AsyncAPIConfig(
+        components=Components(schemas={"User": Schema(type=SchemaType.OBJECT)}),
+        channels=[
+            ChannelDefinition(
+                "events",
+                "/events",
+                [OperationDefinition(action="send", messages=[MessageDefinition(name="Event", payload=payload)])],
+            )
+        ],
     )
-    first = AsyncAPIGenerator(Litestar([]), AsyncAPIConfig()).build_schema()
-    channels.reverse()
-    second = AsyncAPIGenerator(Litestar([]), AsyncAPIConfig()).build_schema()
-    assert first == second
-    assert list(first["operations"]) == ["same_id"]
-    operation = first["operations"]["same_id"]
-    assert operation["channel"]["$ref"] == "#/channels/path~1~0key"
-    assert {ref["$ref"] for ref in operation["messages"]} == {
-        "#/channels/path~1~0key/messages/a",
-        "#/channels/path~1~0key/messages/b~1~0",
-    }
+    message = AsyncAPIGenerator(Litestar([]), config).build_schema()["channels"]["events"]["messages"]["Event"]
+    assert message.get("contentType") == content_type
 
 
-def test_shared_named_message_constraints_cannot_be_deduplicated(monkeypatch) -> None:
-    from litestar import Litestar
+def test_operation_id_case_insensitive_collision() -> None:
+    from litestar import Litestar, websocket
+
+    from litestar_asyncapi import AsyncAPIConfig
+
+    @websocket("/op1", operation_id="myOp")
+    async def handler1(socket: "WebSocket") -> None:
+        return None
+
+    @websocket("/op2", operation_id="MYOP")
+    async def handler2(socket: "WebSocket") -> None:
+        return None
+
+    config = AsyncAPIConfig(include_raw_websocket_routes=True)
+    with pytest.warns(UserWarning, match="cannot infer the raw WebSocket"):
+        operations = AsyncAPIGenerator(Litestar([handler1, handler2]), config).build_asyncapi().operations
+
+    assert len(operations) == 4
+    assert len({key.casefold() for key in operations}) == 4
+
+
+def test_strict_uniqueness_raises_exception() -> None:
+    from litestar import Litestar, websocket
     from litestar.exceptions import ImproperlyConfiguredException
-    from litestar.params import Parameter
-    from litestar.typing import FieldDefinition
 
-    from litestar_asyncapi import AsyncAPIConfig, MessageDefinition
-    from litestar_asyncapi.asyncapi.datastructures import DiscoveredChannel, DiscoveredOperation, DiscoverySource
+    from litestar_asyncapi import AsyncAPIConfig
 
-    route = object()
+    @websocket("/op1", operation_id="myOp")
+    async def handler1(socket: "WebSocket") -> None:
+        return None
+
+    @websocket("/op2", operation_id="myOp")
+    async def handler2(socket: "WebSocket") -> None:
+        return None
+
+    config = AsyncAPIConfig(strict_uniqueness=True, include_raw_websocket_routes=True)
+    with (
+        pytest.warns(UserWarning, match="cannot infer the raw WebSocket"),
+        pytest.raises(ImproperlyConfiguredException, match="Duplicate operationId found"),
+    ):
+        AsyncAPIGenerator(Litestar([handler1, handler2]), config).build_asyncapi()
+
+
+def test_reversed_explicit_channels_have_stable_sanitized_casefold_keys() -> None:
+    from litestar import Litestar
+
+    from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition, MessageDefinition, OperationDefinition
+
     channels = [
-        DiscoveredChannel(
-            key="same",
-            address="/same",
-            route_identity=route,
-            source=DiscoverySource.WEBSOCKET,
-            provenance=str(bound),
-            operations=[
-                DiscoveredOperation(
-                    action="send",
-                    provenance=str(bound),
-                    messages=[
-                        MessageDefinition(
-                            name="value",
-                            payload=FieldDefinition.from_annotation(str, kwarg_definition=Parameter(min_length=bound)),
-                        )
-                    ],
-                )
-            ],
+        ChannelDefinition(
+            key,
+            "/shared",
+            [OperationDefinition(action="send", operation_id=operation_id, messages=[MessageDefinition(payload=int)])],
         )
-        for bound in (1, 5)
+        for key, operation_id in [("z", "A/B"), ("a", "a b"), ("c", "A_B")]
     ]
-    monkeypatch.setattr(
-        "litestar_asyncapi.asyncapi.generator.extract_websocket_channels", lambda *args, **kwargs: channels
-    )
-    with pytest.raises(ImproperlyConfiguredException, match="Conflicting message"):
-        AsyncAPIGenerator(Litestar([]), AsyncAPIConfig()).build_schema()
+    app = Litestar([])
+    first = AsyncAPIGenerator(app, AsyncAPIConfig(channels=channels)).build_schema()
+    second = AsyncAPIGenerator(app, AsyncAPIConfig(channels=list(reversed(channels)))).build_schema()
+    assert first == second
+    assert set(first["channels"]) == {"a", "c", "z"}
+    assert list(first["operations"]) == ["a_b", "A_B_2", "A_B_3"]
+
+
+def test_channel_message_refs_uri_escape_literal_percent() -> None:
+    from litestar import Litestar
+
+    from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition, MessageDefinition, OperationDefinition
+
+    document = AsyncAPIGenerator(
+        Litestar([]),
+        AsyncAPIConfig(
+            channels=[
+                ChannelDefinition(
+                    "literal%2F/#",
+                    "/socket",
+                    [OperationDefinition(action="send", messages=[MessageDefinition(name="m%/~", payload=int)])],
+                )
+            ]
+        ),
+    ).build_schema()
+    operation = next(iter(document["operations"].values()))
+    assert operation["channel"]["$ref"] == "#/channels/literal%252F~1%23"
+    assert operation["messages"] == [{"$ref": "#/channels/literal%252F~1%23/messages/m%25~1~0"}]
+
+
+@pytest.mark.parametrize("send_payload", [str, int])
+def test_same_named_message_is_shared_or_rejected_across_operations(send_payload: type) -> None:
+    from litestar import Litestar, websocket
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    from litestar_asyncapi import AsyncAPIConfig, asyncapi_message
+
+    @asyncapi_message(action="send", name="Value", payload=send_payload)
+    @asyncapi_message(action="receive", name="Value", payload=str)
+    @websocket("/values")
+    async def values(socket: "WebSocket") -> None:
+        return None
+
+    generator = AsyncAPIGenerator(Litestar([values]), AsyncAPIConfig())
+    if send_payload is int:
+        with pytest.raises(ImproperlyConfiguredException, match="Conflicting message 'Value' on channel '/values'"):
+            generator.build_schema()
+        return
+    document = generator.build_schema()
+    assert set(document["channels"]["/values"]["messages"]) == {"Value"}
+    assert {operation["messages"][0]["$ref"] for operation in document["operations"].values()} == {
+        "#/channels/~1values/messages/Value"
+    }

@@ -79,10 +79,14 @@ Anchor: `pyproject.toml::tool.bumpversion`, `Makefile::release`, `Makefile::pre-
 
 ## REL-15 **Runnable doc examples keep valid PEP 723 metadata and standalone marker blocks.**
 Why: Broken metadata or marker blocks break copy-paste examples and CI.
-Check: `# /// script` with `requires-python >=3.10` and a `litestar-asyncapi` dependency; `# start-example` blocks compile after dedent.
-Anchor: `tools/ci/validate_pep723_blocks.py::validate_file`, `tools/ci/validate_doc_markers.py::validate_file`
+Check: `# /// script` with `requires-python >=3.11` and a `litestar-asyncapi` dependency; a module-level `app` that serves its document.
+Anchor: `tools/ci/validate_pep723_blocks.py::validate_file`, `src/tests/unit/docs/test_examples.py`
 
-## REL-16 **Package code stays free of `from __future__ import annotations` and inline comments.**
+## REL-16 **Python code stays free of `from __future__ import annotations`, and package code free of inline comments.**
 Why: Future annotations break Litestar runtime signature introspection; inline comments violate project style.
-Check: The `no-future-annotations` prek hook still targets `^src/litestar_asyncapi/.*\.py$`; new tooling Python uses docstrings instead of `#` comments.
-Anchor: `.pre-commit-config.yaml::no-future-annotations`, `tools/hooks/no_future_annotations.py::check_file`
+Check: `__future__.annotations` stays in ruff's `banned-api` and no per-file ignore disables TID251; new tooling Python uses docstrings instead of `#` comments.
+Anchor: `pyproject.toml::tool.ruff.lint.flake8-tidy-imports.banned-api`
+
+## Curated fields and API fragments
+
+Compare public config field declarations with explicit reference members. Validate legacy implementation-module fragments as well as redirect pages, including plugins.AsyncAPIUIRenderPlugin aliases and split spec pages.

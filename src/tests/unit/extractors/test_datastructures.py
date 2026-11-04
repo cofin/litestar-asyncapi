@@ -3,8 +3,6 @@ import pytest
 from litestar_asyncapi.asyncapi.datastructures import DiscoveredChannel, DiscoverySource, MessageDefinition
 from litestar_asyncapi.spec import Schema, SchemaType
 
-pytestmark = pytest.mark.anyio
-
 
 def test_message_definition_retains_payload_contract() -> None:
     payload = Schema(type=SchemaType.OBJECT)
@@ -126,3 +124,13 @@ def test_layered_native_handler_options_supply_typed_definitions() -> None:
     assert by_path["/parent/inherited"].operations[0].messages[0].payload is int
     assert by_path["/parent/local"].operations[0].summary == "handler wins"
     assert "inherited" in by_path["/parent/inherited"].operations[0].provenance
+
+
+def test_operation_definition_normalizes_action_text() -> None:
+    from litestar_asyncapi import OperationDefinition
+    from litestar_asyncapi.spec import OperationAction
+
+    assert OperationDefinition(action=" Send ").action is OperationAction.SEND
+    assert OperationDefinition(action="RECEIVE").action is OperationAction.RECEIVE
+    with pytest.raises(ValueError, match=r"Invalid action 'publish'\. Expected 'send' or 'receive'\."):
+        OperationDefinition(action="publish")

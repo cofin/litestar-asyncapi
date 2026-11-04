@@ -29,14 +29,14 @@ sources:
 # Technology Stack
 
 <!-- truth: start -->
-- Python >= 3.10 (CI 3.10–3.14); PEP 604 unions and PEP 585 collections; no `from __future__ import annotations` in package code.
+- Python >= 3.11 (CI 3.11–3.15); PEP 604 unions and PEP 585 collections; no `from __future__ import annotations` in package code.
 - Litestar `>=2.24.0`, no upper cap; CI tests the 2.24.0 minimum and latest `<3`.
 - Serialization through Litestar `encode_json`/`decode_json` with application type encoders; PyYAML arrives transitively from Litestar.
 - `uv` for environments and running tools; `hatchling` build backend; `bump-my-version` for releases.
 - `ruff` lint/format via `prek`; `mypy` and `pyright` strict; `slotscheck` for slot integrity.
-- `pytest` + `pytest-cov` (aggregate floor 80%, core target >90%), `anyio` on the asyncio backend.
-- Docs: Sphinx with the Shibuya theme, `auto-pytabs`, `sphinx-design`; runnable PEP 723 examples.
-- Node 22 build/test only: Vite, Vitest, Playwright/Chromium, `@asyncapi/parser` + `@asyncapi/specs` + AJV.
+- `pytest` + `pytest-cov` (aggregate floor 80%, core target >90%); coverage traces `multiprocessing` and `thread`.
+- Docs: Zensical with `mkdocstrings-python` and `pymdown-extensions`; runnable PEP 723 examples executed by `src/tests/unit/docs/test_examples.py`.
+- Node (`.nvmrc`) build/test only: Vite, Vitest, Playwright/Chromium, `@asyncapi/parser` + `@asyncapi/specs` + AJV.
 - UI pins: AsyncAPI React 3.2.1, Scalar 1.69.2, asyncapi-ws-plugin 0.1.0 on React 18.3.1.
 <!-- truth: end -->
 

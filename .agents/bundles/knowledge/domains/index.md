@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Domain Index
 description: Ubiquitous domain vocabulary for litestar-asyncapi.
 tags: [domains, index]

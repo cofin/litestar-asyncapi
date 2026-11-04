@@ -27,7 +27,7 @@ Read-only reviewer for the build, packaging, CI and release surfaces of `litesta
 ### Scope
 
 - `Makefile`, `pyproject.toml` (build, dependencies, pytest, coverage, bumpversion, ruff, mypy, pyright, slotscheck), `package.json`, `package-lock.json`, `vite.config.ts`, `playwright.config.ts`.
-- `.github/workflows/*.yml`, `.pre-commit-config.yaml`, `tools/ci/*.py`, `tools/validate_asyncapi.mjs`, `tools/docs_audit.py`, `tools/hooks/*.py`, `tools/frontend/tests/distribution.py`.
+- `.github/workflows/*.yml`, `.pre-commit-config.yaml`, `tools/ci/*.py`, `tools/validate_asyncapi.mjs`, `tools/docs/*.py`, `tools/frontend/tests/distribution.py`.
 - Committed assets under `src/litestar_asyncapi/assets/ui/` and PEP 723 blocks in `docs/examples/`.
 
 ### Procedure

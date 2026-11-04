@@ -236,6 +236,49 @@ def test_unsupported_native_output_has_payload_and_handler_context() -> None:
         generator.generate(Unsupported, provenance="handler /events")
 
 
+def test_generation_error_has_one_status_prefix_and_short_annotation() -> None:
+    from litestar.exceptions import ImproperlyConfiguredException
+    from litestar.params import Parameter
+
+    field = FieldDefinition.from_annotation(int, kwarg_definition=Parameter(schema_extra={"min_contains": 2}))
+    with pytest.raises(ImproperlyConfiguredException) as error:
+        AsyncAPISchemaGenerator().generate(field, provenance="handler /events")
+    message = str(error.value)
+    assert message.startswith("500: Cannot generate AsyncAPI payload int for handler /events: Cannot export")
+    assert message.count("500:") == 1
+    assert "Kwarg" not in message
+
+
+def test_component_export_error_names_only_the_payloads_that_reach_it() -> None:
+    from typing import Annotated
+
+    from litestar.exceptions import ImproperlyConfiguredException
+    from litestar.params import Parameter
+
+    @dataclass
+    class Broken:
+        values: Annotated[list[int], Parameter(schema_extra={"min_contains": 2})]
+
+    @dataclass
+    class Holder:
+        broken: Broken
+
+    @dataclass
+    class Clean:
+        value: int
+
+    generator = AsyncAPISchemaGenerator()
+    generator.generate(Clean, provenance="clean route")
+    generator.generate(Holder, provenance="holder route")
+    with pytest.raises(ImproperlyConfiguredException) as error:
+        generator.components()
+    message = str(error.value)
+    assert "Broken" in message
+    assert "Holder for holder route" in message
+    assert "clean route" not in message
+    assert message.count("500:") == 1
+
+
 def test_unresolved_namespace_has_payload_and_handler_context() -> None:
     from litestar.exceptions import ImproperlyConfiguredException
 
@@ -254,6 +297,22 @@ def test_explicit_field_default_null_differs_from_absent_default() -> None:
     properties = next(iter(generator.components().values()))["properties"]
     assert "default" not in properties["required"]
     assert properties["optional"]["default"] is None
+
+
+def test_null_default_is_recorded_only_on_the_optional_field() -> None:
+    @dataclass
+    class Nullable:
+        value: int | None = None
+        choice: int | str | None = None
+        counted: int | None = 3
+
+    generator = AsyncAPISchemaGenerator()
+    generator.generate(Nullable)
+    properties = next(iter(generator.components().values()))["properties"]
+    assert properties["value"] == {"oneOf": [{"type": "integer"}, {"type": "null"}], "default": None}
+    assert properties["choice"]["default"] is None
+    assert all("default" not in member for member in properties["choice"]["oneOf"])
+    assert properties["counted"]["default"] == 3
 
 
 def test_array_like_required_position_after_default() -> None:
@@ -319,6 +378,43 @@ def test_tuple_zero_maximum_is_not_dropped() -> None:
     assert schema["maxItems"] == 0
 
 
+def test_constrained_variadic_tuple_keeps_item_type() -> None:
+    import typing
+
+    from litestar.params import Parameter
+
+    generator = AsyncAPISchemaGenerator()
+    for annotation in (tuple[int, ...], vars(typing)["Tuple"][int, ...]):
+        field = FieldDefinition.from_annotation(annotation, kwarg_definition=Parameter(min_items=1, max_items=3))
+        assert generator.generate(field) == {
+            "type": "array",
+            "items": {"type": "integer"},
+            "minItems": 1,
+            "maxItems": 3,
+        }
+
+
+def test_zero_bounds_are_not_dropped() -> None:
+    from typing import Annotated
+
+    from litestar.params import Parameter
+
+    @dataclass
+    class Empty:
+        items: Annotated[list[int], Parameter(max_items=0)]
+        text: Annotated[str, Parameter(min_length=0, max_length=0)]
+        values: Annotated[tuple[int, ...], Parameter(min_items=0, max_items=0)]
+
+    generator = AsyncAPISchemaGenerator()
+    generator.generate(Empty)
+    properties = next(iter(generator.components().values()))["properties"]
+    assert properties["items"]["maxItems"] == 0
+    assert properties["text"]["minLength"] == properties["text"]["maxLength"] == 0
+    assert properties["values"]["minItems"] == properties["values"]["maxItems"] == 0
+    field = FieldDefinition.from_annotation(list[str], kwarg_definition=Parameter(min_items=0))
+    assert generator.generate(field)["minItems"] == 0
+
+
 def test_native_projection_honors_excluded_fields() -> None:
     from dataclasses import dataclass
 
@@ -335,6 +431,25 @@ def test_native_projection_honors_excluded_fields() -> None:
             return {"internal"}
 
     assert normalize_native_schema(FilteredSchema(default={"value": None})) == {"default": {"value": None}}
+
+
+def test_native_projection_uses_aliases_and_references() -> None:
+    from litestar.openapi.spec import Reference, Schema
+
+    from litestar_asyncapi._compat import normalize_native_schema
+
+    schema = Schema(
+        one_of=[Reference(ref="#/$defs/Item")],
+        schema_not=Schema(max_items=0),
+        prefix_items=[Schema(min_length=1)],
+        property_names=Schema(pattern="^[a-z]+$"),
+    )
+    assert normalize_native_schema(schema) == {
+        "oneOf": [{"$ref": "#/$defs/Item"}],
+        "not": {"maxItems": 0},
+        "prefixItems": [{"minLength": 1}],
+        "propertyNames": {"pattern": "^[a-z]+$"},
+    }
 
 
 def test_explicit_multiformat_bypasses_native_dialect_conversion() -> None:
@@ -377,3 +492,40 @@ def test_mixed_literal_types_generate_listener_and_decorator_documents() -> None
     for channel in document["channels"].values():
         payload = next(iter(channel["messages"].values()))["payload"]
         assert set(payload["type"]) == {"integer", "null"}
+
+
+def test_component_schema_names_match_litestar_openapi_names() -> None:
+    from dataclasses import make_dataclass
+
+    from litestar import Litestar, post, websocket_listener
+    from pydantic import BaseModel
+
+    from litestar_asyncapi import AsyncAPIPlugin
+
+    class Address(BaseModel):
+        city: str
+
+    class Customer(msgspec.Struct):
+        address: Address
+
+    first = make_dataclass("Item", [("sku", str)])
+    first.__module__ = "warehouse.first"
+    second = make_dataclass("Item", [("count", int)])
+    second.__module__ = "warehouse.second"
+    order = make_dataclass("Order", [("customer", Customer), ("first", first), ("second", second), ("node", Node)])
+    namespace = {"Order": order}
+
+    @post("/orders", signature_namespace=namespace)
+    async def create(data: order) -> order:  # type: ignore[valid-type]
+        return data
+
+    @websocket_listener("/orders", signature_namespace=namespace)
+    async def stream(data: order) -> order:  # type: ignore[valid-type]
+        return data
+
+    plugin = AsyncAPIPlugin()
+    app = Litestar([create, stream], plugins=[plugin])
+    openapi_components = app.openapi_schema.components.schemas or {}
+
+    assert set(plugin.get_asyncapi_schema(app)["components"]["schemas"]) == set(openapi_components)
+    assert len(openapi_components) == 6

@@ -1,0 +1,9 @@
+no_progress = true
+scheme = ["https", "http"]
+max_retries = 3
+accept = ["200..=299", "429"]
+exclude = [
+  '^https://cofin\.github\.io/litestar-asyncapi/',
+  '^https://fonts\.googleapis\.com/?$',
+  '^https://fonts\.gstatic\.com/?$',
+]

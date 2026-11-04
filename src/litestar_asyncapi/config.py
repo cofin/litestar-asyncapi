@@ -1,11 +1,20 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from litestar.utils.path import normalize_path
 
 from litestar_asyncapi.asyncapi.datastructures import ChannelDefinition
-from litestar_asyncapi.spec import Components, MessageTrait, OperationTrait, Reference, Server
+from litestar_asyncapi.spec import (
+    Components,
+    Contact,
+    ExternalDocumentation,
+    License,
+    MessageTrait,
+    OperationTrait,
+    Reference,
+    Server,
+)
 
 if TYPE_CHECKING:
     from litestar.enums import MediaType
@@ -38,18 +47,36 @@ class DocsConfig:
     """Documentation routes and optional interactive UI settings."""
 
     path: str = "/asyncapi"
+    """Path that the documentation router is mounted under; it must not be the application root."""
     enabled: bool = True
+    """Whether to mount the documentation routes. Plugin methods and the CLI export work either way."""
     guards: Sequence["Guard"] = ()
+    """Litestar guards applied to every documentation route."""
     dependencies: "Dependencies | None" = None
+    """Dependencies provided to the documentation router."""
     renderer: Literal["asyncapi", "scalar"] = "asyncapi"
+    """UI served by the default render plugins: the AsyncAPI React component or Scalar."""
     interactive: bool = False
+    """Whether to add the React WebSocket console at ``/playground``."""
     yaml: bool = False
+    """Whether to also serve the document as YAML at ``/asyncapi.yaml`` and ``/asyncapi.yml``."""
     render_plugins: list["AsyncAPIRenderPlugin"] | None = None
+    """Render plugins that replace the defaults.
+
+    A JSON renderer at ``/asyncapi.json`` is added when the list has none, and the field holds the
+    resolved list after initialization.
+    """
 
     def __post_init__(self) -> None:
         from litestar_asyncapi.docs import renderer_name
         from litestar_asyncapi.plugins import AsyncAPIUIRenderPlugin, JsonRenderPlugin, YamlRenderPlugin
 
+        if normalize_path(self.path) == "/":
+            message = (
+                f"Documentation path {self.path!r} must not be the application root; "
+                "its fallback route would answer every unmatched request"
+            )
+            raise ValueError(message)
         plugins = (
             list(self.render_plugins)
             if self.render_plugins is not None
@@ -95,12 +122,33 @@ class AsyncAPIConfig:
     documentation for event-driven APIs.
     """
 
-    title: str = "AsyncAPI"
-    """The title of the AsyncAPI document."""
-    version: str = "1.0.0"
-    """The version of the API."""
+    title: str | None = None
+    """Title of the document; inherited from the application's OpenAPI config when unset, else ``AsyncAPI``."""
+    version: str | None = None
+    """Version of the API; inherited from the application's OpenAPI config when unset, else ``1.0.0``."""
     description: str | None = None
-    """An optional description of the API."""
+    """Description of the API; inherited from the application's OpenAPI config when unset."""
+    contact: Contact | None = None
+    """Contact information; inherited from the application's OpenAPI config when unset."""
+    license: License | None = None
+    """License of the API; inherited from the application's OpenAPI config when unset."""
+    terms_of_service: str | None = None
+    """URL of the terms of service; inherited from the application's OpenAPI config when unset."""
+    external_docs: ExternalDocumentation | None = None
+    """Additional external documentation; inherited from the application's OpenAPI config when unset."""
+    inherit_openapi: bool = True
+    """Whether to fill unset metadata and security schemes from ``app.openapi_config``.
+
+    Tags and security requirements are never inherited.
+    """
+    inherit_openapi_servers: bool = False
+    """Whether absolute ``app.openapi_config`` server URLs become WebSocket servers.
+
+    ``http`` becomes ``ws`` and ``https`` becomes ``wss``; relative URLs are skipped. Derived servers are
+    named ``openapi``, ``openapi_2``, … and bound only to channels discovered from WebSocket routes,
+    so other channels do not appear to be served by them. Other channels require an explicit nonempty
+    ``servers`` list, since an omitted or empty list means all document servers. Requires ``inherit_openapi``.
+    """
     default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False
@@ -120,6 +168,24 @@ class AsyncAPIConfig:
     include_channels_plugin: bool = True
     """Whether to include ChannelsPlugin channels (best-effort)."""
 
+    include_channels_plugin_topics: bool = True
+    """Whether configured ChannelsPlugin topics without a generated route become topic-only channels.
+
+    Applies only when ``include_channels_plugin`` is true.
+    """
+
+    channel_payloads: Mapping[str, Any] = field(default_factory=dict)
+    """Payload types keyed by ChannelsPlugin topic name.
+
+    A typed topic's generated route and topic-only channel use the generated schema with
+    ``application/json``. Keys must name a configured topic unless a ChannelsPlugin allows arbitrary
+    channels, in which case an unlisted key declares a topic. Keys are validated whatever the include
+    flags say; the arbitrary-channel route stays untyped.
+    """
+
+    include_sse_routes: bool = True
+    """Whether to include HTTP routes returning ``ServerSentEvent`` as send-only channels."""
+
     servers: dict[str, Server | Reference | dict[str, Any]] = field(default_factory=dict)
     """Server definitions for the AsyncAPI document."""
 
@@ -127,10 +193,14 @@ class AsyncAPIConfig:
     """Whether plugin methods should cache built documents for subsequent calls."""
 
     components: Components = field(default_factory=Components)
+    """Reusable components merged into the generated ``components`` object."""
 
     spec_version: Literal["3.0.0", "3.1.0"] = "3.1.0"
+    """AsyncAPI version of the generated document."""
     channels: list[ChannelDefinition] = field(default_factory=list)
+    """Explicit channel contracts; a definition replaces a discovered channel with the same key."""
     docs: "DocsConfig" = field(default_factory=DocsConfig)
+    """Documentation routes and UI settings."""
 
     operation_traits: dict[str, OperationTrait | Reference | dict[str, Any]] = field(default_factory=dict)
     """Reusable operation traits registered under `components.operationTraits`."""
@@ -140,6 +210,9 @@ class AsyncAPIConfig:
 
     def __post_init__(self) -> None:
         _validate_create_examples(self.create_examples)
+        if self.spec_version not in {"3.0.0", "3.1.0"}:
+            message = f"Unsupported spec_version {self.spec_version!r}. Expected '3.0.0' or '3.1.0'."
+            raise ValueError(message)
 
     def to_servers(self) -> dict[str, Server | Reference]:
         """Return a mapping of server definitions.

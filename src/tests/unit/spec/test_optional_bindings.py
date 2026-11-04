@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec.bindings import AMQPChannelBinding, KafkaChannelBinding
-
-pytestmark = pytest.mark.anyio
 
 
 def test_optional_bindings_serialize() -> None:

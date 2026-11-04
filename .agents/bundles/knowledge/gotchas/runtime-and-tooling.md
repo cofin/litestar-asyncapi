@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: addopts
     resource: pyproject.toml::tool.pytest.ini_options
@@ -19,7 +19,7 @@ sources:
     resource: src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin._get_document
     title: One-app binding
   - id: future
-    resource: tools/hooks/no_future_annotations.py::check_file
+    resource: pyproject.toml::tool.ruff.lint.flake8-tidy-imports.banned-api
     title: Future-annotations ban
   - id: bump
     resource: pyproject.toml::tool.bumpversion
@@ -36,7 +36,7 @@ sources:
 
 <!-- truth: start -->
 - Focused `uv run pytest <path>` exits 1 from the global `--cov-fail-under=80`; add `--no-cov`.
-- `from __future__ import annotations` is rejected in `src/litestar_asyncapi/` by a prek hook; Litestar resolves real annotations at runtime.
+- `from __future__ import annotations` is rejected repo-wide by ruff TID251; Litestar resolves real annotations at runtime.
 - One `AsyncAPIPlugin` instance serves one app; a second app raises `ImproperlyConfiguredException`, even after `clear_cache()`.
 - Call `AsyncAPISchemaGenerator.components()` before serializing; early `$ref` dicts are refreshed in place.
 - Litestar 2.24 arbitrary-ASGI mounts drop the stripped prefix from `root_path`; documented, not worked around.
@@ -46,12 +46,12 @@ sources:
 ## Testing
 
 - **Coverage floor on partial runs.** `addopts` carries `--cov=litestar_asyncapi --cov-fail-under=80`[^addopts]. Any single-file run reports ~40% and exits 1, so its exit code cannot distinguish red from green. Use `--no-cov`.
-- **`make_dataclass` module names.** On Python 3.12+, `make_dataclass` overrides a `__module__` supplied through the namespace. Assign `__module__` after construction when tests need distinct module-qualified names across 3.10–3.14.
+- **`make_dataclass` module names.** On Python 3.12+, `make_dataclass` overrides a `__module__` supplied through the namespace. Assign `__module__` after construction when tests need distinct module-qualified names across 3.11–3.15.
 
 ## Litestar integration
 
 - **App binding.** `_get_document` binds the first app it sees and rejects any other[^bind]. Tests that build several apps need one plugin per app.
-- **Future annotations.** The `no_future_annotations` hook fails package files containing the import[^future]; string annotations would break native signature and schema resolution.
+- **Future annotations.** Ruff's `banned-api` (TID251) fails any file containing the import[^future]; string annotations would break native signature and schema resolution.
 - **PyYAML.** Litestar 2.24 imports PyYAML itself. YAML routes are opt-in via `DocsConfig.yaml`; do not add a local extra or presence check.
 - **Arbitrary ASGI mounts.** Native Router nesting and correct `root_path` produce right URLs; arbitrary ASGI mounting in Litestar 2.24 does not accumulate the prefix. Do not add a second URL resolver.
 
@@ -69,9 +69,17 @@ sources:
 
 - **No tagging.** `[tool.bumpversion]` sets `commit = false` and `tag = false`[^bump]; `make release bump=…` edits versions, docs and lock only. Tags and pushes remain explicit, user-initiated actions.
 
+## Discovery and examples
+
+- Topic names are native callback identities, not normalized URL suffixes. Read generated_channels_topic before applying channel_payloads.
+- Arbitrary ChannelsPlugin subscriptions mutate native topic mappings. Keep initialization snapshots; never publish runtime subscriptions.
+- Omitted or empty channel servers means all document servers. Derived WebSocket servers require explicit servers on unrelated channels.
+- Optional payload examples read outer-field declarations first, then the non-null model. Import ExampleFactory only when generation is requested; minimal package imports must not require Pydantic.
+- Explicit Schema references use final Draft07 wire keys, even when prefix_items is supplied as a convenience.
+
 [^addopts]: `pyproject.toml::tool.pytest.ini_options`
 [^bind]: `src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin._get_document`
-[^future]: `tools/hooks/no_future_annotations.py::check_file`
+[^future]: `pyproject.toml::tool.ruff.lint.flake8-tidy-imports.banned-api`
 [^bump]: `pyproject.toml::tool.bumpversion`
 [^sg]: `src/litestar_asyncapi/asyncapi/schema_generation/schema.py::AsyncAPISchemaGenerator.components`
 [^boot]: `src/litestar_asyncapi/docs.py::bootstrap_html`

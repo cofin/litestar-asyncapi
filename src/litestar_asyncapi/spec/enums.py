@@ -1,16 +1,16 @@
-from enum import Enum
+from enum import StrEnum
 
 __all__ = ("OperationAction", "SchemaFormat", "SchemaType", "SecuritySchemeType")
 
 
-class OperationAction(str, Enum):
+class OperationAction(StrEnum):
     """AsyncAPI operation direction (from the application's perspective)."""
 
     RECEIVE = "receive"
     SEND = "send"
 
 
-class SchemaType(str, Enum):
+class SchemaType(StrEnum):
     """JSON Schema base types (Draft 07 compatible)."""
 
     ARRAY = "array"
@@ -22,7 +22,7 @@ class SchemaType(str, Enum):
     STRING = "string"
 
 
-class SchemaFormat(str, Enum):
+class SchemaFormat(StrEnum):
     """Common JSON Schema formats used by AsyncAPI payloads."""
 
     DATE = "date"
@@ -37,7 +37,7 @@ class SchemaFormat(str, Enum):
     UUID = "uuid"
 
 
-class SecuritySchemeType(str, Enum):
+class SecuritySchemeType(StrEnum):
     """AsyncAPI Security Scheme types."""
 
     API_KEY = "apiKey"

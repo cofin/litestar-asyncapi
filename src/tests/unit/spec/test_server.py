@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec import Server, ServerVariable
-
-pytestmark = pytest.mark.anyio
 
 
 def test_server_serialization() -> None:

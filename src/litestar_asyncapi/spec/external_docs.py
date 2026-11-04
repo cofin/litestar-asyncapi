@@ -11,5 +11,8 @@ class ExternalDocumentation(BaseSchemaObject):
     """Reference external documentation."""
 
     url: str
+    """URL of the documentation."""
     description: str | None = None
+    """Description of the documentation; CommonMark is allowed."""
     extensions: dict[str, Any] = field(default_factory=dict)
+    """Specification extensions; every key must start with ``x-``."""

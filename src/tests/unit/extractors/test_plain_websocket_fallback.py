@@ -10,8 +10,6 @@ from litestar_asyncapi.spec import OperationAction
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-pytestmark = pytest.mark.anyio
-
 
 def test_plain_websocket_handler_produces_placeholder_operations() -> None:
     from litestar import Litestar, websocket

@@ -1,13 +1,10 @@
 from dataclasses import dataclass
 from typing import Any
 
-import pytest
 from litestar import Litestar, websocket
 
 from litestar_asyncapi import AsyncAPIPlugin, asyncapi_message, asyncapi_operation
 from litestar_asyncapi.spec import OperationAction
-
-pytestmark = pytest.mark.anyio
 
 
 @dataclass

@@ -19,7 +19,7 @@ Intentional repository patterns. A finding matching one of these is suppressed.
 
 ## FP-GEN-03 — Provenance subclasses declaring only their own `__slots__`
 `asyncapi/datastructures.py::DiscoveredOperation` / `DiscoveredChannel` use `@dataclass(kw_only=True)` with explicit `__slots__` for new fields instead of `slots=True`.
-**DO NOT FLAG** as a slots leak or inconsistency; this avoids inherited-field duplication on Python 3.10 and passes `slotscheck`.
+**DO NOT FLAG** as a slots leak or inconsistency; this avoids inherited-field duplication and passes `slotscheck`.
 
 ## FP-GEN-04 — `BaseSchemaObject` uses `@dataclass` with `__slots__ = ()`
 `spec/base.py::BaseSchemaObject` is an empty-slot base so subclasses can be `@dataclass(slots=True)`.
@@ -30,8 +30,8 @@ Intentional repository patterns. A finding matching one of these is suppressed.
 **DO NOT FLAG** the exclusion as unjustified; it is configured repository policy for protocol binding models.
 
 ## FP-GEN-06 — ChannelsPlugin channels emit an unconstrained `Schema()` payload
-`asyncapi/extractors/channels.py::extract_channels_plugin_channels` cannot know broker payload types; it records only frame mode and send direction.
-**DO NOT FLAG** the empty schema as a missing contract; explicit `ChannelDefinition` entries document broker payloads.
+`asyncapi/extractors/channels.py::extract_channels_plugin_channels` keeps an unconstrained payload when channel_payloads does not declare a topic type; native frame mode and send direction remain explicit.
+**DO NOT FLAG** the empty schema as a missing contract; `channel_payloads` types configured topics, and complete explicit `ChannelDefinition` entries document other broker contracts.
 
 ## FP-GEN-07 — Raw-socket placeholders with `UserWarning`
 With `include_raw_websocket_routes=True`, `_infer_raw_websocket_operations` emits `RawMessage`/`RawResponse` with no payload and a warning.

@@ -3,28 +3,41 @@ import re
 import warnings
 from copy import deepcopy
 from dataclasses import dataclass, fields, is_dataclass, replace
-from typing import TYPE_CHECKING, Any, NoReturn, cast
+from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, cast
 from urllib.parse import quote, unquote
 
 from litestar.exceptions import ImproperlyConfiguredException
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._compat import NativeDTOPayload
+from litestar_asyncapi._compat import NativeDTOPayload, resolve_annotation
 from litestar_asyncapi.asyncapi.datastructures import (
+    SOURCE_EXTENSION,
+    SOURCE_MARKERS,
     ChannelDefinition,
     DiscoveredChannel,
     DiscoveredOperation,
     DiscoverySource,
     MessageDefinition,
     OperationDefinition,
+    ReplyDefinition,
 )
-from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channels, extract_websocket_channels
+from litestar_asyncapi.asyncapi.extractors import (
+    extract_channels_plugin_channels,
+    extract_sse_channels,
+    extract_websocket_channels,
+)
+from litestar_asyncapi.asyncapi.openapi import (
+    OPENAPI_SERVERS_SOURCE,
+    OPENAPI_SOURCE,
+    inherited_info,
+    inherited_security_schemes,
+    inherited_servers,
+)
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
 from litestar_asyncapi.spec import (
     AsyncAPI,
     Channel,
-    Info,
     Message,
     MessageTrait,
     MultiFormatSchema,
@@ -32,11 +45,14 @@ from litestar_asyncapi.spec import (
     OperationAction,
     OperationTrait,
     Reference,
+    Reply,
     Schema,
 )
 from litestar_asyncapi.spec.base import UNSET, BaseSchemaObject
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from litestar import Litestar
 
     from litestar_asyncapi import AsyncAPIConfig
@@ -46,13 +62,17 @@ __all__ = ("AsyncAPIGenerator",)
 
 INVALID_OPERATION_ID_CHARS = re.compile(r"[^a-zA-Z0-9_.-]+")
 
+T = TypeVar("T")
+
 
 @dataclass(slots=True)
 class AsyncAPIGenerator:
     """Build AsyncAPI documents from Litestar apps and AsyncAPIConfig."""
 
     app: "Litestar"
+    """Application whose routes and plugins are documented."""
     config: "AsyncAPIConfig"
+    """Configuration that supplies metadata, explicit contracts and discovery flags."""
 
     def build_asyncapi(self) -> AsyncAPI:
         """Build an AsyncAPI document object.
@@ -61,19 +81,38 @@ class AsyncAPIGenerator:
             The generated AsyncAPI document.
         """
         schema_generator = AsyncAPISchemaGenerator(self.app)
-        info = Info(title=self.config.title, version=self.config.version, description=self.config.description)
+        openapi = self.app.openapi_config
         document = AsyncAPI(
-            info=info, asyncapi=self.config.spec_version, default_content_type=self.config.default_content_type
+            info=inherited_info(self.config, openapi),
+            asyncapi=self.config.spec_version,
+            default_content_type=self.config.default_content_type,
         )
 
         document.servers.update(self.config.to_servers())
+        derived_servers = (
+            inherited_servers(openapi) if self.config.inherit_openapi and self.config.inherit_openapi_servers else {}
+        )
+        for name, server in derived_servers.items():
+            if name in document.servers and _definition_key(document.servers[name]) != _definition_key(server):
+                message = f"Conflicting server {name!r}: AsyncAPIConfig.servers and {OPENAPI_SERVERS_SOURCE}"
+                raise ImproperlyConfiguredException(message)
+            document.servers[name] = server
 
         document.components = deepcopy(self.config.components)
+        if self.config.inherit_openapi:
+            _merge_components(
+                document.components.security_schemes,
+                inherited_security_schemes(openapi),
+                "securitySchemes",
+                source=OPENAPI_SOURCE,
+            )
         _merge_components(document.components.operation_traits, self.config.to_operation_traits(), "operationTraits")
         _merge_components(document.components.message_traits, self.config.to_message_traits(), "messageTraits")
         discovered = _normalize_channels(_discover_channels(self.app, self.config, schema_generator))
-        _populate_channels(document, discovered)
-        _populate_operations(document, discovered, config=self.config, schema_generator=schema_generator, app=self.app)
+        channels = _populate_channels(document, discovered, websocket_servers=list(derived_servers))
+        _populate_operations(
+            document, discovered, channels, config=self.config, schema_generator=schema_generator, app=self.app
+        )
 
         _merge_components(document.components.schemas, schema_generator.components(), "schemas")
         _validate_references(document.to_schema())
@@ -148,8 +187,8 @@ def _discover_channels(
     discovered: list[DiscoveredChannel] = []
     if config.include_websocket_routes:
         discovered.extend(extract_websocket_channels(app, schema_generator=schema_generator, config=config))
-    if config.include_channels_plugin:
-        discovered.extend(extract_channels_plugin_channels(app, schema_generator=schema_generator))
+    discovered.extend(extract_channels_plugin_channels(app, schema_generator=schema_generator, config=config))
+    discovered.extend(extract_sse_channels(app, schema_generator=schema_generator, config=config))
     explicit: dict[str, tuple[ChannelDefinition, str]] = {}
     for index, channel in enumerate(config.channels):
         source = f"AsyncAPIConfig.channels[{index}] ({channel.key})"
@@ -157,6 +196,17 @@ def _discover_channels(
             message = f"Conflicting explicit channel {channel.key!r}: {explicit[channel.key][1]} and {source}"
             raise ImproperlyConfiguredException(message)
         explicit[channel.key] = (channel, source)
+    for channel in discovered:
+        if (
+            channel.key in explicit
+            and channel.source is DiscoverySource.CHANNELS_PLUGIN
+            and channel.route_identity is None
+        ):
+            message = (
+                f"Conflicting channel {channel.key!r}: {channel.provenance} and {explicit[channel.key][1]}; "
+                "type the topic with AsyncAPIConfig.channel_payloads or set include_channels_plugin_topics=False"
+            )
+            raise ImproperlyConfiguredException(message)
     discovered = [channel for channel in discovered if channel.key not in explicit]
     discovered.extend(
         DiscoveredChannel(
@@ -181,25 +231,61 @@ def _discover_channels(
     return discovered
 
 
-def _populate_channels(document: AsyncAPI, discovered: list[DiscoveredChannel]) -> None:
-    for discovered_channel in discovered:
-        channel_key = discovered_channel.key
-        document.channels[channel_key] = Channel(
-            address=discovered_channel.address,
-            parameters=discovered_channel.parameters,
-            servers=discovered_channel.servers,
-            bindings=discovered_channel.bindings,
+def _populate_channels(
+    document: AsyncAPI, discovered: list[DiscoveredChannel], *, websocket_servers: list[str]
+) -> dict[str, Channel]:
+    """Add one inline channel per discovered channel and return them by key.
+
+    Discovered channels carry an ``x-litestar-source`` transport marker unless their own extensions set one.
+    WebSocket channels without explicit servers are bound to ``websocket_servers``.
+    """
+    if websocket_servers:
+        for channel in discovered:
+            if channel.source is not DiscoverySource.WEBSOCKET and not channel.servers:
+                message = (
+                    f"Channel {channel.key!r} ({channel.provenance}) requires explicit servers when "
+                    "inherit_openapi_servers=True; omitted or empty servers would also include the derived "
+                    "WebSocket servers. Set ChannelDefinition.servers or disable inherit_openapi_servers."
+                )
+                raise ImproperlyConfiguredException(message)
+    channels = {
+        channel.key: Channel(
+            address=channel.address,
+            description=channel.description,
+            parameters=channel.parameters,
+            servers=_resolve_names(
+                websocket_servers
+                if channel.servers is None and channel.source is DiscoverySource.WEBSOCKET and websocket_servers
+                else channel.servers,
+                available=document.servers,
+                kind="server",
+                pointer="#/servers",
+                context=f" in {channel.provenance}",
+            ),
+            bindings=channel.bindings,
+            extensions=(
+                {SOURCE_EXTENSION: SOURCE_MARKERS[channel.source], **channel.extensions}
+                if channel.source in SOURCE_MARKERS
+                else dict(channel.extensions)
+            ),
         )
+        for channel in discovered
+    }
+    document.channels.update(channels)
+    return channels
 
 
 def _populate_operations(
     document: AsyncAPI,
     discovered: list[DiscoveredChannel],
+    channels: dict[str, Channel],
     *,
     config: "AsyncAPIConfig",
     schema_generator: AsyncAPISchemaGenerator,
     app: "Litestar",
 ) -> None:
+    """Add every operation and its messages, then resolve replies given by name against the final message keys."""
+    replies: list[tuple[Operation, ReplyDefinition, str]] = []
     used_operation_ids: set[str] = set()
     used_operation_keys: set[str] = set()
     channel_message_keys: dict[str, set[str]] = {}
@@ -210,10 +296,7 @@ def _populate_operations(
     for discovered_channel in discovered:
         channel_key = discovered_channel.key
         channel_ref = Reference(ref=f"#/channels/{_json_pointer_escape(channel_key)}")
-        channel = document.channels[channel_key]
-        if isinstance(channel, Reference):
-            msg = "Discovered channels must be inline Channel objects"
-            raise TypeError(msg)
+        channel = channels[channel_key]
         for discovered_operation, prepared_messages in _prepare_operations(
             discovered_channel, schema_generator=schema_generator, app=app, config=config, message_traits=message_traits
         ):
@@ -259,7 +342,8 @@ def _populate_operations(
                 else None
             )
 
-            document.operations[operation_key] = Operation(
+            provenance = getattr(discovered_operation, "provenance", discovered_channel.provenance)
+            operation = Operation(
                 action=OperationAction(discovered_operation.action),
                 channel=channel_ref,
                 title=discovered_operation.title,
@@ -268,10 +352,59 @@ def _populate_operations(
                 messages=messages,
                 traits=operation_trait_refs,
                 tags=discovered_operation.tags,
-                security=discovered_operation.security,
+                security=_resolve_names(
+                    discovered_operation.security,
+                    available=document.components.security_schemes,
+                    kind="security scheme",
+                    pointer="#/components/securitySchemes",
+                    context=f" in {provenance}",
+                ),
                 bindings=discovered_operation.bindings,
-                reply=discovered_operation.reply,
+                reply=None if isinstance(discovered_operation.reply, ReplyDefinition) else discovered_operation.reply,
             )
+            document.operations[operation_key] = operation
+            if isinstance(discovered_operation.reply, ReplyDefinition):
+                replies.append((operation, discovered_operation.reply, provenance))
+
+    for operation, reply, provenance in replies:
+        operation.reply = _resolve_reply(reply, channels=channels, provenance=provenance)
+
+
+def _resolve_names(
+    values: "Sequence[str | T | Reference] | None", *, available: dict[str, Any], kind: str, pointer: str, context: str
+) -> "list[T | Reference] | None":
+    """Replace names with references to ``pointer/<name>``, raising for names missing from ``available``."""
+    if values is None:
+        return None
+    resolved: list[T | Reference] = []
+    for value in values:
+        if not isinstance(value, str):
+            resolved.append(value)
+            continue
+        if value not in available:
+            message = f"Unknown {kind} {value!r}{context}; valid names: {sorted(available)!r}"
+            raise ImproperlyConfiguredException(message)
+        resolved.append(Reference(ref=f"{pointer}/{_json_pointer_escape(value)}"))
+    return resolved
+
+
+def _resolve_reply(reply: ReplyDefinition, *, channels: dict[str, Channel], provenance: str) -> Reply:
+    channel = channels.get(reply.channel)
+    if channel is None:
+        message = f"Unknown reply channel {reply.channel!r} in {provenance}; valid names: {sorted(channels)!r}"
+        raise ImproperlyConfiguredException(message)
+    channel_pointer = f"#/channels/{_json_pointer_escape(reply.channel)}"
+    return Reply(
+        address=reply.address,
+        channel=Reference(ref=channel_pointer),
+        messages=_resolve_names(
+            reply.messages,
+            available=channel.messages or {},
+            kind="reply message",
+            pointer=f"{channel_pointer}/messages",
+            context=f" on channel {reply.channel!r} in {provenance}",
+        ),
+    )
 
 
 def _prepare_operations(
@@ -360,12 +493,7 @@ def _build_message(
     ):
         examples = schema_generator.declared_examples(definition.payload)
         if examples is None:
-            field = (
-                definition.payload
-                if isinstance(definition.payload, FieldDefinition)
-                else FieldDefinition.from_annotation(definition.payload)
-            )
-            example = generate_example(field, config=config, app=app)
+            example = generate_example(resolve_annotation(definition.payload, app), config=config, app=app)
             examples = [example] if example is not UNSET else None
     if examples is None and isinstance(definition.payload, NativeDTOPayload) and config.create_examples:
         warnings.warn(
@@ -456,58 +584,28 @@ def _definition_key(value: Any) -> str:
     return json.dumps(stable(value), sort_keys=True, ensure_ascii=True)
 
 
-def _merge_components(target: dict[str, Any], additions: dict[str, Any], category: str) -> None:
+def _merge_components(
+    target: dict[str, Any], additions: dict[str, Any], category: str, *, source: str | None = None
+) -> None:
     for key, value in additions.items():
         if key in target and _definition_key(target[key]) != _definition_key(value):
             message = (
-                f"Conflicting component {category}/{key}: AsyncAPIConfig.components and generated/configured {category}"
+                f"Conflicting component {category}/{key}: AsyncAPIConfig.components and "
+                f"{source or f'generated/configured {category}'}"
             )
             raise ImproperlyConfiguredException(message)
         target[key] = value
 
 
 def _normalize_channels(channels: list[DiscoveredChannel]) -> list[DiscoveredChannel]:
+    """Order channels by key and reject two channels that claim the same key."""
     normalized: dict[str, DiscoveredChannel] = {}
     for channel in sorted(channels, key=lambda value: (value.key, value.provenance)):
         previous = normalized.get(channel.key)
-        if previous is None:
-            normalized[channel.key] = replace(channel, operations=list(channel.operations))
-            continue
-        if (
-            previous.route_identity is None
-            or previous.route_identity is not channel.route_identity
-            or previous.address != channel.address
-        ):
-            detail = f"Conflicting channel {channel.key!r}: {previous.provenance} and {channel.provenance} do not share a route identity"
+        if previous is not None:
+            detail = f"Conflicting channel {channel.key!r}: {previous.provenance} and {channel.provenance}"
             raise ImproperlyConfiguredException(detail)
-        for name in ("parameters", "servers", "bindings"):
-            old, new = getattr(previous, name), getattr(channel, name)
-            conflicting = old is not None and new is not None and _definition_key(old) != _definition_key(new)
-            if isinstance(old, dict) and isinstance(new, dict):
-                conflicting = any(
-                    _definition_key(old[key]) != _definition_key(new[key]) for key in old.keys() & new.keys()
-                )
-                setattr(previous, name, {**old, **new})
-            if conflicting:
-                detail = f"Conflicting channel {channel.key!r} {name}: {previous.provenance} and {channel.provenance}"
-                raise ImproperlyConfiguredException(detail)
-            if old is None:
-                setattr(previous, name, new)
-        previous.operations = [*previous.operations, *channel.operations]
-    for channel in normalized.values():
-        if channel.source is DiscoverySource.CONFIG:
-            continue
-        operations: dict[str, OperationDefinition] = {}
-        for operation in sorted(channel.operations, key=_definition_key):
-            key = _definition_key(replace(operation, messages=None))
-            previous_operation = operations.get(key)
-            if previous_operation is None:
-                operations[key] = replace(
-                    operation, messages=list(operation.messages) if operation.messages is not None else None
-                )
-            else:
-                previous_operation.messages = [*(previous_operation.messages or []), *(operation.messages or [])]
-        channel.operations = list(operations.values())
+        normalized[channel.key] = channel
     return list(normalized.values())
 
 

@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.plugins import JsonRenderPlugin
-
-pytestmark = pytest.mark.anyio
 
 
 def test_json_plugin_defaults() -> None:

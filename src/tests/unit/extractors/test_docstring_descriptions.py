@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import pytest
 from litestar import Litestar, websocket_listener
 from litestar.handlers.websocket_handlers.stream import websocket_stream
 
@@ -14,8 +13,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     from litestar import WebSocket
-
-pytestmark = pytest.mark.anyio
 
 
 def test_docstrings_applied_to_listener_operations() -> None:

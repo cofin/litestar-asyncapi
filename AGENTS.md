@@ -14,25 +14,13 @@ This project uses **Flow** with **Open Knowledge Format (OKF v0.2)** bundles und
 
 ## Build & Test Commands
 
-Prefer `Makefile` targets. Run Python tools via `uv run`.
+The full command reference is `.agents/bundles/knowledge/workflow.md`. Prefer `Makefile` targets and run Python tools via `uv run`. The everyday set:
 
 ```bash
 make install                                   # uv sync --all-extras --dev
 uv run pytest src/tests/path.py -q --no-cov    # focused test; --no-cov is required (global 80% floor fails partial runs)
-make test                                      # full suite with coverage floor
-make lint                                      # prek, type-check, slotscheck, zizmor, validate-examples, validate-pep723
-make type-check                                # mypy src && pyright
-make fix                                       # ruff autofix + format
-make check-all                                 # lint, test-all, coverage
-
-make docs docs-linkcheck                       # Sphinx build and link check
-
-# Packaged frontend and installed distribution (Node 22 for build/tests only)
-make js-install build                          # locked npm install, assets, wheel and sdist
-make validate-asyncapi                         # official schema/parser and exported fixture
-make js-test browser-test                      # Vitest and real Chromium tests
-make installed-test PYTHON_VERSION=3.12
-make browser-test-installed PYTHON_VERSION=3.12
+make lint                                      # static gates
+make check-all                                 # lint, then the full suite once with coverage
 ```
 
 ## Architecture Overview
@@ -49,7 +37,7 @@ make browser-test-installed PYTHON_VERSION=3.12
 
 ## Conventions & Patterns
 
-- **Python:** >= 3.10, PEP 604 unions, PEP 585 collections. No `from __future__ import annotations` in package code.
+- **Python:** >= 3.11, PEP 604 unions, PEP 585 collections. No `from __future__ import annotations` in package code.
 - **No inline comments:** explanations belong in Google-style docstrings.
 - **Slotted classes:** enforced via `slotscheck`; owned UI adapters inheriting unslotted native renderer bases are narrowly exempt.
 - **Tuple fidelity:** fixed-length tuples keep positional types and exact length; wire output uses Draft07 `items` arrays with `minItems`/`maxItems`. Never infer length from `prefixItems` alone.

@@ -152,10 +152,10 @@ def create_app() -> Litestar:
     for renderer in ("asyncapi", "scalar", "mounted/docs"):
         for version in ("3.1.0",) if renderer == "mounted/docs" else ("3.0.0", "3.1.0"):
             path = f"/{renderer}" if version == "3.1.0" else f"/v30/{renderer}"
-            selected = config("asyncapi" if renderer == "mounted/docs" else renderer, version, "/")
+            selected = config("asyncapi" if renderer == "mounted/docs" else renderer, version, "/docs")
             if renderer == "mounted/docs":
                 selected.docs = DocsConfig(
-                    path="/",
+                    path="/docs",
                     enabled=False,
                     render_plugins=[AsyncAPIUIRenderPlugin(), JsonRenderPlugin(path="/contract.json")],
                 )
@@ -171,7 +171,7 @@ def create_app() -> Litestar:
 
                 return handler
 
-            routes.append(mount(inner, path))
+            routes.append(mount(inner, path.removesuffix("/docs")))
     mounted = interactive_config()
     mounted.docs = DocsConfig(path="/docs", renderer="scalar", interactive=True)
     mounted.servers["echo"].pathname = "/socket-app"

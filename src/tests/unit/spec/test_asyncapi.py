@@ -1,5 +1,3 @@
-import pytest
-
 from litestar_asyncapi.spec import (
     AsyncAPI,
     Channel,
@@ -12,8 +10,6 @@ from litestar_asyncapi.spec import (
     Schema,
     SchemaType,
 )
-
-pytestmark = pytest.mark.anyio
 
 
 def test_asyncapi_root_serialization() -> None:

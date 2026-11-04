@@ -1,15 +1,11 @@
 from typing import TYPE_CHECKING
 
-import pytest
-
 from litestar_asyncapi import asyncapi_message
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
 if TYPE_CHECKING:
     from litestar import WebSocket
-
-pytestmark = pytest.mark.anyio
 
 
 def test_path_parameters_are_converted_to_asyncapi_parameters() -> None:

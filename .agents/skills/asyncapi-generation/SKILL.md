@@ -6,14 +6,17 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 # AsyncAPI Generation & Discovery
 
 <!-- truth: start -->
-- `AsyncAPIGenerator.build_asyncapi` is the single assembly path: discover → `_normalize_channels` → `_populate_channels` → `_populate_operations` → merge schema components → `_validate_references`. Add behavior inside this pipeline, not beside it.
+- `AsyncAPIGenerator.build_asyncapi` is the single assembly path: inherited `Info`, servers and security schemes → discover → `_normalize_channels` → `_populate_channels` → `_populate_operations` (named replies resolved last) → merge schema components → `_validate_references`. Add behavior inside this pipeline, not beside it.
+- `asyncapi/openapi.py` is the only reader of `app.openapi_config`: read lazily at build time, `None` and list `components` handled, never mutated, never `app.openapi_schema`/`to_openapi_schema()`. Metadata and security scheme definitions are inherited unless `inherit_openapi=False`; tags and security requirements never are. Unmappable schemes and relative-URL OAuth flows are skipped with `UserWarning`.
+- `inherit_openapi_servers` (default off) derives `openapi`, `openapi_2`, … `ws`/`wss` servers from absolute OpenAPI URLs and binds them only to `DiscoverySource.WEBSOCKET` channels without explicit servers. When derived servers exist, every unrelated channel needs explicit nonempty servers; omitted and empty lists select all document servers.
+- `OperationDefinition.security`, `ChannelDefinition.servers` and `ReplyDefinition` take names resolved by `_resolve_names` against the final document; unknown names raise listing valid names; a bare `str` in place of a list raises `TypeError` in `__post_init__`.
 - Operation identity is the `document.operations` map key. Never emit a wire `operationId` property.
 - Operation keys and ids are unique case-insensitively via `.casefold()`. `strict_uniqueness=True` raises `ImproperlyConfiguredException`; otherwise suffix `_2`, `_3`, ….
 - Every generated `$ref` token passes through `_json_pointer_escape` (RFC 6901 `~`→`~0`, `/`→`~1`, then percent-quoting).
-- `MessageDefinition`, `OperationDefinition`, `ChannelDefinition` are the shared typed contract for decorators, extractors and `AsyncAPIConfig.channels`. `DiscoveredOperation`/`DiscoveredChannel` add provenance only.
+- `MessageDefinition`, `OperationDefinition`, `ChannelDefinition`, `ReplyDefinition` are the shared typed contract for decorators, extractors and `AsyncAPIConfig.channels`. `DiscoveredOperation`/`DiscoveredChannel` add provenance only.
 - Python payload/header types survive until `_build_message`; extractors never pre-render schemas except ChannelsPlugin's unconstrained `Schema()`.
 - `None` means "no override"; an explicit empty list (`messages=[]`, `examples=[]`) is an override.
-- Explicit `ChannelDefinition.key` replaces matching inferred channels; duplicate explicit keys raise with both sources. Inferred channels merge only when they share the same `route_identity` object and address.
+- Explicit `ChannelDefinition.key` replaces matching inferred channels; duplicate explicit keys raise with both sources. Any two discovered channels with the same key raise, naming both provenances; channels are never merged.
 - Conflicts (channel, message, component, trait) raise `ImproperlyConfiguredException` naming both provenance strings. Never silently pick one side.
 - Ordering is deterministic through `_definition_key` (public values, never `id()`); keep provenance/route_identity out of ordering keys.
 - `include_in_schema` in handler `opt` is honored by both extractors (`_should_include_handler`).
@@ -23,19 +26,19 @@ description: Use when changing AsyncAPI document assembly or discovery in litest
 - Spec models subclass `BaseSchemaObject`, are `@dataclass(slots=True)`, and serialize through `to_schema`: `UNSET` (Litestar `Empty`) omits; `None` omits unless field metadata `nullable=True`; `extensions` keys must start with `x-` and never shadow modeled fields.
 - Logical `content_type` is distinct from the `x-websocket-mode` frame-mode extension; explicit extensions win over inferred ones.
 - Private Litestar imports live only in `_compat.py`; extractors call its helpers (`websocket_signature`, `websocket_payload`, `generated_channels_mode`).
-- Python >=3.10, PEP 604/585 typing, no inline comments (Google docstrings), owned classes slotted.
+- Python >=3.11, PEP 604/585 typing, no inline comments (Google docstrings), owned classes slotted.
 - Focused tests: `uv run pytest <path> -q --no-cov` (the global coverage floor fails focused runs).
 <!-- truth: end -->
 
 ## Scope
 
-- `src/litestar_asyncapi/asyncapi/generator.py`
+- `src/litestar_asyncapi/asyncapi/generator.py`, `asyncapi/openapi.py`
 - `src/litestar_asyncapi/asyncapi/extractors/websocket.py`, `extractors/channels.py`
 - `src/litestar_asyncapi/asyncapi/datastructures.py`, `asyncapi/utils/docstrings.py`
 - `src/litestar_asyncapi/decorators.py`, `src/litestar_asyncapi/cli.py`
 - `src/litestar_asyncapi/config.py::AsyncAPIConfig` (contract fields; `DocsConfig` belongs to the docs-UI domain)
 - `src/litestar_asyncapi/spec/**` (wire models, `bindings/`)
-- Tests: `src/tests/unit/test_generator*.py`, `test_operation_id_hardening.py`, `test_traits.py`, `test_decorators*.py`, `test_config.py`, `unit/extractors/*`, `unit/spec/*`, `src/tests/integration/{test_discovery,test_routes,test_cli,test_asyncapi_metadata_examples}.py`
+- Tests: `src/tests/unit/test_generator*.py`, `test_openapi_inheritance.py`, `test_traits.py`, `test_decorators*.py`, `test_config.py`, `unit/extractors/*`, `unit/spec/*`, `src/tests/integration/{test_discovery,test_routes,test_cli,test_asyncapi_metadata_examples}.py`
 
 Schema conversion (`asyncapi/schema_generation/`, `_compat.py` schema creator, examples) belongs to the asyncapi-schema domain; consume it through `AsyncAPISchemaGenerator.generate/components/declared_examples`.
 
@@ -78,7 +81,7 @@ make test
 make check-all
 ```
 
-Wire-contract changes also need the official schema gate: `make validate-asyncapi` (Node 22).
+Wire-contract changes also need the official schema gate: `make validate-asyncapi` (Node (`.nvmrc`)).
 
 ## References
 

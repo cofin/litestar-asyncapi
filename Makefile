@@ -9,14 +9,10 @@ SHELL := /bin/bash
 .ONESHELL:
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
-PYTHON_VERSION ?= 3.10
+PYTHON_VERSION ?= 3.11
 UV_SYNC_ARGS ?= --all-extras --dev
 
-# Detect Rodete and configure index URLs for Python tools
-ifneq ($(shell grep -s -q "rodete" /etc/os-release && echo "yes"),)
-export PIP_INDEX_URL=https://pypi.org/simple
-export UV_INDEX_URL=https://pypi.org/simple
-endif
+-include Makefile.local
 
 # -----------------------------------------------------------------------------
 # Display Formatting and Colors
@@ -43,10 +39,6 @@ help:                                               ## Display this help text fo
 # Installation and Environment Setup
 # =============================================================================
 
-.PHONY: setup-env
-setup-env:                                          ## Configure local environment (e.g. Rodete)
-	@./tools/scripts/setup-env.sh
-
 .PHONY: install-uv
 install-uv:                                         ## Install latest version of uv
 	@echo "${INFO} Installing uv... ⚡"
@@ -54,7 +46,7 @@ install-uv:                                         ## Install latest version of
 	@echo "${OK} UV installed successfully 🎉"
 
 .PHONY: install
-install: destroy clean setup-env                    ## Install all locked development dependencies
+install: destroy clean                              ## Install all locked development dependencies
 	@echo "${INFO} Starting fresh installation... ⚡"
 	@uv python pin $(PYTHON_VERSION) >/dev/null 2>&1
 	@uv venv >/dev/null 2>&1
@@ -141,43 +133,50 @@ pre-release:                                       ## Start a pre-release: make 
 # Documentation
 # =============================================================================
 
+DOCS_RUN = uv run --frozen
+
 .PHONY: docs
-docs:                                             ## Build documentation
+docs:                                             ## Build, redirect and verify the documentation site
 	@echo "${INFO} Building docs... 📚"
-	@uv run sphinx-build -b html docs docs/_build/html
+	@$(DOCS_RUN) python -m tools.docs.generate_cli_docs
+	@$(DOCS_RUN) python -m tools.docs.export_example_documents
+	@$(DOCS_RUN) zensical build --clean --strict
+	@$(DOCS_RUN) python -m tools.docs.postbuild
+	@$(DOCS_RUN) python -m tools.docs.verify_docs_artifacts
 	@echo "${OK} Docs build complete 📚"
 
+.PHONY: docs-serve
+docs-serve:                                       ## Serve the documentation with live reload
+	@$(DOCS_RUN) python -m tools.docs.generate_cli_docs
+	@$(DOCS_RUN) python -m tools.docs.export_example_documents
+	@$(DOCS_RUN) zensical serve
+
 .PHONY: docs-linkcheck
-docs-linkcheck:                                   ## Check documentation links
-	@echo "${INFO} Checking docs links... 📚"
-	@uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
-	@echo "${OK} Docs linkcheck complete 📚"
+docs-linkcheck:                                   ## Check external links in the built site with lychee
+	@if ! command -v lychee >/dev/null 2>&1; then \
+		echo "${WARN} lychee is not installed; skipping the external link check"; \
+	elif [ ! -f site/index.html ]; then \
+		echo "${ERROR} No built site; run make docs first"; \
+		exit 1; \
+	else \
+		lychee --root-dir "$$(pwd)/site" 'site/**/*.html'; \
+	fi
 
 .PHONY: docs-clean
 docs-clean:                                       ## Clean documentation artifacts
 	@echo "${INFO} Cleaning docs artifacts... 📚"
-	@rm -rf docs/_build docs-build >/dev/null 2>&1
+	@rm -rf site docs/_generated docs/reference/cli.md >/dev/null 2>&1
 	@echo "${OK} Docs artifacts cleaned 📚"
-
-.PHONY: docs-audit
-docs-audit:                                       ## Audit documentation structure and terminology
-	@echo "${INFO} Auditing docs... 📚"
-	@if [ -f tools/docs_audit.py ]; then \
-		uv run python tools/docs_audit.py; \
-	else \
-		echo "${INFO} tools/docs_audit.py not found, skipping"; \
-	fi
-	@echo "${OK} Docs audit complete 📚"
 
 # =============================================================================
 # Validation Targets
 # =============================================================================
 
-.PHONY: validate-examples
-validate-examples:                                  ## Validate docs/examples marker blocks
-	@echo "${INFO} Validating doc example markers... 🔍"
-	@uv run python tools/ci/validate_doc_markers.py
-	@echo "${OK} Doc example markers valid ✨"
+.PHONY: scan-docstrings
+scan-docstrings:                                    ## Check inline docstrings on public dataclass fields
+	@echo "${INFO} Scanning public docstrings... 🔍"
+	@uv run python -m tools.docs.scan_public_docstrings
+	@echo "${OK} Public docstrings complete ✨"
 
 .PHONY: validate-pep723
 validate-pep723:                                    ## Validate PEP 723 blocks in runnable examples
@@ -212,9 +211,6 @@ test:                                              ## Run the tests
 	@uv run pytest src/tests
 	@echo "${OK} Tests complete 🧪"
 
-.PHONY: test-all
-test-all: test                                     ## Run all tests
-
 .PHONY: coverage
 coverage:                                          ## Run tests with coverage report
 	@echo "${INFO} Running tests with coverage... 🧪"
@@ -230,12 +226,6 @@ coverage:                                          ## Run tests with coverage re
 .PHONY: mypy
 mypy:                                              ## Run mypy
 	@echo "${INFO} Running mypy... 🔍"
-	@uv run mypy
-	@echo "${OK} Mypy checks passed ✨"
-
-.PHONY: mypy-nocache
-mypy-nocache:                                      ## Run Mypy without cache
-	@echo "${INFO} Running mypy without cache... 🔍"
 	@uv run mypy
 	@echo "${OK} Mypy checks passed ✨"
 
@@ -265,9 +255,6 @@ prek:                                               ## Run prek hooks
 	fi
 	@echo "${OK} prek checks passed ✨"
 
-.PHONY: pre-commit
-pre-commit: prek                                   ## Run prek hooks (alias for pre-commit)
-
 .PHONY: zizmor
 zizmor:                                             ## Run zizmor workflow security scanner
 	@echo "${INFO} Running zizmor workflow security checks... 🛡️"
@@ -292,20 +279,30 @@ fix:                                               ## Fix linting issues
 	@echo "${OK} Linting issues fixed ✨"
 
 .PHONY: lint
-lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run all linting checks
+lint: prek type-check slotscheck zizmor validate-pep723 scan-docstrings ## Run all linting checks
 
 .PHONY: check-all
-check-all: lint test-all coverage                  ## Run all checks (lint, test, coverage)
+check-all: lint test                               ## Run lint, then the test suite once with coverage
 
 .PHONY: validate-asyncapi
-validate-asyncapi: export-asyncapi-fixture          ## Validate offline AsyncAPI contracts and Draft07 payloads
+validate-asyncapi: export-asyncapi-fixture export-example-documents ## Validate offline AsyncAPI contracts, docs examples and Draft07 payloads
 	@npm run validate:asyncapi
-	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json
+	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json docs/_generated
+
+.PHONY: export-example-documents
+export-example-documents:                          ## Export every docs example document to docs/_generated
+	@uv run python -m tools.docs.export_example_documents
 
 .PHONY: export-asyncapi-fixture
-export-asyncapi-fixture:                           ## Export a headless application contract for the official gate
+export-asyncapi-fixture:                           ## Export application contracts for the official gate
 	@mkdir -p .tmp
 	@uv run litestar --app-dir src --app tests.fixtures.apps.cli:app asyncapi export --output .tmp/asyncapi-fixture.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.bindings:app_3_0 asyncapi export --output src/tests/fixtures/asyncapi/bindings-3.0.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.bindings:app_3_1 asyncapi export --output src/tests/fixtures/asyncapi/bindings-3.1.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.realtime:app_3_0 asyncapi export --output src/tests/fixtures/asyncapi/realtime-3.0.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.realtime:app_3_1 asyncapi export --output src/tests/fixtures/asyncapi/realtime-3.1.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.openapi:app_3_0 asyncapi export --output src/tests/fixtures/asyncapi/openapi-3.0.0.json --overwrite
+	@uv run litestar --app-dir src --app tests.fixtures.apps.openapi:app_3_1 asyncapi export --output src/tests/fixtures/asyncapi/openapi-3.1.0.json --overwrite
 
 .PHONY: js-build js-test browser-test
 js-build:                                          ## Build packaged browser assets

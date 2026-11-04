@@ -1,5 +1,5 @@
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from inspect import getclosurevars, unwrap
 from random import Random
@@ -10,7 +10,6 @@ import msgspec
 from faker import Faker
 from litestar import Litestar
 from litestar._openapi.datastructures import SchemaRegistry
-from litestar._openapi.schema_generation.examples import ExampleFactory, _create_field_meta
 from litestar._openapi.schema_generation.plugins.struct import StructSchemaPlugin
 from litestar._openapi.schema_generation.schema import SchemaCreator
 from litestar.channels.plugin import ChannelsPlugin
@@ -22,6 +21,7 @@ from litestar.openapi.spec import Reference, Schema
 from litestar.openapi.spec.base import BaseSchemaObject
 from litestar.openapi.spec.enums import OpenAPIType
 from litestar.params import KwargDefinition
+from litestar.types import Empty
 from litestar.typing import FieldDefinition
 from polyfactory.factories.base import BaseFactory
 
@@ -43,7 +43,11 @@ class _SchemaCreator(SchemaCreator):
         self._null_schemas: dict[int, Schema] = {}
 
     def process_schema_result(self, field: FieldDefinition, schema: Schema) -> Schema | Reference:
-        """Record explicit null defaults before native optional fields lose presence."""
+        """Record explicit null defaults and keep zero-valued bounds that native truthiness checks drop."""
+        if isinstance(field.kwarg_definition, KwargDefinition):
+            for name in ("min_items", "max_items", "min_length", "max_length"):
+                if getattr(field.kwarg_definition, name) == 0 and getattr(schema, name) is None:
+                    setattr(schema, name, 0)
         if field.default is None:
             self.null_fields.setdefault(id(schema), set()).add("default")
             if field.is_const:
@@ -58,7 +62,7 @@ class _SchemaCreator(SchemaCreator):
         return super().process_schema_result(field, schema)
 
     def for_field_definition(self, field_definition: FieldDefinition) -> Schema | Reference:
-        """Preserve tuple cardinality from its Python annotation, including empty tuples."""
+        """Preserve tuple item types and cardinality from the Python annotation, including empty tuples."""
         if field_definition.is_forward_ref:
             namespace = self._namespaces[-1] if self._namespaces else {}
             carrier = SimpleNamespace(__annotations__={"payload": field_definition.raw})
@@ -75,26 +79,29 @@ class _SchemaCreator(SchemaCreator):
         annotation = field_definition.annotation
         args = get_args(annotation)
         if (
-            get_origin(annotation) is tuple
-            and hasattr(annotation, "__args__")
-            and not (args and args[-1] is Ellipsis)
-            and self.get_plugin_for(field_definition) is None
+            get_origin(annotation) is not tuple
+            or not hasattr(annotation, "__args__")
+            or self.get_plugin_for(field_definition) is not None
         ):
-            args = () if args == ((),) else args
-            schema = Schema(
-                type=OpenAPIType.ARRAY,
-                prefix_items=[self.for_field_definition(FieldDefinition.from_annotation(arg)) for arg in args] or None,
-            )
-            result = self.process_schema_result(field_definition, schema)
-            schema.min_items = max(len(args), schema.min_items if schema.min_items is not None else len(args))
-            schema.max_items = min(len(args), schema.max_items if schema.max_items is not None else len(args))
-            if (
-                isinstance(field_definition.kwarg_definition, KwargDefinition)
-                and field_definition.kwarg_definition.max_items == 0
-            ):
-                schema.max_items = 0
-            return result
-        return super().for_field_definition(field_definition)
+            return super().for_field_definition(field_definition)
+        if args and args[-1] is Ellipsis:
+            items = self.for_field_definition(FieldDefinition.from_annotation(args[0]))
+            return self.process_schema_result(field_definition, Schema(type=OpenAPIType.ARRAY, items=items))
+        args = () if args == ((),) else args
+        schema = Schema(
+            type=OpenAPIType.ARRAY,
+            prefix_items=[self.for_field_definition(FieldDefinition.from_annotation(arg)) for arg in args] or None,
+        )
+        result = self.process_schema_result(field_definition, schema)
+        schema.min_items = max(len(args), schema.min_items if schema.min_items is not None else len(args))
+        schema.max_items = min(len(args), schema.max_items if schema.max_items is not None else len(args))
+        return result
+
+    def for_optional_field(self, field_definition: FieldDefinition) -> Schema:
+        """Keep an explicit null default on the optional field itself, not on its non-null members."""
+        if field_definition.default is None:
+            field_definition = replace(field_definition, default=Empty)
+        return super().for_optional_field(field_definition)
 
     def for_plugin(self, field_definition: FieldDefinition, plugin: Any) -> Schema | Reference:
         """Reuse native field schemas while correcting msgspec's array wire layout."""
@@ -165,9 +172,7 @@ def normalize_native_schema(value: Any, null_fields: dict[int, set[str]] | None 
     """Serialize native spec objects without pruning null entries from literal data."""
     if isinstance(value, BaseSchemaObject):
         return {
-            field.metadata.get("alias", _normalize_key(field.name)): normalize_native_schema(
-                getattr(value, field.name), null_fields
-            )
+            _normalize_key(field): normalize_native_schema(getattr(value, field.name), null_fields)
             for field in value._iter_fields()
             if field.name not in value._exclude_fields
             and (getattr(value, field.name) is not None or field.name in (null_fields or {}).get(id(value), set()))
@@ -180,7 +185,10 @@ def normalize_native_schema(value: Any, null_fields: dict[int, set[str]] | None 
 
 
 def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) -> list[Any] | None:
-    """Read declared examples without finalizing the native registry's reference names."""
+    """Read declared examples without finalizing the native registry's reference names.
+
+    A single-member ``Optional`` payload reads the examples declared on its non-null member.
+    """
     native = creator.for_field_definition(field)
     if isinstance(native, Reference):
         native = creator.schema_registry.get_schema_for_field_definition(field)
@@ -188,6 +196,9 @@ def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) ->
         return list(native.examples)
     if native.example is not None:
         return [native.example]
+    members = [inner for inner in field.inner_types if not inner.is_none_type] if field.is_optional else []
+    if len(members) == 1:
+        return declared_schema_examples(members[0], creator)
     model_config = getattr(field.type_, "model_config", {})
     extra = model_config.get("json_schema_extra") if isinstance(model_config, dict) else None
     if isinstance(extra, dict) and "examples" in extra:
@@ -196,7 +207,14 @@ def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) ->
 
 
 def native_example_value(field: FieldDefinition) -> Any:
-    """Use an isolated native example factory without reseeding shared random state."""
+    """Use an isolated native example factory without reseeding shared random state.
+
+    Litestar's example factory module requires pydantic, so it is imported only when
+    automatic examples are requested. Without pydantic, enabling ``create_examples``
+    raises Litestar's ``MissingDependencyException`` naming the missing package.
+    """
+    from litestar._openapi.schema_generation.examples import ExampleFactory, _create_field_meta
+
     faker = Faker()
     faker.seed_instance()
 
@@ -235,26 +253,77 @@ def websocket_signature(handler: Any) -> tuple[FieldDefinition | None, FieldDefi
     return None
 
 
-def websocket_handler_name(handler: Any) -> str:
-    """Return the user callback name behind native listener and stream wrappers."""
+def websocket_handler_callback(handler: Any) -> Any:
+    """Return the user callback behind native listener and stream wrappers."""
     callback = handler.fn
     if isinstance(handler, WebsocketListenerRouteHandler):
         callback = callback._fn
-    return str(getattr(unwrap(callback), "__qualname__", handler.handler_name))
+    return unwrap(callback)
 
 
-def generated_channels_mode(handler: Any, app: Litestar) -> str | None:
-    """Recognize actual native Channels callbacks by owner and generated function identity."""
+def websocket_handler_name(handler: Any) -> str:
+    """Return the user callback ``__name__`` behind native listener and stream wrappers."""
+    return str(getattr(websocket_handler_callback(handler), "__name__", handler.handler_name))
+
+
+@dataclass(slots=True, frozen=True)
+class ChannelsPluginTopics:
+    """Topics a ``ChannelsPlugin`` was constructed with, and its arbitrary-channel setting."""
+
+    topics: tuple[str, ...]
+    arbitrary_channels_allowed: bool
+
+
+def channels_plugin_topics(plugin: ChannelsPlugin, *, at_init: bool = False) -> ChannelsPluginTopics:
+    """Read a plugin's configured topics and arbitrary-channel setting.
+
+    With ``arbitrary_channels_allowed``, ``ChannelsPlugin.subscribe`` adds runtime topic names to the
+    same private mapping as the configured ones. Those names are returned only during application
+    init (``at_init=True``), before any subscription; afterwards an arbitrary-channel plugin reports no
+    topics. Without arbitrary channels the mapping cannot grow, so it is always read.
+
+    Args:
+        plugin: The ChannelsPlugin to read.
+        at_init: Whether the application is still initializing.
+
+    Returns:
+        The plugin's topic snapshot.
+    """
+    arbitrary = plugin._arbitrary_channels_allowed
+    return ChannelsPluginTopics(
+        topics=tuple(plugin._channels) if at_init or not arbitrary else (), arbitrary_channels_allowed=arbitrary
+    )
+
+
+def generated_channels_plugin(handler: Any, app: Litestar) -> ChannelsPlugin | None:
+    """Return the application ``ChannelsPlugin`` that generated a WebSocket handler, if any.
+
+    Native Channels callbacks are recognized by owner and generated function identity.
+    """
     callback = handler.fn
     plugins = [plugin for plugin in app.plugins if isinstance(plugin, ChannelsPlugin)]
     owner = getattr(callback, "__self__", None)
     if owner in plugins and getattr(callback, "__func__", None) is ChannelsPlugin._ws_handler_func:
-        return cast("ChannelsPlugin", owner)._socket_send_mode
+        return cast("ChannelsPlugin", owner)
     code = getattr(callback, "__code__", None)
     if code is None or code not in ChannelsPlugin._create_ws_handler_func.__code__.co_consts:
         return None
     owner = getclosurevars(callback).nonlocals.get("self")
-    return owner._socket_send_mode if owner in plugins else None
+    return cast("ChannelsPlugin", owner) if owner in plugins else None
+
+
+def generated_channels_mode(handler: Any, app: Litestar) -> str | None:
+    """Return the frame send mode of a ChannelsPlugin-generated handler, or ``None`` for other handlers."""
+    plugin = generated_channels_plugin(handler, app)
+    return plugin._socket_send_mode if plugin is not None else None
+
+
+def generated_channels_topic(handler: Any) -> str | None:
+    """Read the fixed topic captured by an identified native ChannelsPlugin callback."""
+    callback = handler.fn
+    if getattr(callback, "__closure__", None) is None:
+        return None
+    return cast("str | None", getclosurevars(callback).nonlocals.get("channel_name"))
 
 
 def websocket_content_type(handler: Any, field: FieldDefinition, *, sending: bool) -> str | None:

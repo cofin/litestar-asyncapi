@@ -8,16 +8,19 @@ __all__ = ("WebSocketChannelBinding", "WebSocketMessageBinding", "WebSocketServe
 
 @dataclass(slots=True)
 class WebSocketServerBinding(Binding):
-    """WebSocket server binding (minimal initial model)."""
+    """WebSocket server binding, which defines no protocol-specific fields."""
 
 
 @dataclass(slots=True)
 class WebSocketChannelBinding(Binding):
-    """WebSocket channel binding (minimal initial model)."""
+    """WebSocket channel binding describing the opening handshake."""
 
     method: str | None = None
+    """HTTP method of the opening handshake: ``GET`` or ``POST``."""
     query: dict[str, Any] | None = None
+    """Schema of the query parameters of the opening handshake."""
     headers: dict[str, Any] | None = None
+    """Schema of the HTTP headers of the opening handshake."""
 
 
 @dataclass(slots=True)

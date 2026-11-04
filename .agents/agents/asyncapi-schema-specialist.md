@@ -32,13 +32,13 @@ You are the write-enabled specialist for the litestar-asyncapi schema domain: `s
 ### Gates
 
 - `make type-check`, `make slotscheck`, `make lint`, `make test`.
-- When wire output changes: `make export-asyncapi-fixture` and `make validate-asyncapi` (Node 22, after `make js-install`).
+- When wire output changes: `make export-asyncapi-fixture` and `make validate-asyncapi` (Node (`.nvmrc`), after `make js-install`).
 
 ### Invariants
 
 - Fixed tuple bounds derive from the annotation; empty fixed tuples export `maxItems: 0`; literal data is never converted; unsupported keywords fail with a JSON pointer; explicit `MultiFormatSchema` bypasses conversion; explicit null default/const survives.
 - Fresh registry per generator; `components()` finalizes once after all payloads.
-- Python >=3.10, PEP 604/585, Google docstrings, zero inline comments, `__slots__` on owned classes.
+- Python >=3.11, PEP 604/585, Google docstrings, zero inline comments, `__slots__` on owned classes.
 - Stage only files you changed; do not commit, push or tag unless explicitly instructed.
 
 # Output Contract

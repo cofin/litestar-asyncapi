@@ -10,7 +10,7 @@ description: Use when changing payload/header schema generation or message examp
 - Every private `litestar._openapi.*` import lives in `src/litestar_asyncapi/_compat.py`. Other modules import from `_compat`, never from `litestar._openapi`.
 - Each `AsyncAPISchemaGenerator` builds a fresh `SchemaRegistry` via `create_schema_creator(app)`; never share the app's OpenAPI registry or cache.
 - App schema plugins (`app.plugins.openapi`) participate even when OpenAPI serving is disabled; user plugins override native tuple/Struct shapes.
-- `prefer_alias` comes from the app's `PydanticSchemaPlugin` (default `True`); msgspec `encode_name` aliases stay native.
+- `prefer_alias` comes from the app's `PydanticSchemaPlugin`, which Litestar registers with `prefer_alias=False`; `True` applies only when no Pydantic plugin is registered. msgspec `encode_name` aliases stay native.
 - `generate()` returns provisional dicts; `components()` finalizes native names and refreshes every previously returned dict in place. Call it once, after all payloads, before serializing.
 - Native AsyncAPI 3.0/3.1 schemas are Draft07: fixed tuples export `items` arrays plus `minItems`/`maxItems` derived from the annotation. `prefixItems` alone never implies exact length.
 - Empty fixed tuple `tuple[()]` exports `maxItems: 0`, never `items: []`. Tuple bounds intersect declared constraints; variadic tuples stay unbounded.
@@ -23,8 +23,9 @@ description: Use when changing payload/header schema generation or message examp
 - Failures name the payload and its provenance (handler/channel) in `ImproperlyConfiguredException`.
 - Example precedence: explicit message examples (including `[]` and `None` payload) > declared schema/model examples > generated example. Generated examples never reseed shared RNG/Faker and are omitted with a warning when unsupported.
 - `normalize_examples` round-trips through `encode_json`/`decode_json` with `app.type_encoders`.
-- Python >=3.10, PEP 604/585 typing, Google docstrings, zero inline comments, `__slots__` on owned classes.
+- Python >=3.11, PEP 604/585 typing, Google docstrings, zero inline comments, `__slots__` on owned classes.
 - Litestar dependency is `>=2.24.0` with no upper cap; CI exercises 2.24.0 and latest `<3`.
+- Component schema names equal the names Litestar's OpenAPI gives the same Python types, including module-disambiguated duplicates; `test_native.py::test_component_schema_names_match_litestar_openapi_names` pins it.
 <!-- truth: end -->
 
 ## Scope
@@ -77,7 +78,7 @@ make test
 make validate-asyncapi
 ```
 
-Focused runs need `--no-cov`: the global `--cov-fail-under=80` addopt makes partial runs exit 1. `make validate-asyncapi` requires Node 22 and `make js-install`.
+Focused runs need `--no-cov`: the global `--cov-fail-under=80` addopt makes partial runs exit 1. `make validate-asyncapi` requires Node (`.nvmrc`) and `make js-install`.
 
 ## References
 

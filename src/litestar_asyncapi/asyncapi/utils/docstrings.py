@@ -1,46 +1,19 @@
 import inspect
 from typing import Any
 
+from litestar_asyncapi._compat import websocket_handler_callback
+
 __all__ = ("get_handler_docstring",)
 
 
-def get_handler_docstring(handler: Any) -> str | None:
-    """Return a normalized docstring for a handler or callable.
+def get_handler_docstring(route_handler: Any) -> str | None:
+    """Return the normalized docstring of the user callback behind a WebSocket route handler.
 
     Args:
-        handler: A Litestar route handler or callable object.
+        route_handler: A Litestar WebSocket route handler.
 
     Returns:
-        The normalized docstring, or ``None`` if no docstring is available.
+        The normalized docstring, or ``None`` if the callback has none.
     """
-
-    for candidate in _iter_docstring_candidates(handler):
-        docstring = inspect.getdoc(candidate)
-        if docstring:
-            return docstring.strip() or None
-    return None
-
-
-def _iter_docstring_candidates(handler: Any) -> list[Any]:
-    candidates: list[Any] = []
-    seen: set[int] = set()
-
-    def _add(value: Any) -> None:
-        if id(value) in seen:
-            return
-        seen.add(id(value))
-        candidates.append(value)
-
-    def _add_with_inner(value: Any) -> None:
-        if value is None:
-            return
-        inner = getattr(value, "_fn", None)
-        if inner is not None:
-            _add(inner)
-        _add(value)
-
-    for attr in ("fn", "_fn", "handler_fn", "handler", "_handler", "callable"):
-        _add_with_inner(getattr(handler, attr, None))
-    _add(handler)
-
-    return candidates
+    docstring = inspect.getdoc(websocket_handler_callback(route_handler))
+    return docstring.strip() or None if docstring else None

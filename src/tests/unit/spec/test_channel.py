@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec import Channel, Message, Parameter, Schema, SchemaType
-
-pytestmark = pytest.mark.anyio
 
 
 def test_channel_serialization_with_parameters_and_messages() -> None:

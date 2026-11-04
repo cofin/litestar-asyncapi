@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from litestar.testing import TestClient
 
 from tests.fixtures.apps.cli import http_app
@@ -38,7 +39,7 @@ def test_headless_export_matches_http() -> None:
     document = json.loads(result.stdout)
     assert document["servers"]["local"] == {"host": "localhost:8000", "protocol": "ws"}
     messages = document["channels"]["/events"]["messages"]
-    assert messages["ListenerHandler_receive"]["examples"] == [{"payload": ["amount:2.50", 1]}]
+    assert messages["events_receive"]["examples"] == [{"payload": ["amount:2.50", 1]}]
     assert invoke().stdout == result.stdout
 
 
@@ -72,3 +73,19 @@ def test_write_failure_and_invalid_format(tmp_path: Path) -> None:
     assert invalid.returncode != 0
     assert invalid.stdout == ""
     assert "Invalid value" in invalid.stderr
+
+
+@pytest.mark.parametrize("name", ["bindings", "openapi", "realtime"])
+@pytest.mark.parametrize("version", ["3.0.0", "3.1.0"])
+def test_committed_generated_fixtures_match_export(name: str, version: str) -> None:
+    from importlib import import_module
+
+    from litestar_asyncapi import AsyncAPIPlugin
+
+    module = import_module(f"tests.fixtures.apps.{name}")
+    app = module.app_3_0 if version == "3.0.0" else module.app_3_1
+    plugin = next(plugin for plugin in app.plugins if isinstance(plugin, AsyncAPIPlugin))
+    committed = FIXTURE.parents[1] / "asyncapi" / f"{name}-{version}.json"
+    exported = plugin.get_asyncapi_json(app).decode("utf-8")
+    assert "prefixItems" not in exported
+    assert committed.read_text(encoding="utf-8") == exported + "\n"

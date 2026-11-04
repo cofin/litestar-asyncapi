@@ -1,16 +1,12 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import pytest
-
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.spec import OperationAction
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
-
-pytestmark = pytest.mark.anyio
 
 
 def test_stream_infers_send_operation_from_item_type() -> None:

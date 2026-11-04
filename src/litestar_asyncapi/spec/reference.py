@@ -10,3 +10,4 @@ class Reference(BaseSchemaObject):
     """A JSON reference (`$ref`) wrapper used throughout the spec."""
 
     ref: str
+    """JSON pointer or URI of the referenced object, serialized as ``$ref``."""

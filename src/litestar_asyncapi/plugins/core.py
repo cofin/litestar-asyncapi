@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
+from litestar.channels import ChannelsPlugin
 from litestar.enums import MediaType
 from litestar.exceptions import ImproperlyConfiguredException, NotFoundException
 from litestar.handlers import get
@@ -11,6 +12,7 @@ from litestar.serialization import decode_json, encode_json, get_serializer
 from litestar.static_files import create_static_files_router
 from litestar.status_codes import HTTP_404_NOT_FOUND
 
+from litestar_asyncapi._compat import ChannelsPluginTopics, channels_plugin_topics
 from litestar_asyncapi.docs import asset_directory, renderer_name
 
 if TYPE_CHECKING:
@@ -47,20 +49,17 @@ def _handle_docs_path_not_found(path: str = "/") -> Response[Any]:
 
 
 class AsyncAPIPlugin(InitPluginProtocol):
-    """AsyncAPI plugin for Litestar.
+    """Generate the application's AsyncAPI document and serve its documentation routes.
 
-    This plugin provides AsyncAPI documentation support for event-driven APIs,
-    similar to how OpenAPI documents REST APIs.
+    One instance belongs to one application, and an application accepts one instance.
+
+    Args:
+        config: Plugin configuration; defaults to ``AsyncAPIConfig()``.
     """
 
-    __slots__ = ("_app", "_cached_asyncapi", "_cached_json", "_cached_schema", "_config")
+    __slots__ = ("_app", "_cached_asyncapi", "_cached_json", "_cached_schema", "_channels_topics", "_config")
 
     def __init__(self, config: "AsyncAPIConfig | None" = None) -> None:
-        """Initialize the AsyncAPI plugin.
-
-        Args:
-            config: Optional AsyncAPI configuration. If not provided, defaults will be used.
-        """
         from litestar_asyncapi.config import AsyncAPIConfig
 
         self._config = config or AsyncAPIConfig()
@@ -68,6 +67,7 @@ class AsyncAPIPlugin(InitPluginProtocol):
         self._cached_json: bytes | None = None
         self._cached_asyncapi: AsyncAPI | None = None
         self._cached_schema: dict[str, Any] | None = None
+        self._channels_topics: tuple[tuple[ChannelsPlugin, ChannelsPluginTopics], ...] = ()
 
     @property
     def config(self) -> "AsyncAPIConfig":
@@ -102,7 +102,9 @@ class AsyncAPIPlugin(InitPluginProtocol):
 
         from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 
-        document = deepcopy(AsyncAPIGenerator(app=app, config=self.config).build_asyncapi())
+        document = AsyncAPIGenerator(app=app, config=self.config).build_asyncapi()
+        if self.config.use_cache:
+            document = deepcopy(document)
         encoded = encode_json(document.to_schema(), serializer=get_serializer(app.type_encoders))
         schema = decode_json(encoded)
         if self.config.use_cache:
@@ -188,14 +190,33 @@ class AsyncAPIPlugin(InitPluginProtocol):
         """Handle application initialization.
 
         This method is called during Litestar application initialization.
-        Registers docs routes when enabled.
+        Snapshots the topics configured on every ``ChannelsPlugin`` so runtime subscriptions never
+        reach the document, and registers docs routes when enabled. Documentation route names are
+        fixed, so an application accepts exactly one AsyncAPIPlugin.
 
         Args:
             app_config: The Litestar application configuration.
 
         Returns:
             The updated application configuration.
+
+        Raises:
+            ImproperlyConfiguredException: If the application has another AsyncAPIPlugin.
         """
+        other = next(
+            (plugin for plugin in app_config.plugins if isinstance(plugin, AsyncAPIPlugin) and plugin is not self), None
+        )
+        if other is not None:
+            message = (
+                "An application accepts one AsyncAPIPlugin; found plugins with docs paths "
+                f"{self.config.docs.path!r} and {other.config.docs.path!r}"
+            )
+            raise ImproperlyConfiguredException(message)
+        self._channels_topics = tuple(
+            (plugin, channels_plugin_topics(plugin, at_init=True))
+            for plugin in app_config.plugins
+            if isinstance(plugin, ChannelsPlugin)
+        )
         if self.config.docs.enabled:
             app_config.route_handlers.append(self.create_docs_router())
         return app_config

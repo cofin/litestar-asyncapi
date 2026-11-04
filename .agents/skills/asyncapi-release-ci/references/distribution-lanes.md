@@ -13,15 +13,15 @@ How build, test and publish targets compose into the single tested artifact.
 
 | Lane | Entry | Proves | Requires |
 | --- | --- | --- | --- |
-| Static | `make lint` | prek hooks, `mypy` strict, `pyright`, `slotscheck`, `zizmor`, doc markers, PEP 723 blocks | `make install` |
+| Static | `make lint` | prek hooks, `mypy` strict, `pyright`, `slotscheck`, `zizmor`, public field docstrings, PEP 723 blocks | `make install` |
 | Source tests | `make test` / `make coverage` | behavior in the checkout; coverage floor 80 | `make install` |
 | Focused tests | `uv run pytest <path> -q --no-cov` | one module without the global coverage floor | `make install` |
-| Packaged UI | `make js-install build js-test` | locked npm tree, Vite output, Vitest view logic, wheel+sdist asset completeness | Node 22 |
-| Official contract | `make validate-asyncapi` | `@asyncapi/specs` schemas + `@asyncapi/parser` accept exported 3.0/3.1 fixtures and reject isolated mutations | Node 22 |
+| Packaged UI | `make js-install build js-test` | locked npm tree, Vite output, Vitest view logic, wheel+sdist asset completeness | Node (`.nvmrc`) |
+| Official contract | `make validate-asyncapi` | `@asyncapi/specs` schemas + `@asyncapi/parser` accept exported 3.0/3.1 fixtures and reject isolated mutations | Node (`.nvmrc`) |
 | Browser | `make browser-test` | Playwright Chromium against `tools/frontend/tests/server.py` | `npx playwright install chromium` |
 | Installed Python | `make installed-test PYTHON_VERSION=X LITESTAR_BOUNDARY=minimum\|latest` | wheel imports from site-packages, minimal generation, full tests outside the checkout | built `dist/*.whl` |
-| Installed browser | `make browser-test-installed PYTHON_VERSION=X` | installed manifest hash equals source manifest; browser suite against installed wheel | built wheel, Node 22 |
-| Docs | `make docs docs-linkcheck` | Sphinx HTML build and external links | docs group |
+| Installed browser | `make browser-test-installed PYTHON_VERSION=X` | installed manifest hash equals source manifest; browser suite against installed wheel | built wheel, Node (`.nvmrc`) |
+| Docs | `make docs docs-linkcheck` | Zensical strict build, redirect stubs, inventory and internal links; external links via lychee | docs group |
 
 ## `make build`
 
@@ -46,10 +46,14 @@ When raising the minimum Litestar version, update `project.dependencies`, both p
 
 ## CI composition
 
-- `ci.yml::distribution` calls `distribution.yml`; `ci.yml::test_python` fans out `test.yml` over Python 3.10–3.14 x `minimum`/`latest` and downloads `tested-distribution`.
+- `ci.yml::distribution` calls `distribution.yml`; `ci.yml::test_python` fans out `test.yml` over Python 3.11–3.15 x `minimum`/`latest` and downloads `tested-distribution`.
 - Coverage runs only where `coverage` input is true (3.12/minimum) and uploads `coverage-xml` for `ci.yml::codecov`.
 - `publish.yml` (on `release: published` or `workflow_dispatch`) calls `distribution.yml`, then `pypi` downloads `tested-distribution` into `dist` and publishes via trusted publishing.
 
 ## Release targets
 
 `make release bump=major|minor|patch` runs `docs`, `clean`, `build`, then `bump-my-version bump` and `uv lock --upgrade-package litestar-asyncapi`. `make pre-release version=X.Y.Z-alpha.N` does the same with an explicit version. `tool.bumpversion` sets `commit = false` and `tag = false`; the release itself is created on GitHub by the maintainer. These targets run only when the user asks.
+
+## Documentation artifact lane
+
+make docs runs CLI/example generation, strict Zensical, whitespace compaction, API-fragment redirects and artifact checks. Verify every newly curated config field is rendered and legacy implementation-module anchors land on the correct split page. See knowledge/testing/documentation-site.md for budgets and source-versus-installed evidence.

@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec import CorrelationId, Message, Schema, SchemaType
-
-pytestmark = pytest.mark.anyio
 
 
 def test_message_serialization_with_payload_and_correlation_id() -> None:

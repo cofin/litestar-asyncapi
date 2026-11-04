@@ -1,6 +1,7 @@
 """Named documentation links and filesystem-backed package assets."""
 
 import html
+from functools import lru_cache
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -40,6 +41,11 @@ def asset_directory() -> Path:
     return directory
 
 
+@lru_cache(maxsize=4)
+def _read_manifest(path: Path) -> Any:
+    return decode_json(path.read_bytes())
+
+
 def bootstrap_html(request: "Request[Any, Any, Any]", *, entry: str, options: dict[str, Any]) -> str:
     """Create escaped links and inert configuration for the external bootstrap."""
     names = request.route_handler.opt["asyncapi_routes"]
@@ -48,7 +54,7 @@ def bootstrap_html(request: "Request[Any, Any, Any]", *, entry: str, options: di
     styles = ""
     if entry in {"react", "scalar"}:
         try:
-            manifest = decode_json((asset_directory() / "ui" / "manifest.json").read_bytes())
+            manifest = _read_manifest(asset_directory() / "ui" / "manifest.json")
             selected = manifest.get(f"tools/frontend/{entry}.ts") or manifest[f"frontend/{entry}.ts"]
             config["entryUrl"] = request.url_for(names["assets"], file_path="ui/" + selected["file"])
             pending = [selected]

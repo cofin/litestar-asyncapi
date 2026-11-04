@@ -86,3 +86,7 @@ Anchor: `src/litestar_asyncapi/docs.py::asset_directory`, `docs.py::bootstrap_ht
 Why: tests of private shapes lock in implementation details. Focused runs without `--no-cov` exit 1 on the global coverage floor and hide real results.
 Check: route tests use `TestClient`/`create_test_client`. Browser behavior lives in `*.spec.ts` against `tools/frontend/tests/server.py`. No new standalone audit-style test files are added.
 Anchor: `src/tests/integration/test_routes.py`, `playwright.config.ts`
+
+## Shared schemas and browser fixture paths
+
+Union traversal must distinguish shared sibling references from cycles on the current recursion path. Browser fixture docs paths must satisfy root-path validation, including the Playwright readiness endpoint.
