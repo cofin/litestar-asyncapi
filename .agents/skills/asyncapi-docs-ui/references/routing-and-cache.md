@@ -52,3 +52,7 @@ tags: [skills, asyncapi-docs-ui, routing-and-cache]
 | lazy generation, ownership, defensive copies | `src/tests/integration/test_plugin_cache.py` |
 | JSON/YAML/UI share encoder normalization | `src/tests/unit/test_json_plugin.py` |
 | console opt-in, Scalar refusal | `src/tests/unit/plugins/test_playground.py` |
+
+## Startup and fixture paths
+
+Reject every docs path normalizing to /. An app accepts one plugin even when docs are disabled; a plugin separately binds to one app. Browser fixtures must mount supported non-root docs routers and update playwright.config.ts readiness URLs with them.

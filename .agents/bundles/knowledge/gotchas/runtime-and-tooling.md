@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: addopts
     resource: pyproject.toml::tool.pytest.ini_options
@@ -68,6 +68,14 @@ sources:
 ## Release
 
 - **No tagging.** `[tool.bumpversion]` sets `commit = false` and `tag = false`[^bump]; `make release bump=…` edits versions, docs and lock only. Tags and pushes remain explicit, user-initiated actions.
+
+## Discovery and examples
+
+- Topic names are native callback identities, not normalized URL suffixes. Read generated_channels_topic before applying channel_payloads.
+- Arbitrary ChannelsPlugin subscriptions mutate native topic mappings. Keep initialization snapshots; never publish runtime subscriptions.
+- Omitted or empty channel servers means all document servers. Derived WebSocket servers require explicit servers on unrelated channels.
+- Optional payload examples read outer-field declarations first, then the non-null model. Import ExampleFactory only when generation is requested; minimal package imports must not require Pydantic.
+- Explicit Schema references use final Draft07 wire keys, even when prefix_items is supplied as a convenience.
 
 [^addopts]: `pyproject.toml::tool.pytest.ini_options`
 [^bind]: `src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin._get_document`

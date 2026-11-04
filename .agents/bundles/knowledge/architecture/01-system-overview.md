@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: core
     resource: src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin
@@ -39,6 +39,10 @@ on_cli_init registers asyncapi export through Litestar's CLI group, inheriting i
 Each plugin instance binds to one application and rejects reuse, even with caching disabled or after clear_cache. A private canonical document, normalized dictionary and immutable JSON bytes are populated lazily. get_asyncapi and get_asyncapi_schema return defensive copies; get_asyncapi_json returns immutable bytes. clear_cache clears all generated values while retaining ownership. use_cache=False regenerates without storing them.
 
 Application encoders feed one normalization path shared by downloads, CLI, examples and UI. Schema generation uses a fresh native registry independent of OpenAPI state. Explicit server definitions prevent request Host from contaminating cached contracts.
+
+## Startup ownership
+
+An application accepts exactly one AsyncAPIPlugin, independently of the per-instance one-app cache binding. on_app_init rejects another instance even when docs are disabled. DocsConfig rejects every path normalizing to the application root because its fallback would claim unmatched requests. Browser fixtures must use a non-root docs router inside each mount.[^core]
 
 [^core]: `src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin`
 [^cli]: `src/litestar_asyncapi/cli.py::register_commands`

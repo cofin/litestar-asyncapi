@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: gen
     resource: src/litestar_asyncapi/asyncapi/generator.py::AsyncAPIGenerator
@@ -35,13 +35,14 @@ sources:
    └── Native Litestar SchemaRegistry (deduplication under #/components/schemas/)
 
 2. Construct Root Document
-   ├── Info (title, version, description, license, contact)
+   ├── Info (explicit values, then OpenAPI metadata, then defaults)
    ├── Default Content Type (omitted unless explicitly configured)
-   └── Servers (dictionary from config.servers)
+   └── Servers (explicit config plus opt-in derived WebSocket servers)
 
 3. Channel Discovery (_discover_channels)
    ├── Extract WebSocket channels (extract_websocket_channels)
-   └── Extract ChannelsPlugin channels (extract_channels_plugin_channels)
+   ├── Extract ChannelsPlugin routes and configured topics
+   └── Extract SSE routes (extract_sse_channels)
 
 4. Populate Document Channels & Operations
    ├── Map DiscoveredChannel -> Channel (address, parameters, messages)
@@ -77,7 +78,15 @@ MessageDefinition, OperationDefinition and ChannelDefinition are shared by decor
 
 Explicit channel keys identify documents independently from transport addresses. A configured key replaces matching inference; distinct keys may share an address. Conflicting explicit keys identify both configuration sources. Two discovered channels with the same key raise and identify both sources; conflicting schemas/examples identify both sources. Assembly orders encoded contracts deterministically and indexes casefolded keys. Explicit config.components merge without overwriting native schemas. Local reference checks validate known AsyncAPI/schema positions and selected-channel membership through aliases; literal data and external references are not traversed as document references.
 
-Documentation settings reside in config.docs (DocsConfig). Python 3.10 provenance subclasses declare only their own slots explicitly to avoid inherited-field duplication.
+Documentation settings reside in config.docs (DocsConfig). Provenance subclasses declare only their own slots explicitly.
+
+## OpenAPI inheritance and named references
+
+asyncapi/openapi.py reads only app.openapi_config at document-build time. It fills unset Info fields and merges mappable security scheme definitions without mutating the config or building app.openapi_schema. Tags and security requirements never inherit. inherit_openapi=False disables inheritance; unmappable schemes and relative OAuth URLs warn and skip.
+
+Opt-in inherit_openapi_servers derives ws/wss servers from absolute HTTP URLs. Only discovered WebSockets receive those defaults. Every unrelated channel needs explicit nonempty servers when derived servers exist; [] also means all root servers. Conflicting inherited names fail with both sources. These behaviors are owned by AsyncAPIGenerator.build_asyncapi and _populate_channels.[^gen]
+
+_resolve_names validates security and server names against final maps; _resolve_operation_traits and _resolve_message_traits resolve trait names. ReplyDefinition resolves channel/message membership after all operation message keys exist. Bare strings in list-valued name fields raise at construction.[^ds]
 
 [^gen]: `src/litestar_asyncapi/asyncapi/generator.py::AsyncAPIGenerator`
 [^uniq]: `src/litestar_asyncapi/asyncapi/generator.py::_ensure_unique_operation_id`

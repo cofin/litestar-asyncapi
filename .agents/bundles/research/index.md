@@ -1,15 +1,9 @@
 ---
-type: Index
 title: Technical Research Index
-description: Pre-PRD and pre-flow technical research notes.
-tags: [research, investigations, spikes, index]
+description: Unpromoted technical research notes.
+tags: [research, index]
 ---
 
 # Technical Research
 
-Pre-PRD and pre-flow technical research notes.
-
-| Topic | State | Flow | Description |
-| --- | --- | --- | --- |
-
-*(No unpromoted research notes open. The codebase audit was promoted into [`contract-fixes`](../specs/contract-fixes/research/codebase-audit_20261104.md).)*
+No unpromoted research notes. Completed research is contracted into [knowledge](../knowledge/index.md); original reports remain in Git history.

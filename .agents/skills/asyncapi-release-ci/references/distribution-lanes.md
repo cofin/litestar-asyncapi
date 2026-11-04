@@ -13,7 +13,7 @@ How build, test and publish targets compose into the single tested artifact.
 
 | Lane | Entry | Proves | Requires |
 | --- | --- | --- | --- |
-| Static | `make lint` | prek hooks, `mypy` strict, `pyright`, `slotscheck`, `zizmor`, doc markers, PEP 723 blocks | `make install` |
+| Static | `make lint` | prek hooks, `mypy` strict, `pyright`, `slotscheck`, `zizmor`, public field docstrings, PEP 723 blocks | `make install` |
 | Source tests | `make test` / `make coverage` | behavior in the checkout; coverage floor 80 | `make install` |
 | Focused tests | `uv run pytest <path> -q --no-cov` | one module without the global coverage floor | `make install` |
 | Packaged UI | `make js-install build js-test` | locked npm tree, Vite output, Vitest view logic, wheel+sdist asset completeness | Node (`.nvmrc`) |
@@ -53,3 +53,7 @@ When raising the minimum Litestar version, update `project.dependencies`, both p
 ## Release targets
 
 `make release bump=major|minor|patch` runs `docs`, `clean`, `build`, then `bump-my-version bump` and `uv lock --upgrade-package litestar-asyncapi`. `make pre-release version=X.Y.Z-alpha.N` does the same with an explicit version. `tool.bumpversion` sets `commit = false` and `tag = false`; the release itself is created on GitHub by the maintainer. These targets run only when the user asks.
+
+## Documentation artifact lane
+
+make docs runs CLI/example generation, strict Zensical, whitespace compaction, API-fragment redirects and artifact checks. Verify every newly curated config field is rendered and legacy implementation-module anchors land on the correct split page. See knowledge/testing/documentation-site.md for budgets and source-versus-installed evidence.

@@ -94,3 +94,7 @@ All paths are relative to `src/litestar_asyncapi/` unless prefixed with `src/tes
 - Behavior tests live in the canonical file for the seam (see `../../asyncapi-generation/references/contracts-and-discovery.md` and `assembly-and-identity.md` test maps).
 - Tests build a real `Litestar` app; they do not mock `AsyncAPIGenerator` or extractors.
 - Each new raise path has a `pytest.raises(ImproperlyConfiguredException, match=...)` test.
+
+## Server and topic identity checks
+
+When derived root servers exist, omitted and empty channel servers both select them. Require explicit nonempty lists on unrelated channels. Verify fixed ChannelsPlugin topic identity through native callbacks rather than normalized URL prefixes; include relative base paths and slash-bearing topics.

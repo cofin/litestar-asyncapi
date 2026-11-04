@@ -53,3 +53,7 @@ Order in `generator.py::_build_message`:
 ## Error context
 
 `AsyncAPISchemaGenerator.generate` converts `ImproperlyConfiguredException`, `NameError`, `TypeError`, `ValueError` into `ImproperlyConfiguredException("Cannot generate AsyncAPI payload ... for <provenance>: ...")`. `components()` wraps export failures with the list of payload origins. `resolve_annotation` raises `TypeError` for unresolved string annotations. Tests: `test_unsupported_native_output_has_payload_and_handler_context`, `test_unresolved_namespace_has_payload_and_handler_context`.
+
+## Optional example precedence
+
+declared_schema_examples reads the outer FieldDefinition schema before descending into a single non-null member. Otherwise Parameter(examples=...) on int | None disappears. Keep the public document regression in test_example_precedence.py. native_example_value imports ExampleFactory lazily so basic package import does not require Pydantic.

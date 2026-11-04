@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Style Guides Index
 description: Repository conventions and language style guides for litestar-asyncapi.
 tags: [styleguides, standards, conventions, index]

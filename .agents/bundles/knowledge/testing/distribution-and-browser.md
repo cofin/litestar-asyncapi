@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: inst
     resource: Makefile::installed-test
@@ -55,6 +55,10 @@ Missing PyYAML fails Litestar import itself; disabled YAML routes are the suppor
 ## Browser acceptance
 
 Playwright covers generated 3.0/3.1 documents, recursive references, tuple/null/false/header content, hostile metadata, external-network blocking, malformed documents, missing assets, CSP fallbacks, and interactive valid/invalid frames, reconnects and page-departure cleanup[^pw]. The browser test server runs under `uvicorn`[^srv]; the installed lane adds `uvicorn` and `websockets` to the temporary venv[^binst]. Normal pages require zero browser errors and zero external requests.
+
+## Minimal imports and docs fixtures
+
+Run the pre-test wheel smoke before installing the test dependency group, so Pydantic added by tests cannot hide an unconditional optional import. Source-only documentation examples skip in installed tests. Browser fixtures use supported non-root docs paths under ASGI mounts and the readiness URL must follow those paths.[^inst][^srv]
 
 [^inst]: `Makefile::installed-test`
 [^val]: `tools/validate_asyncapi.mjs`

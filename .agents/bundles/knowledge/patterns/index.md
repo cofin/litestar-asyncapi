@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Code Patterns Index
 description: Reusable implementation patterns and anti-patterns for litestar-asyncapi.
 tags: [patterns, index]

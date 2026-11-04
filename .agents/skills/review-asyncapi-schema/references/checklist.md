@@ -86,3 +86,7 @@ Anchor: `src/litestar_asyncapi/asyncapi/schema_generation/schema.py::AsyncAPISch
 Why: private-state assertions pass while the exported document regresses.
 Check: new tests live in `test_native.py`, `test_dialect.py` or `test_examples.py`, call `AsyncAPISchemaGenerator`/`to_asyncapi_schema`/`generate_example` with a real `Litestar` app, and assert exported dicts or exception text; wire changes refresh the fixture and pass `make validate-asyncapi`; Python follows PEP 604/585, Google docstrings and no inline comments.
 Anchor: `src/tests/unit/schema_generation/test_native.py`
+
+## Optional declared examples
+
+Outer FieldDefinition examples take priority over non-null optional member examples. Verify emitted messages with automatic generation both enabled and disabled. Explicit Schema references address final Draft07 wire keys; do not apply native dialect reference rewriting to constructor conveniences.

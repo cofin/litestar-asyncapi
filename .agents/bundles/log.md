@@ -2,6 +2,16 @@
 
 Date-grouped record of Flow lifecycle events, migrations, and completed work.
 
+## 2026-11-04 — archive: reviewed PR 12 flows
+
+Archived 17 completed specs and 41 task worksheets on feat/updates-1; reviewed range 23d1a4af332cd31651b871215b9638f708510594..d82dff3ce194db6d33273d227841299dfa8d15ca plus validated working-tree review corrections. Review corrections committed at dcc21c01b0e1e0bad5f4547dad61f075364629c2; the user authorized unsigned local commits. Flows: channel-source-markers, channels-plugin-topics, contract-ergonomics, contract-fixes, discovery-fixes, docs-examples-verified, docs-learn-content, docs-redesign, docs-reference-curation, docs-routing-fixes, docs-zensical-foundation, public-hygiene, realtime-discovery, schema-fixes, sse-discovery, test-gate-debloat, wire-contract-fixes.
+
+Correctness, quality and four domain reviewers completed isolated reviews. ADOPT: GEN-08 server isolation (explicit nonempty unrelated-channel servers, selected by user), GEN-10 fixed-topic identity, SCH-14 outer optional-field examples, UI-12 sibling shared references, REL-12 legacy API fragments, QUALITY-01 rendered configuration fields, public-hygiene continuity and browser fixture startup. CONTEST: SCH-10 was withdrawn because explicit Schema references address final Draft07 wire locations. Followup reviews found no unresolved blocking defects.
+
+Verification: make check-all (324 source tests, coverage above 80%); make build, 13 Vitest tests, official fixture and all 14 example validations, 19 source and 19 installed Chromium tests; Python 3.12 installed minimum/latest Litestar (309 tests each, source-only examples skipped); strict docs, inventory, local links, all legacy redirect maps and reference budgets. External link check skipped locally (lychee unavailable); original hosted docs job passed. Hosted CI on d82dff3 failed at the outdated browser fixture and skipped installed matrices. Fixes are local; no hosted publication, review, merge, or CI-success claim is made.
+
+Contracted into knowledge/architecture/01..05, domains/asyncapi-contracts, gotchas/runtime-and-tooling, testing/documentation-site and distribution-and-browser, styleguides/python, decisions/adr-004-openapi-inheritance, and domain engineering/review skill references. Task commits were checked against branch history before deletion; public-hygiene resolves to 7ed8631 and 938a9e1. Detailed original specifications and implementation notes remain in Git history.
+
 ## 2026-11-05
 
 ### Completed: `contract-ergonomics`

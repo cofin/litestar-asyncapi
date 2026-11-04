@@ -56,7 +56,7 @@ How `src/litestar_asyncapi/asyncapi/generator.py::AsyncAPIGenerator.build_asynca
 `src/litestar_asyncapi/spec/base.py::BaseSchemaObject.to_schema`:
 
 - Skip `UNSET`; skip `None` unless `field.metadata["nullable"]` (e.g. `spec/message.py::MessageExample.payload`, `spec/schema.py::Schema.default` / `const`).
-- Keys: `metadata["alias"]` (must be `str`) else `_normalize_key` (camelCase, `ref`→`$ref`, `in_`→`in`, `schema_x`→`x` except `schema_format`).
+- Keys: `metadata["alias"]` (must be `str`) else `_normalize_key` (camelCase and `ref`→`$ref`; all other special keys require explicit aliases).
 - Values: `_normalize_value` recurses into spec objects, dataclasses, dicts, lists/tuples; enums → `.value`.
 - `extensions`: keys must be `str`, start with `x-`, and not collide with modeled keys; otherwise `ValueError`.
 
@@ -75,3 +75,7 @@ How `src/litestar_asyncapi/asyncapi/generator.py::AsyncAPIGenerator.build_asynca
 | Wire serialization | `src/tests/unit/spec/test_base.py`, `test_wire_contract.py`, per-model `src/tests/unit/spec/test_*.py` |
 | Config contract | `src/tests/unit/test_config.py` |
 | Routes / CLI | `src/tests/integration/test_routes.py`, `test_cli.py` |
+
+## OpenAPI and named references
+
+Read asyncapi/openapi.py and architecture/02 before changing inheritance. Metadata/security definitions inherit lazily, tags/requirements never do. Derived servers require explicit nonempty servers on every non-WebSocket channel; [] selects all root servers. _resolve_names resolves final server/security/trait maps, and _resolve_reply runs after message keys exist. Tests: src/tests/unit/test_openapi_inheritance.py and test_generator_components.py.

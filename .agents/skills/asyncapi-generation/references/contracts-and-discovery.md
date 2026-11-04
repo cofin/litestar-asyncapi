@@ -18,8 +18,8 @@ How typed contracts enter the generator and how routes become `DiscoveredChannel
 | `MessageDefinition` | Message contract; `payload`/`headers` hold Python types, `FieldDefinition`, `Schema`, `Reference`, `dict`, `bool` or `MultiFormatSchema` | Types stay unrendered until `generator.py::_build_message` |
 | `OperationDefinition` | Application-perspective `action` plus named message choices | `__post_init__` coerces `action` to `OperationAction` and rejects duplicate message names |
 | `ChannelDefinition` | Explicit channel; `key` is document identity, `address` is transport | Distinct keys may share an address |
-| `DiscoveredOperation` / `DiscoveredChannel` | Provenance subclasses (`provenance`, `source`, `route_identity`) | Declare only their own `__slots__` (Python 3.10 inheritance-safe); `kw_only=True` |
-| `DiscoverySource` | `WEBSOCKET`, `CHANNELS_PLUGIN`, `CONFIG` | `CONFIG` channels skip operation merging in `_normalize_channels` |
+| `DiscoveredOperation` / `DiscoveredChannel` | Provenance subclasses (`provenance`, `source`, `route_identity`) | Declare only their own `__slots__`; `kw_only=True` |
+| `DiscoverySource` | `WEBSOCKET`, `CHANNELS_PLUGIN`, `SSE`, `CONFIG` | Duplicate discovered keys raise; explicit keys replace inference |
 
 Override semantics: `None` = inherit/infer; explicit value (including `[]`) = override.
 
@@ -54,8 +54,8 @@ Override semantics: `None` = inherit/infer; explicit value (including `[]`) = ov
 
 `src/litestar_asyncapi/asyncapi/extractors/channels.py::extract_channels_plugin_channels`
 
-- Discovers only routes the plugin actually generated (`generated_channels_mode` not `None`). Subscription names without route creation produce nothing.
-- Emits one send-only operation with `payload=Schema()` and `text/plain` or `application/octet-stream` by mode.
+- Discovers native generated sockets plus configured topic-only channels. Snapshot configured topics at init; never infer runtime subscriptions.
+- Read fixed topics with generated_channels_topic rather than reversing normalized paths. channel_payloads gives typed topics application/json; otherwise sockets retain native frame types and topic-only payloads stay unconstrained.
 - User sockets sharing a prefix remain WebSocket-extractor channels.
 
 ## Explicit channels
@@ -74,3 +74,7 @@ Override semantics: `None` = inherit/infer; explicit value (including `[]`) = ov
 | ChannelsPlugin | `src/tests/unit/extractors/test_channels_plugin.py` |
 | Datastructures | `src/tests/unit/extractors/test_datastructures.py` |
 | Nested routers, include_in_schema | `src/tests/integration/test_discovery.py` |
+
+## SSE and reply contracts
+
+extractors/sse.py discovers resolved ServerSentEvent annotations, honors layered HTTP visibility, and emits send-only text/event-stream messages with path parameters and an unconstrained payload unless a decorator supplies one. include_sse_routes controls it. ReplyDefinition names a reply channel and optional messages; operation security/channel servers accept names. Test src/tests/unit/extractors/test_sse_routes.py and test_generator_components.py.

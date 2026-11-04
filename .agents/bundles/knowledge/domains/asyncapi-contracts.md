@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: ds
     resource: src/litestar_asyncapi/asyncapi/datastructures.py::DiscoverySource
@@ -35,7 +35,7 @@ sources:
 - **Channel key** is the document identity under `channels`; **address** is the transport path. They differ: distinct keys may share an address.
 - **Operation key** is the identity under `operations`; there is no wire `operationId`.
 - **Action** is from the application's point of view: listener input is `receive`, listener output and streams are `send`.
-- **Definition** (`ChannelDefinition`, `OperationDefinition`, `MessageDefinition`) is a typed contract shared by decorators and `AsyncAPIConfig.channels`.
+- **Definition** (`ChannelDefinition`, `OperationDefinition`, `MessageDefinition`, `ReplyDefinition`) is a typed contract shared by decorators and `AsyncAPIConfig.channels`.
 - **Discovered** (`DiscoveredChannel`, `DiscoveredOperation`) adds provenance (`DiscoverySource`) only.
 - **Canonical document** is the per-app cached `AsyncAPI` model plus its normalized dict and JSON bytes.
 - `None` means "no override"; an explicit empty list means "override with nothing".
@@ -62,14 +62,18 @@ sources:
 
 1. **Declare**: handlers, decorators and `AsyncAPIConfig.channels` express contracts with Python payload types.
 2. **Discover**: extractors walk finalized routes and the `ChannelsPlugin`, producing `Discovered*` values with provenance.
-3. **Merge**: explicit keys replace inference; compatible inferred contracts merge only for the same route identity; conflicts name both sources.
+3. **Merge**: explicit keys replace inference; duplicate discovered keys raise with both provenances; explicit topic conflicts require disabling topic discovery.
 4. **Assemble**: payload types become schemas, examples become `MessageExample`, keys are deduplicated and `$ref` pointers escaped.
 5. **Finalize**: schema component names are finalized, references validated, then the document is normalized with application encoders and cached.
 
 ## Boundaries
 
 - Security declarations describe contracts; they never install runtime authorization.
-- There is no automatic broker or SSE inference. Raw WebSocket handlers need explicit metadata unless `include_raw_websocket_routes=True`.
+- Configured ChannelsPlugin topics and annotated SSE routes are discovered; arbitrary broker transports need explicit contracts. Raw WebSocket handlers need explicit metadata unless `include_raw_websocket_routes=True`.
+
+## Server and reference names
+
+ReplyDefinition names a reply channel and its messages. Operation security and channel servers accept names resolved against the final document; unknown names list available choices.[^ds] An omitted or empty channel servers list selects every root server. Derived WebSocket servers therefore require explicit nonempty server lists on every unrelated channel.[^cfg]
 
 [^ds]: `src/litestar_asyncapi/asyncapi/datastructures.py::DiscoverySource`
 [^cfg]: `src/litestar_asyncapi/config.py::AsyncAPIConfig`

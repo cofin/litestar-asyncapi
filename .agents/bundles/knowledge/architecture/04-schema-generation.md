@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: sg
     resource: src/litestar_asyncapi/asyncapi/schema_generation/schema.py::AsyncAPISchemaGenerator
@@ -31,7 +31,7 @@ AsyncAPISchemaGenerator delegates Python type evaluation[^sg] to Litestar >=2.24
 
 All private Litestar imports are isolated in _compat.py.[^compat] Each build uses a fresh native SchemaCreator and SchemaRegistry, independent of the app's OpenAPI cache. The installed supported version is authoritative; sibling checkout hooks may differ.
 
-Narrow corrections preserve fixed and empty tuple cardinality, msgspec array-like wire order/default tails, Python 3.10 nested generic forward references and explicit null presence. User schema-plugin overrides retain precedence. Tuple bounds intersect declared constraints; bare and variadic tuples remain unbounded. Array-like Struct minimum length follows the last required wire position, and extra items remain permitted unless the model forbids them.
+Narrow corrections preserve fixed and empty tuple cardinality, msgspec array-like wire order/default tails, nested generic forward references and explicit null presence. User schema-plugin overrides retain precedence. Tuple bounds intersect declared constraints; bare and variadic tuples remain unbounded. Array-like Struct minimum length follows the last required wire position, and extra items remain permitted unless the model forbids them.
 
 Standard-library annotation resolution uses owner-module and app signature namespaces without changing globals. Unresolved references fail with payload/handler context. Native spec objects use a lossless projection that preserves null-valued dictionaries; explicit field and schema_extra null defaults/consts are tracked. Bare native Schema(default=None/const=None) cannot reveal whether None was explicitly supplied.
 
@@ -50,6 +50,10 @@ Implicit modern/2020-12 input preserves sibling constraints by wrapping referenc
 ## Verification
 
 Use `uv run pytest <path> -q --no-cov` for focused runs, make test, make type-check, make slotscheck and Node (`.nvmrc`) make validate-asyncapi. Behavioral coverage checks actual recursive reference targets, custom app plugins, model aliases/tags, tuple and array-like decoder contracts, null constraints and OpenAPI-state isolation. Nonempty output alone does not prove schema fidelity.
+
+## Declared examples and optional dependencies
+
+Message examples take precedence over outer-field examples, then the single non-null optional member model, then optional generation. Named payloads resolve through the application signature namespace. Optional null defaults stay on the outer schema rather than shared enum/member schemas.[^compat] The package imports with only Litestar installed: import native ExampleFactory lazily inside native_example_value, because automatic examples alone require Pydantic.
 
 [^sg]: `src/litestar_asyncapi/asyncapi/schema_generation/schema.py::AsyncAPISchemaGenerator`
 [^compat]: `src/litestar_asyncapi/_compat.py::create_schema_creator`

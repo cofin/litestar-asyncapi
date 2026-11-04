@@ -1,5 +1,4 @@
 ---
-type: Index
 title: Gotchas Index
 description: Non-obvious footguns and runtime traps.
 tags: [gotchas, index]

@@ -81,3 +81,7 @@ class AsyncAPIConfig:
 - Function-based tests with `pytest`.
 - Tests are synchronous; no async test runner is configured.
 - High test coverage: >90% target for core modules.
+
+## Public dataclass documentation
+
+Document every public dataclass field with its adjacent inline string docstring. tools/docs/scan_public_docstrings.py checks presence; curated reference member lists separately control whether the field is rendered. Keep both surfaces synchronized.

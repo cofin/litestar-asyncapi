@@ -86,3 +86,7 @@ Anchor: `tools/ci/validate_pep723_blocks.py::validate_file`, `src/tests/unit/doc
 Why: Future annotations break Litestar runtime signature introspection; inline comments violate project style.
 Check: `__future__.annotations` stays in ruff's `banned-api` and no per-file ignore disables TID251; new tooling Python uses docstrings instead of `#` comments.
 Anchor: `pyproject.toml::tool.ruff.lint.flake8-tidy-imports.banned-api`
+
+## Curated fields and API fragments
+
+Compare public config field declarations with explicit reference members. Validate legacy implementation-module fragments as well as redirect pages, including plugins.AsyncAPIUIRenderPlugin aliases and split spec pages.

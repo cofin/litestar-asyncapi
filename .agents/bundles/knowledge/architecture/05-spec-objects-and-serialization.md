@@ -8,9 +8,9 @@ generated:
   by: flow-setup
   at: 2026-11-04
 verified:
-  - by: flow-setup
+  - by: flow-completion
     at: 2026-11-04
-    commit: 49bc3c8
+    commit: dcc21c01b0e1e0bad5f4547dad61f075364629c2
 sources:
   - id: base
     resource: src/litestar_asyncapi/spec/base.py::BaseSchemaObject
@@ -68,6 +68,10 @@ The base class provides uniform serialization via `to_schema()`:[^base]
 - Native payload schemas use the implemented Draft07 adapter around Litestar schema generation. Retain the AsyncAPI-specific serializer because native OpenAPI model serialization loses required null presence and AsyncAPI aliases.
 - Application type encoders apply through one native round trip, `decode_json(encode_json(value, serializer=get_serializer(app.type_encoders)))`: `AsyncAPIPlugin` runs it over `document.to_schema()` for the cached canonical schema[^core], and `normalize_examples` runs it per example payload and headers[^ex]. Scalar and null values survive.
 - Native model plugins own optional model support.
+
+## Explicit tuple schemas
+
+Schema.prefix_items is a constructor convenience that serializes as Draft07 items; a trailing items schema becomes additionalItems. _draft07.tuple_item_keywords owns the shared mapping. Explicit Schema bypasses native dialect conversion, so Reference strings address the final wire locations, such as #/items/0. Do not reinterpret them as constructor field paths.[^base]
 
 [^base]: `src/litestar_asyncapi/spec/base.py::BaseSchemaObject`
 [^core]: `src/litestar_asyncapi/plugins/core.py::AsyncAPIPlugin`
