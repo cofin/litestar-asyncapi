@@ -105,7 +105,7 @@ Every document the plugin emits says what the application actually does, and val
 | 2 | `wire-contract-fixes` | Wire keys and conformance fixture | B1, B6, alias-only normalization, bindings/security/traits/extensions fixture in official validation | `BaseSchemaObject.to_schema`, `make validate-asyncapi` | 1 | completed |
 | 3 | `schema-fixes` | Payload schema fidelity | B4, B5, B9, B10, B11, schema error message cleanup | `AsyncAPISchemaGenerator`, generated `components/schemas` | 1 | completed |
 | 4 | `discovery-fixes` | Discovery, naming and decorators | B2, B7, B8, B12 (action, spec_version), listener-unwrapping helper, discovery debloat ledger items | `AsyncAPIGenerator.build_schema`, `asyncapi_operation`, `asyncapi_message` | 1 | completed |
-| 5 | `docs-routing-fixes` | Docs routing and console | B3 single-plugin guard, B12 `path="/"`, B13 console unions (verify first), manifest caching | `AsyncAPIPlugin`, `DocsConfig`, docs routes | 1 | draft |
+| 5 | `docs-routing-fixes` | Docs routing and console | B3 single-plugin guard, B12 `path="/"`, B13 console unions (verify first), manifest caching | `AsyncAPIPlugin`, `DocsConfig`, docs routes | 1 | completed |
 | 6 | `test-gate-debloat` | Test and gate debloat | anyio markers, echo tests, duplicate slotscheck, `check-all` double run, Makefile aliases, ruff ignores, future-annotations hook → ruff (if proven), `.agents` command duplication | `make lint`, `make check-all` | 2, 3, 4, 5 | draft |
 
 **Merge order:** 1 → 2 → 3 → 4 → 5 → 6. The chapters share these files:
@@ -177,13 +177,14 @@ Each candidate is classified by tracing its callers, re-exports, `opt` strings a
 - [x] wire-contract-fixes — key normalization, prefixItems export, conformance fixture (../wire-contract-fixes/spec.md)
 - [x] schema-fixes — tuple, bounds, example and null fidelity (../schema-fixes/spec.md)
 - [x] discovery-fixes — listener naming, metadata order, decorator merging, discovery debloat (../discovery-fixes/spec.md)
-- [ ] docs-routing-fixes — single-plugin guard, root path, console unions, caching (../docs-routing-fixes/spec.md)
+- [x] docs-routing-fixes — single-plugin guard, root path, console unions, caching (../docs-routing-fixes/spec.md)
 - [ ] test-gate-debloat — tests and gates trimmed with proven replacements (../test-gate-debloat/spec.md)
 
 ## Continuity Snapshot
 
-- **State:** planned. Chapters 1–4 (`public-hygiene`, `wire-contract-fixes`, `schema-fixes`, `discovery-fixes`) are completed; `docs-routing-fixes` is next.
+- **State:** planned. Chapters 1–5 (`public-hygiene`, `wire-contract-fixes`, `schema-fixes`, `discovery-fixes`, `docs-routing-fixes`) are completed; `test-gate-debloat` is next.
 - **Review:** round 1 of the independent review is adjudicated. All 16 findings were adopted, and `plan_revision` is now 2.
 - **Discoveries:**
   - `coverage.xml` in the working tree can be stale after partial runs. Regenerate it before comparing coverage.
   - Issue #11 (`../realtime-discovery/spec.md`) builds on chapter 4's extractors and lands after it.
+  - Coverage omits the `thread` concurrency, so docs request-handler code is never traced. Chapter 6 should decide whether to add it.

@@ -17,7 +17,7 @@ tags: [skills, asyncapi-docs-ui, frontend-and-interaction]
 ## Bootstrap protocol — `src/litestar_asyncapi/docs.py::bootstrap_html` + `assets/bootstrap.js`
 
 1. The server emits `#asyncapi-config` as `type="application/json"` with `{schemaUrl, entry, options, entryUrl}`. The JSON is encoded with `encode_json`, then `<` is replaced by `<`.
-2. CSS comes from walking `manifest.json` recursively from `tools/frontend/<entry>.ts` through its `imports`. Any `OSError`, `KeyError` or `ValueError` replaces the styles with a `role="alert"` missing-assets message.
+2. CSS comes from walking `manifest.json` (parsed once per path by `docs.py::_read_manifest`, an `lru_cache`; failed reads are not cached) recursively from `tools/frontend/<entry>.ts` through its `imports`. Any `OSError`, `KeyError` or `ValueError` replaces the styles with a `role="alert"` missing-assets message.
 3. The page includes `<nav>` links to every named route, a `#asyncapi-status` live region and `<script src=".../bootstrap.js" defer>`.
 4. `bootstrap.js` fetches `schemaUrl` (same-origin credentials) and checks that `asyncapi` is `3.0.0` or `3.1.0` and that `info` exists. It then runs `import(entryUrl)` and calls `render(schema, options)`. If `render` returns a disposer, it runs on `pagehide`. A persisted `pageshow` reloads the page.
 5. Failures write a fixed message through `textContent` and set `role="alert"`.
