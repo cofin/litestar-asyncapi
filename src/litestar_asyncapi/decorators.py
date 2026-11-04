@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from litestar.exceptions import ImproperlyConfiguredException
 
 from litestar_asyncapi._compat import websocket_handler_name
-from litestar_asyncapi.asyncapi.datastructures import MessageDefinition, OperationDefinition
+from litestar_asyncapi.asyncapi.datastructures import MessageDefinition, OperationDefinition, ReplyDefinition
 from litestar_asyncapi.spec import (
     CorrelationId,
     MessageTrait,
@@ -64,9 +64,9 @@ def asyncapi_operation(
     traits: list[str | OperationTrait | Reference] | None = None,
     messages: list[MessageDefinition] | None = None,
     tags: list[Tag | Reference] | None = None,
-    security: list[SecurityScheme | Reference] | None = None,
+    security: list[str | SecurityScheme | Reference] | None = None,
     bindings: dict[str, Any] | Reference | None = None,
-    reply: Reply | Reference | None = None,
+    reply: ReplyDefinition | Reply | Reference | None = None,
 ) -> Callable[[T], T]:
     """Declare the operation for one action on a WebSocket or Server-Sent Event route handler.
 
@@ -77,7 +77,7 @@ def asyncapi_operation(
         A decorator that mutates the Litestar route handler metadata in-place.
     """
 
-    op_action = OperationAction(OperationDefinition(action=action).action)
+    op_action = OperationAction(OperationDefinition(action=action, security=security).action)
 
     def decorator(obj: T) -> T:
         route_handler = _get_route_handler(obj)

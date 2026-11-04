@@ -33,6 +33,13 @@ All notable changes to this project will be documented in this file.
   URLs into `ws` and `wss` servers, with their path, description and
   variables. Only channels discovered from WebSocket routes are bound to them.
   Relative URLs are skipped. It is off by default.
+- Contracts can refer to things by name instead of JSON pointer.
+  `OperationDefinition.security` takes scheme names such as `["BearerToken"]`,
+  `ChannelDefinition.servers` takes server names, and the new
+  `ReplyDefinition(channel, messages, address)` names the reply channel and its
+  messages. Unknown names raise with the valid names listed, and a reply message
+  must belong to the reply channel. A bare string in place of a list raises
+  `TypeError`. Objects and `Reference`s keep working.
 - Every discovered channel now says which transport it uses. A channel carries
   `x-litestar-source` set to `websocket` or `channels`, and an explicit
   `bindings` object: native WebSocket channels get a `ws` binding and

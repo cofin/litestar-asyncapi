@@ -130,3 +130,30 @@ def test_decorators_require_route_handler_instance() -> None:
 
     with pytest.raises(ImproperlyConfiguredException, match="must wrap a Litestar route handler"):
         asyncapi_operation(action="send", summary="x")(plain)
+
+
+def test_operation_decorator_accepts_security_and_reply_names() -> None:
+    from litestar import Litestar
+
+    from litestar_asyncapi import AsyncAPIConfig, ReplyDefinition
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+    from litestar_asyncapi.spec import Components, SecurityScheme
+
+    @asyncapi_operation(action="receive", security=["token"], reply=ReplyDefinition("/ask", messages=["answer"]))
+    @asyncapi_message(action="send", name="answer", payload=str)
+    @websocket_listener("/ask")
+    async def ask(data: str) -> str:
+        return data
+
+    config = AsyncAPIConfig(
+        components=Components(security_schemes={"token": SecurityScheme(type="httpApiKey", name="t", in_="query")})
+    )
+    operation = AsyncAPIGenerator(Litestar([ask]), config).build_schema()["operations"]["ask_receive"]
+
+    assert operation["security"] == [{"$ref": "#/components/securitySchemes/token"}]
+    assert operation["reply"] == {
+        "channel": {"$ref": "#/channels/~1ask"},
+        "messages": [{"$ref": "#/channels/~1ask/messages/answer"}],
+    }
+    with pytest.raises(TypeError, match="security must be a list of names"):
+        asyncapi_operation(action="receive", security="token")  # type: ignore[arg-type]

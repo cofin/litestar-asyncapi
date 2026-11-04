@@ -5,6 +5,7 @@ from litestar_asyncapi import (
     ChannelDefinition,
     MessageDefinition,
     OperationDefinition,
+    ReplyDefinition,
     asyncapi_message,
     asyncapi_operation,
 )
@@ -25,6 +26,8 @@ The decorators refine what discovery infers from a route handler. The definition
 ::: litestar_asyncapi.OperationDefinition
 
 ::: litestar_asyncapi.MessageDefinition
+
+::: litestar_asyncapi.ReplyDefinition
 
 ## Transport markers
 

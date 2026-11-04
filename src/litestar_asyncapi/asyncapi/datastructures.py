@@ -11,6 +11,7 @@ from litestar_asyncapi.spec import (
     Parameter,
     Reference,
     Reply,
+    ReplyAddress,
     SecurityScheme,
     Tag,
 )
@@ -24,6 +25,7 @@ __all__ = (
     "DiscoverySource",
     "MessageDefinition",
     "OperationDefinition",
+    "ReplyDefinition",
 )
 
 
@@ -82,6 +84,27 @@ class MessageDefinition:
     """Specification extensions; every key must start with ``x-``."""
 
 
+def _reject_bare_name(field: str, value: object) -> None:
+    if isinstance(value, str):
+        detail = f"{field} must be a list of names, not the string {value!r}"
+        raise TypeError(detail)
+
+
+@dataclass(slots=True)
+class ReplyDefinition:
+    """A reply named by its channel key and message names, resolved when the document is built."""
+
+    channel: str
+    """Key of the channel the reply is sent on."""
+    messages: list[str] | None = None
+    """Names of messages on the reply channel that may be sent as the reply; any of them when omitted."""
+    address: ReplyAddress | Reference | None = None
+    """Where the reply is sent when it is not the channel's fixed address."""
+
+    def __post_init__(self) -> None:
+        _reject_bare_name("messages", self.messages)
+
+
 @dataclass(slots=True)
 class OperationDefinition:
     """An application-perspective operation and its named message choices."""
@@ -102,14 +125,15 @@ class OperationDefinition:
     """Operation traits, given by name of a configured trait, as an object or as a reference."""
     tags: list[Tag | Reference] | None = None
     """Tags for logical grouping."""
-    security: list[SecurityScheme | Reference] | None = None
-    """Security schemes that apply to the operation."""
+    security: list[str | SecurityScheme | Reference] | None = None
+    """Security schemes that apply to the operation, given by name of a scheme in ``components``, as an object or as a reference."""
     bindings: dict[str, Any] | Reference | None = None
     """Protocol-specific operation bindings."""
-    reply: Reply | Reference | None = None
+    reply: ReplyDefinition | Reply | Reference | None = None
     """Reply that the operation expects, for request and reply patterns."""
 
     def __post_init__(self) -> None:
+        _reject_bare_name("security", self.security)
         action = self.action.strip().lower()
         if action not in {item.value for item in OperationAction}:
             detail = f"Invalid action {self.action!r}. Expected 'send' or 'receive'."
@@ -135,14 +159,17 @@ class ChannelDefinition:
     """Operations on the channel."""
     parameters: dict[str, Parameter | Reference] | None = None
     """Parameters for expressions in ``address``."""
-    servers: list[Reference] | None = None
-    """References to the servers that host the channel; all servers when omitted."""
+    servers: list[str | Reference] | None = None
+    """Names of, or references to, the servers that host the channel; all servers when omitted."""
     bindings: dict[str, Any] | Reference | None = None
     """Protocol-specific channel bindings."""
     description: str | None = None
     """Description of the channel; CommonMark is allowed."""
     extensions: dict[str, Any] = field(default_factory=dict)
     """Specification extensions; every key must start with ``x-``."""
+
+    def __post_init__(self) -> None:
+        _reject_bare_name("servers", self.servers)
 
 
 @dataclass(kw_only=True)

@@ -3,7 +3,7 @@ import re
 import warnings
 from copy import deepcopy
 from dataclasses import dataclass, fields, is_dataclass, replace
-from typing import TYPE_CHECKING, Any, NoReturn, cast
+from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, cast
 from urllib.parse import quote, unquote
 
 from litestar.exceptions import ImproperlyConfiguredException
@@ -19,6 +19,7 @@ from litestar_asyncapi.asyncapi.datastructures import (
     DiscoverySource,
     MessageDefinition,
     OperationDefinition,
+    ReplyDefinition,
 )
 from litestar_asyncapi.asyncapi.extractors import (
     extract_channels_plugin_channels,
@@ -44,11 +45,14 @@ from litestar_asyncapi.spec import (
     OperationAction,
     OperationTrait,
     Reference,
+    Reply,
     Schema,
 )
 from litestar_asyncapi.spec.base import UNSET, BaseSchemaObject
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from litestar import Litestar
 
     from litestar_asyncapi import AsyncAPIConfig
@@ -57,6 +61,8 @@ __all__ = ("AsyncAPIGenerator",)
 
 
 INVALID_OPERATION_ID_CHARS = re.compile(r"[^a-zA-Z0-9_.-]+")
+
+T = TypeVar("T")
 
 
 @dataclass(slots=True)
@@ -238,10 +244,14 @@ def _populate_channels(
             address=channel.address,
             description=channel.description,
             parameters=channel.parameters,
-            servers=(
-                [Reference(ref=f"#/servers/{_json_pointer_escape(name)}") for name in websocket_servers]
+            servers=_resolve_names(
+                websocket_servers
                 if channel.servers is None and channel.source is DiscoverySource.WEBSOCKET and websocket_servers
-                else channel.servers
+                else channel.servers,
+                available=document.servers,
+                kind="server",
+                pointer="#/servers",
+                context=f" in {channel.provenance}",
             ),
             bindings=channel.bindings,
             extensions=(
@@ -265,6 +275,8 @@ def _populate_operations(
     schema_generator: AsyncAPISchemaGenerator,
     app: "Litestar",
 ) -> None:
+    """Add every operation and its messages, then resolve replies given by name against the final message keys."""
+    replies: list[tuple[Operation, ReplyDefinition, str]] = []
     used_operation_ids: set[str] = set()
     used_operation_keys: set[str] = set()
     channel_message_keys: dict[str, set[str]] = {}
@@ -321,7 +333,8 @@ def _populate_operations(
                 else None
             )
 
-            document.operations[operation_key] = Operation(
+            provenance = getattr(discovered_operation, "provenance", discovered_channel.provenance)
+            operation = Operation(
                 action=OperationAction(discovered_operation.action),
                 channel=channel_ref,
                 title=discovered_operation.title,
@@ -330,10 +343,59 @@ def _populate_operations(
                 messages=messages,
                 traits=operation_trait_refs,
                 tags=discovered_operation.tags,
-                security=discovered_operation.security,
+                security=_resolve_names(
+                    discovered_operation.security,
+                    available=document.components.security_schemes,
+                    kind="security scheme",
+                    pointer="#/components/securitySchemes",
+                    context=f" in {provenance}",
+                ),
                 bindings=discovered_operation.bindings,
-                reply=discovered_operation.reply,
+                reply=None if isinstance(discovered_operation.reply, ReplyDefinition) else discovered_operation.reply,
             )
+            document.operations[operation_key] = operation
+            if isinstance(discovered_operation.reply, ReplyDefinition):
+                replies.append((operation, discovered_operation.reply, provenance))
+
+    for operation, reply, provenance in replies:
+        operation.reply = _resolve_reply(reply, channels=channels, provenance=provenance)
+
+
+def _resolve_names(
+    values: "Sequence[str | T | Reference] | None", *, available: dict[str, Any], kind: str, pointer: str, context: str
+) -> "list[T | Reference] | None":
+    """Replace names with references to ``pointer/<name>``, raising for names missing from ``available``."""
+    if values is None:
+        return None
+    resolved: list[T | Reference] = []
+    for value in values:
+        if not isinstance(value, str):
+            resolved.append(value)
+            continue
+        if value not in available:
+            message = f"Unknown {kind} {value!r}{context}; valid names: {sorted(available)!r}"
+            raise ImproperlyConfiguredException(message)
+        resolved.append(Reference(ref=f"{pointer}/{_json_pointer_escape(value)}"))
+    return resolved
+
+
+def _resolve_reply(reply: ReplyDefinition, *, channels: dict[str, Channel], provenance: str) -> Reply:
+    channel = channels.get(reply.channel)
+    if channel is None:
+        message = f"Unknown reply channel {reply.channel!r} in {provenance}; valid names: {sorted(channels)!r}"
+        raise ImproperlyConfiguredException(message)
+    channel_pointer = f"#/channels/{_json_pointer_escape(reply.channel)}"
+    return Reply(
+        address=reply.address,
+        channel=Reference(ref=channel_pointer),
+        messages=_resolve_names(
+            reply.messages,
+            available=channel.messages or {},
+            kind="reply message",
+            pointer=f"{channel_pointer}/messages",
+            context=f" on channel {reply.channel!r} in {provenance}",
+        ),
+    )
 
 
 def _prepare_operations(
