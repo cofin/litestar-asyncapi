@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec import Contact, Info, License
-
-pytestmark = pytest.mark.anyio
 
 
 def test_info_serialization() -> None:

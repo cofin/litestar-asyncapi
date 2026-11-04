@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec import Components, Schema, SchemaType, SecurityScheme, SecuritySchemeType
-
-pytestmark = pytest.mark.anyio
 
 
 def test_components_serialization() -> None:

@@ -9,8 +9,6 @@ from litestar_asyncapi.spec import OperationAction
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-pytestmark = pytest.mark.anyio
-
 
 def test_listener_infers_receive_and_send_operations() -> None:
     attrs = pytest.importorskip("attrs")

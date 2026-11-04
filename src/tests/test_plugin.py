@@ -7,8 +7,6 @@ if TYPE_CHECKING:
 
     from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
 
-pytestmark = pytest.mark.anyio
-
 
 def test_plugin_instantiation_with_defaults() -> None:
     """Test that the plugin can be instantiated with default configuration."""

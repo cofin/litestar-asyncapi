@@ -5,8 +5,6 @@ import pytest
 from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channels
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
-pytestmark = pytest.mark.anyio
-
 
 def test_channels_plugin_without_routes_has_no_socket_contracts() -> None:
     from litestar import Litestar

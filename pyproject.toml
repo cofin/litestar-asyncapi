@@ -87,7 +87,6 @@ lint = [
 ]
 tests = [
   "litestar[standard,attrs,pydantic]",
-  "anyio",
   "coverage[toml]",
   "pytest",
   "pytest-timeout",

@@ -7,14 +7,6 @@ if TYPE_CHECKING:
 
     from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
 
-pytestmark = pytest.mark.anyio
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    """Return the async backend to use for tests."""
-    return "asyncio"
-
 
 @pytest.fixture
 def asyncapi_config() -> "AsyncAPIConfig":

@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 
     from litestar import WebSocket
 
-pytestmark = pytest.mark.anyio
-
 
 def test_generator_builds_document_with_channels_and_operations() -> None:
     from litestar import Litestar, websocket_listener

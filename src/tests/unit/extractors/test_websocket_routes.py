@@ -1,7 +1,5 @@
 from typing import TYPE_CHECKING
 
-import pytest
-
 from litestar_asyncapi import asyncapi_message
 from litestar_asyncapi.asyncapi.datastructures import DiscoverySource
 from litestar_asyncapi.asyncapi.extractors import extract_websocket_channels
@@ -9,8 +7,6 @@ from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
 if TYPE_CHECKING:
     from litestar import WebSocket
-
-pytestmark = pytest.mark.anyio
 
 
 def test_websocket_routes_are_discovered() -> None:

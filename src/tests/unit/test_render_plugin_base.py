@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.plugins import AsyncAPIRenderPlugin
-
-pytestmark = pytest.mark.anyio
 
 
 class _DummyPlugin(AsyncAPIRenderPlugin):

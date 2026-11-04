@@ -3,8 +3,6 @@ import pytest
 from litestar_asyncapi.asyncapi.datastructures import DiscoveredChannel, DiscoverySource, MessageDefinition
 from litestar_asyncapi.spec import Schema, SchemaType
 
-pytestmark = pytest.mark.anyio
-
 
 def test_message_definition_retains_payload_contract() -> None:
     payload = Schema(type=SchemaType.OBJECT)

@@ -2,8 +2,6 @@ import pytest
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
 
-pytestmark = pytest.mark.anyio
-
 
 def test_plugin_caches_document_and_schema() -> None:
     from litestar import Litestar, websocket_listener

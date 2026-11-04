@@ -6,8 +6,6 @@ from litestar import websocket_listener
 from litestar_asyncapi.decorators import ASYNCAPI_OPT_KEY, AsyncAPIMetadata, asyncapi_message, asyncapi_operation
 from litestar_asyncapi.spec import OperationAction
 
-pytestmark = pytest.mark.anyio
-
 
 def test_decorators_attach_metadata_to_handler_opt() -> None:
     def fn(socket: Any, data: Any) -> Any:

@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec import Message, Operation, OperationAction, Reference, Schema, SchemaType
-
-pytestmark = pytest.mark.anyio
 
 
 def test_operation_serialization() -> None:

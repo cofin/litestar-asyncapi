@@ -1251,7 +1251,6 @@ build = [
     { name = "bump-my-version" },
 ]
 dev = [
-    { name = "anyio" },
     { name = "auto-pytabs", extra = ["sphinx"] },
     { name = "bump-my-version" },
     { name = "codespell" },
@@ -1306,7 +1305,6 @@ lint = [
     { name = "slotscheck" },
 ]
 tests = [
-    { name = "anyio" },
     { name = "coverage", version = "7.16.2", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version < '3.11'" },
     { name = "coverage", version = "7.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "litestar", extra = ["attrs", "pydantic", "standard"] },
@@ -1324,7 +1322,6 @@ requires-dist = [{ name = "litestar", specifier = ">=2.24.0" }]
 [package.metadata.requires-dev]
 build = [{ name = "bump-my-version" }]
 dev = [
-    { name = "anyio" },
     { name = "auto-pytabs", extras = ["sphinx"], specifier = ">=0.5.0" },
     { name = "bump-my-version" },
     { name = "codespell" },
@@ -1368,7 +1365,6 @@ lint = [
     { name = "slotscheck", specifier = ">=0.16.5" },
 ]
 tests = [
-    { name = "anyio" },
     { name = "coverage", extras = ["toml"] },
     { name = "litestar", extras = ["standard", "attrs", "pydantic"] },
     { name = "pytest" },

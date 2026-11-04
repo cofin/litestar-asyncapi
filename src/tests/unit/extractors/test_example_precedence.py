@@ -10,8 +10,6 @@ from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
 if TYPE_CHECKING:
     from litestar import WebSocket
 
-pytestmark = pytest.mark.anyio
-
 
 def test_decorator_examples_override_generated_examples() -> None:
     @dataclass

@@ -4,8 +4,6 @@ from litestar.testing import TestClient
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
 
-pytestmark = pytest.mark.anyio
-
 
 def test_docs_routes_exist_and_have_expected_media_types() -> None:
     app = Litestar(route_handlers=[], plugins=[AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(yaml=True)))])

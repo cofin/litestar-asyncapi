@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 
     from litestar import WebSocket
 
-pytestmark = pytest.mark.anyio
-
 
 def test_websocket_extraction_across_handler_variants() -> None:
     from litestar import Litestar, websocket, websocket_listener

@@ -3,8 +3,6 @@ import pytest
 from litestar_asyncapi import AsyncAPIConfig
 from litestar_asyncapi.spec import Server
 
-pytestmark = pytest.mark.anyio
-
 
 def test_config_defaults() -> None:
     config = AsyncAPIConfig()

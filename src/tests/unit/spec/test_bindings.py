@@ -1,8 +1,4 @@
-import pytest
-
 from litestar_asyncapi.spec.bindings import WebSocketChannelBinding
-
-pytestmark = pytest.mark.anyio
 
 
 def test_websocket_binding_serialization() -> None:
