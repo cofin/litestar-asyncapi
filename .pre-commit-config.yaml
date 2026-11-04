@@ -44,12 +44,6 @@ repos:
         args: [--use-tuple]
         exclude: ^(docs|src/tests|tools)/
 
-  - repo: https://github.com/ariebovenberg/slotscheck
-    rev: v0.21.0
-    hooks:
-      - id: slotscheck
-        files: ^src/litestar_asyncapi/
-
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.3
     hooks:

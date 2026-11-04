@@ -330,6 +330,7 @@ ignore_missing_imports = true
 module = ["pygments.*", "faker.*"]
 
 [tool.slotscheck]
+require-subclass = true
 strict-imports = false
 # The UI adapter inherits Litestar's native, unslotted renderer base.
 exclude-classes = "litestar_asyncapi\\.spec\\.bindings\\..*:.*Binding|litestar_asyncapi\\.plugins\\.renderers:AsyncAPIUIRenderPlugin"
