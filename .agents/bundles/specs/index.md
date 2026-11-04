@@ -14,7 +14,7 @@ Active and planned Flow specifications and task worksheets.
 | [docs-redesign](./docs-redesign/spec.md) | PRD | active | — | Move docs to Zensical with task-oriented navigation and executed examples. |
 | [docs-examples-verified](./docs-examples-verified/spec.md) | Flow | completed | docs-redesign | Run every docs example app in pytest and validate its document. |
 | [docs-zensical-foundation](./docs-zensical-foundation/spec.md) | Flow | completed | docs-redesign | Zensical config, theme, build/CI/Pages wiring, redirects, Sphinx removal. |
-| [docs-reference-curation](./docs-reference-curation/spec.md) | Flow | draft | docs-redesign | Budgeted API reference, field docstrings, scanner gate, CLI page. |
+| [docs-reference-curation](./docs-reference-curation/spec.md) | Flow | completed | docs-redesign | Budgeted API reference, field docstrings, scanner gate, CLI page. |
 | [docs-learn-content](./docs-learn-content/spec.md) | Flow | draft | docs-redesign | Example-first Learn, Integrations and Project pages. |
 | [contract-fixes](./contract-fixes/spec.md) | PRD | completed | — | Fix verified contract, discovery and routing bugs; remove leaked internals; debloat tests and gates. |
 | [public-hygiene](./public-hygiene/spec.md) | Flow | completed | contract-fixes | Remove leaked internals, green lint. |

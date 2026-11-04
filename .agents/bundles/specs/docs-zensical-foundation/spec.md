@@ -93,18 +93,19 @@ URLs are relative to `https://cofin.github.io/litestar-asyncapi/`. Later chapter
 | `usage/renderers.html` | `integrations/documentation-ui/` | Integrations |
 | `usage/security-and-servers.html` | `integrations/security-and-servers/` | Integrations |
 | `reference/index.html`, `reference/api.html`, `genindex.html`, `py-modindex.html` | `reference/` | Reference |
-| `reference/core.html` | `reference/core/` | Reference |
-| `reference/plugins.html` | `reference/plugins/` | Reference |
-| `reference/spec.html` | `reference/spec/` | Reference |
-| `reference/extractors.html` | `reference/extractors/` | Reference |
-| `reference/schema-generation.html` | `reference/schema-generation/` | Reference |
+| `reference/core.html`, `reference/core/` | `reference/plugin/` | Reference |
+| `reference/plugins.html`, `reference/plugins/` | `reference/renderers/` | Reference |
+| `reference/spec.html` | `reference/spec/` (section index) | Reference |
+| `reference/extractors.html`, `reference/extractors/` | `reference/generator/` | Reference |
+| `reference/schema-generation.html`, `reference/schema-generation/` | `reference/schema/` | Reference |
+| none (new pages) | `reference/contracts/`, `reference/spec/document/`, `reference/spec/channels/`, `reference/spec/messages/`, `reference/spec/bindings-security/`, `reference/cli/` | Reference |
 | none (new section index) | `project/` | Project |
 | `migration.html` | `project/migration/` | Project |
 | `changelog.html` | `project/changelog/` | Project |
 | `contribution-guide.html` | `project/contribution-guide/` | Project |
 | `search.html` | `/` | Home |
 
-`reference/index.html` is served by the new page itself, so it needs no stub. The gallery keeps its former section ids (`#websocket-listener`, `#decorator-overrides`, ...).
+`reference/index.html` is served by the new page itself, so it needs no stub. The curated reference replaced the module pages at `reference/core/`, `reference/plugins/`, `reference/extractors/` and `reference/schema-generation/`; each keeps resolving through an `index.html` stub in `REDIRECTS` that keeps the fragment. The gallery keeps its former section ids (`#websocket-listener`, `#decorator-overrides`, ...).
 
 ## Implementation Plan
 

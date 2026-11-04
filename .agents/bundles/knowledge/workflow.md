@@ -49,12 +49,13 @@ make js-install                                # npm ci (Node (`.nvmrc`); build/
 uv run pytest src/tests/unit/test_generator.py::test_name -q --no-cov
 
 # lint & typecheck
-make lint                                      # prek, type-check, slotscheck, zizmor, validate-pep723
+make lint                                      # prek, type-check, slotscheck, zizmor, validate-pep723, scan-docstrings
 make prek                                      # ruff (incl. the future-annotations ban), codespell, file hygiene on tracked and untracked files
 make type-check                                # mypy and pyright
 make slotscheck                                # every class defines __slots__ unless excluded in pyproject.toml
 make zizmor                                    # workflow security scan
 make validate-pep723                           # PEP 723 metadata in docs/examples
+make scan-docstrings                           # inline docstring on every public dataclass field; no planning labels in public docstrings
 make fix                                       # ruff autofix + format
 
 # tests
@@ -70,10 +71,10 @@ make installed-test PYTHON_VERSION=3.12 [LITESTAR_BOUNDARY=latest]
 make browser-test-installed PYTHON_VERSION=3.12
 
 # documentation
-make docs                                      # Zensical strict build, legacy redirects, artifact and internal link verification (.venv-docs, Python 3.12)
+make docs                                      # generated CLI page, Zensical strict build, compaction and redirects, link and Reference budget verification (.venv-docs, Python 3.12)
 make docs-serve                                # live preview
 make docs-linkcheck                            # external links with lychee; skips when lychee is absent
-make docs-clean                                # remove site/ and docs/_generated/
+make docs-clean                                # remove site/, docs/_generated/ and the generated CLI page
 ```
 
 The coverage floor in `addopts`[^addopts] applies only to whole-suite runs; `make test` and `make check-all` enforce it. Coverage traces both `multiprocessing` and `thread`, so handlers run in the `TestClient` worker thread are measured. CI splits these gates into `prek`, `mypy`, `pyright`, `slotscheck`, tested-distribution and per-Python test jobs[^ci].
