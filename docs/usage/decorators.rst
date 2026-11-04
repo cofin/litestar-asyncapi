@@ -7,8 +7,10 @@ application action, ``receive`` or ``send``.
 
 ``asyncapi_operation(messages=[MessageDefinition(...), ...])`` describes multiple
 named choices for one action. ``operation_id`` selects the operation map key.
-``asyncapi_message`` edits one named message; it rejects an ambiguous unnamed
-override when multiple messages exist. Use ``Tag`` objects for tags, not strings.
+``asyncapi_message`` adds one named message; it rejects an ambiguous unnamed
+message when others exist. Messages from both decorators are merged by name in
+either stacking order, and a repeated name raises ``ValueError``. Use ``Tag``
+objects for tags, not strings.
 
 Explicit metadata overrides inference. Explicit ``messages=[]`` and ``examples=[]``
 are intentional empty lists; they do not request fallback inference or generation.

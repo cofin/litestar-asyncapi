@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from litestar.exceptions import ImproperlyConfiguredException
@@ -92,26 +92,24 @@ def asyncapi_operation(
         metadata = _get_or_create_metadata(route_handler)
 
         existing = metadata.operations.get(op_action) or OperationDefinition(action=op_action)
-        if operation_id is not None:
-            existing.operation_id = operation_id
-        if title is not None:
-            existing.title = title
-        if summary is not None:
-            existing.summary = summary
-        if description is not None:
-            existing.description = description
-        if traits is not None:
-            existing.traits = traits
-        for key, value in {
-            "messages": messages,
-            "tags": tags,
-            "security": security,
-            "bindings": bindings,
-            "reply": reply,
-        }.items():
-            if value is not None:
-                setattr(existing, key, value)
-        metadata.operations[op_action] = existing
+        changes: dict[str, Any] = {
+            key: value
+            for key, value in {
+                "operation_id": operation_id,
+                "title": title,
+                "summary": summary,
+                "description": description,
+                "traits": traits,
+                "tags": tags,
+                "security": security,
+                "bindings": bindings,
+                "reply": reply,
+            }.items()
+            if value is not None
+        }
+        if messages is not None:
+            changes["messages"] = [*(existing.messages or []), *messages]
+        metadata.operations[op_action] = replace(existing, **changes)
         return obj
 
     return decorator
@@ -165,9 +163,7 @@ def asyncapi_message(
             tags=tags,
             extensions=extensions or {},
         )
-        operation.messages = [existing for existing in operation.messages or [] if existing.name != name]
-        operation.messages.append(message)
-        metadata.operations[op_action] = operation
+        metadata.operations[op_action] = replace(operation, messages=[*(operation.messages or []), message])
         return obj
 
     return decorator

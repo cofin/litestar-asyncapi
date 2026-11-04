@@ -46,6 +46,11 @@ Fixed
 * Operations added by ``asyncapi_operation`` or ``asyncapi_message`` now get the
   handler's ``summary``, ``description``, ``operation_id`` and docstring when the
   decorator sets none. Decorator values still win.
+* ``asyncapi_operation(messages=...)`` and ``asyncapi_message`` now merge their
+  messages in either stacking order. Previously ``messages=`` silently dropped
+  messages added by ``asyncapi_message`` placed below it. Declaring the same
+  message name twice now raises ``ValueError`` instead of keeping only the last
+  declaration.
 
 0.2.0
 =====
