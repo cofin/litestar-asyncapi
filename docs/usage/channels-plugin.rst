@@ -1,20 +1,29 @@
 ChannelsPlugin
 ==============
 
-Only actual generated WebSocket routes are discovered. Set
-``create_ws_route_handlers=True`` to expose them. Their operation is ``send``:
-the application publishes messages to subscribers; incoming frames are discarded
-by the generated route. Text, bytes and JSON values are possible, so discovery
-does not invent a universal object/JSON payload.
+Generated WebSocket routes (``create_ws_route_handlers=True``) are documented
+with their path as channel key. Their operation is ``send``: the application
+publishes messages to subscribers; incoming frames are discarded by the
+generated route. Deduplication uses native handler identity so a user socket at
+another address is not hidden.
 
-Each generated channel carries ``x-litestar-source: channels`` and an empty
+Each configured topic without a generated fixed-topic route, including every
+topic under Litestar's default ``create_ws_route_handlers=False``, becomes a
+topic-only channel keyed by the topic name. It has the description
+"ChannelsPlugin broker topic" and one ``send`` operation named
+``{topic}_send``. These channels describe broker topics, not addresses a client
+can connect to; hide them with
+``AsyncAPIConfig(include_channels_plugin_topics=False)``.
+
+Topics come only from the names passed to the ``ChannelsPlugin`` constructor and
+are read once when the application starts, so runtime subscriptions never change
+the document. ``arbitrary_channels_allowed=True`` without configured names adds
+no topic channels. A topic named like another channel key, or configured on two
+``ChannelsPlugin`` instances, raises ``ImproperlyConfiguredException``.
+
+Every ChannelsPlugin channel carries ``x-litestar-source: channels`` and an empty
 ``bindings`` object. The empty object is deliberate: it marks a ChannelsPlugin
-subscription rather than a native WebSocket handler, even under a ``/ws/``
-prefix.
-
-With ``create_ws_route_handlers=False``, internal subscriptions produce no phantom
-network channels. Dynamic subscriptions are not broker contracts. Deduplication
-uses native handler identity so a user socket at another address is not hidden.
+channel rather than a native WebSocket handler, even under a ``/ws/`` prefix.
 
 The example retains an HTTP publishing route and a separate typed echo listener:
 

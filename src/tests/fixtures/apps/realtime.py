@@ -81,7 +81,10 @@ def create_app(spec_version: Literal["3.0.0", "3.1.0"]) -> Litestar:
     channels = ChannelsPlugin(
         MemoryChannelsBackend(), channels=["news"], create_ws_route_handlers=True, ws_handler_base_path="/ws/"
     )
-    return Litestar(route_handlers=[metrics, chat, prices, metrics_events], plugins=[channels, AsyncAPIPlugin(config)])
+    topics = ChannelsPlugin(MemoryChannelsBackend(), channels=["orders", "alerts"])
+    return Litestar(
+        route_handlers=[metrics, chat, prices, metrics_events], plugins=[channels, topics, AsyncAPIPlugin(config)]
+    )
 
 
 app_3_0 = create_app("3.0.0")

@@ -19,6 +19,11 @@ Added
   channels with ``contentType: text/event-stream``, an ``http`` binding and
   ``x-litestar-source: sse``. Type their payload with ``asyncapi_message``, and
   turn discovery off with ``AsyncAPIConfig(include_sse_routes=False)``.
+* Topics configured on a ``ChannelsPlugin`` are documented even without
+  generated WebSocket routes, which is Litestar's default. Each topic without a
+  route becomes a channel keyed by its name with one ``send`` operation. Topics
+  are read when the application starts, so runtime subscriptions never appear.
+  Turn this off with ``AsyncAPIConfig(include_channels_plugin_topics=False)``.
 * ``ChannelDefinition`` accepts ``description`` and ``extensions``. Explicit
   channels get no automatic transport marker.
 

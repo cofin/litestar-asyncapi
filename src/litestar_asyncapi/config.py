@@ -126,6 +126,12 @@ class AsyncAPIConfig:
     include_channels_plugin: bool = True
     """Whether to include ChannelsPlugin channels (best-effort)."""
 
+    include_channels_plugin_topics: bool = True
+    """Whether configured ChannelsPlugin topics without a generated route become topic-only channels.
+
+    Applies only when ``include_channels_plugin`` is true.
+    """
+
     include_sse_routes: bool = True
     """Whether to include HTTP routes returning ``ServerSentEvent`` as send-only channels."""
 

@@ -156,8 +156,7 @@ def _discover_channels(
     discovered: list[DiscoveredChannel] = []
     if config.include_websocket_routes:
         discovered.extend(extract_websocket_channels(app, schema_generator=schema_generator, config=config))
-    if config.include_channels_plugin:
-        discovered.extend(extract_channels_plugin_channels(app, schema_generator=schema_generator))
+    discovered.extend(extract_channels_plugin_channels(app, schema_generator=schema_generator, config=config))
     discovered.extend(extract_sse_channels(app, schema_generator=schema_generator, config=config))
     explicit: dict[str, tuple[ChannelDefinition, str]] = {}
     for index, channel in enumerate(config.channels):
@@ -166,6 +165,17 @@ def _discover_channels(
             message = f"Conflicting explicit channel {channel.key!r}: {explicit[channel.key][1]} and {source}"
             raise ImproperlyConfiguredException(message)
         explicit[channel.key] = (channel, source)
+    for channel in discovered:
+        if (
+            channel.key in explicit
+            and channel.source is DiscoverySource.CHANNELS_PLUGIN
+            and channel.route_identity is None
+        ):
+            message = (
+                f"Conflicting channel {channel.key!r}: {channel.provenance} and {explicit[channel.key][1]}; "
+                "type the topic with AsyncAPIConfig.channel_payloads or set include_channels_plugin_topics=False"
+            )
+            raise ImproperlyConfiguredException(message)
     discovered = [channel for channel in discovered if channel.key not in explicit]
     discovered.extend(
         DiscoveredChannel(

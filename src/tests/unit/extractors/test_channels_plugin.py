@@ -6,17 +6,101 @@ from litestar_asyncapi.asyncapi.extractors import extract_channels_plugin_channe
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 
 
-def test_channels_plugin_without_routes_has_no_socket_contracts() -> None:
+def test_configured_topics_without_routes_become_topic_channels() -> None:
     from litestar import Litestar
     from litestar.channels.backends.memory import MemoryChannelsBackend
     from litestar.channels.plugin import ChannelsPlugin
 
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
     plugin = ChannelsPlugin(MemoryChannelsBackend(), channels=["news", "alerts"], create_ws_route_handlers=False)
     app = Litestar(route_handlers=[], plugins=[plugin])
-    gen = AsyncAPISchemaGenerator()
+    document = AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()
 
-    channels = extract_channels_plugin_channels(app, schema_generator=gen)
-    assert channels == []
+    assert set(document["channels"]) == {"news", "alerts"}
+    assert document["channels"]["news"] == {
+        "address": "news",
+        "description": "ChannelsPlugin broker topic",
+        "messages": {"news_send": {"payload": {}}},
+        "bindings": {},
+        "x-litestar-source": "channels",
+    }
+    assert set(document["operations"]) == {"news_send", "alerts_send"}
+    assert document["operations"]["news_send"]["action"] == "send"
+
+    hidden = AsyncAPIGenerator(app, AsyncAPIConfig(include_channels_plugin_topics=False)).build_schema()
+    assert hidden["channels"] == {}
+
+
+def test_runtime_subscriptions_never_reach_the_document() -> None:
+    import asyncio
+
+    from litestar import Litestar
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+
+    from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin, DocsConfig
+
+    channels = ChannelsPlugin(MemoryChannelsBackend(), channels=["news"], arbitrary_channels_allowed=True)
+    asyncapi = AsyncAPIPlugin(AsyncAPIConfig(docs=DocsConfig(enabled=False), use_cache=False))
+    app = Litestar(route_handlers=[], plugins=[channels, asyncapi])
+
+    async def subscribe() -> None:
+        async with channels:
+            await channels.subscribe("runtime")
+
+    asyncio.run(subscribe())
+    assert set(asyncapi.get_asyncapi_schema(app)["channels"]) == {"news"}
+
+
+def test_topic_keys_colliding_with_other_channels_raise() -> None:
+    from litestar import Litestar, websocket_listener
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    from litestar_asyncapi import AsyncAPIConfig, ChannelDefinition
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    @websocket_listener("/live")
+    async def live(data: str) -> str:
+        return data
+
+    app = Litestar([live], plugins=[ChannelsPlugin(MemoryChannelsBackend(), channels=["/live", "news"])])
+    with pytest.raises(
+        ImproperlyConfiguredException,
+        match=r"Conflicting channel '/live': ChannelsPlugin\[0\] topic '/live' and route /live",
+    ):
+        AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()
+
+    config = AsyncAPIConfig(channels=[ChannelDefinition("news", "news")], include_websocket_routes=False)
+    with pytest.raises(
+        ImproperlyConfiguredException, match=r"ChannelsPlugin\[0\] topic 'news'.*AsyncAPIConfig.channels\[0\]"
+    ):
+        AsyncAPIGenerator(app, config).build_schema()
+
+
+def test_topic_shared_by_two_channels_plugins_raises() -> None:
+    from litestar import Litestar
+    from litestar.channels.backends.memory import MemoryChannelsBackend
+    from litestar.channels.plugin import ChannelsPlugin
+    from litestar.exceptions import ImproperlyConfiguredException
+
+    from litestar_asyncapi import AsyncAPIConfig
+    from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+
+    app = Litestar(
+        [],
+        plugins=[
+            ChannelsPlugin(MemoryChannelsBackend(), channels=["news"]),
+            ChannelsPlugin(MemoryChannelsBackend(), channels=["alerts", "news"]),
+        ],
+    )
+    with pytest.raises(
+        ImproperlyConfiguredException, match=r"ChannelsPlugin topic 'news'.*ChannelsPlugin\[0\].*ChannelsPlugin\[1\]"
+    ):
+        AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()
 
 
 def test_channels_plugin_extractor_returns_empty_without_plugin() -> None:
@@ -38,7 +122,7 @@ def test_channels_plugin_extracts_actual_send_only_routes() -> None:
     gen = AsyncAPISchemaGenerator()
 
     channels = extract_channels_plugin_channels(app, schema_generator=gen)
-    assert [channel.address for channel in channels] == ["/news"]
+    assert [channel.key for channel in channels] == ["/news"]
     assert [operation.action.value for operation in channels[0].operations] == ["send"]
 
 
@@ -83,7 +167,8 @@ def test_actual_channels_routes_are_deduplicated_by_native_identity(arbitrary: b
     app = Litestar([user], plugins=[plugin])
     document = AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()
     generated_path = "/ws/{channel_name}" if arbitrary else "/ws/news"
-    assert set(document["channels"]) == {"/ws/user", generated_path}
+    topic_channels = {"news"} if arbitrary else set()
+    assert set(document["channels"]) == {"/ws/user", generated_path, *topic_channels}
     actions = [
         operation["action"]
         for operation in document["operations"].values()

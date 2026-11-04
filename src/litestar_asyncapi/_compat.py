@@ -260,18 +260,49 @@ def websocket_handler_name(handler: Any) -> str:
     return str(getattr(websocket_handler_callback(handler), "__name__", handler.handler_name))
 
 
-def generated_channels_mode(handler: Any, app: Litestar) -> str | None:
-    """Recognize actual native Channels callbacks by owner and generated function identity."""
+@dataclass(slots=True, frozen=True)
+class ChannelsPluginTopics:
+    """Topics a ``ChannelsPlugin`` was constructed with, and how it names its generated routes."""
+
+    topics: tuple[str, ...]
+    root_path: str
+    arbitrary_channels_allowed: bool
+
+
+def channels_plugin_topics(plugin: ChannelsPlugin) -> ChannelsPluginTopics:
+    """Read a plugin's configured topics, handler root path and arbitrary-channel setting.
+
+    Runtime subscriptions add topics to the same private mapping, so callers snapshot this before the
+    application starts.
+    """
+    return ChannelsPluginTopics(
+        topics=tuple(plugin._channels),
+        root_path=plugin._handler_root_path,
+        arbitrary_channels_allowed=plugin._arbitrary_channels_allowed,
+    )
+
+
+def generated_channels_plugin(handler: Any, app: Litestar) -> ChannelsPlugin | None:
+    """Return the application ``ChannelsPlugin`` that generated a WebSocket handler, if any.
+
+    Native Channels callbacks are recognized by owner and generated function identity.
+    """
     callback = handler.fn
     plugins = [plugin for plugin in app.plugins if isinstance(plugin, ChannelsPlugin)]
     owner = getattr(callback, "__self__", None)
     if owner in plugins and getattr(callback, "__func__", None) is ChannelsPlugin._ws_handler_func:
-        return cast("ChannelsPlugin", owner)._socket_send_mode
+        return cast("ChannelsPlugin", owner)
     code = getattr(callback, "__code__", None)
     if code is None or code not in ChannelsPlugin._create_ws_handler_func.__code__.co_consts:
         return None
     owner = getclosurevars(callback).nonlocals.get("self")
-    return owner._socket_send_mode if owner in plugins else None
+    return cast("ChannelsPlugin", owner) if owner in plugins else None
+
+
+def generated_channels_mode(handler: Any, app: Litestar) -> str | None:
+    """Return the frame send mode of a ChannelsPlugin-generated handler, or ``None`` for other handlers."""
+    plugin = generated_channels_plugin(handler, app)
+    return plugin._socket_send_mode if plugin is not None else None
 
 
 def websocket_content_type(handler: Any, field: FieldDefinition, *, sending: bool) -> str | None:
