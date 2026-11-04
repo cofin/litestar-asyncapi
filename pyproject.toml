@@ -32,12 +32,12 @@ requires-python = ">=3.10"
 version = "0.2.0"
 
 [project.urls]
-Changelog = "https://github.com/litestar-org/litestar-asyncapi/releases/"
+Changelog = "https://github.com/cofin/litestar-asyncapi/releases/"
 Discord = "https://discord.gg/litestar-919193495116337154"
-Documentation = "https://github.com/litestar-org/litestar-asyncapi"
-Homepage = "https://github.com/litestar-org/litestar-asyncapi"
-Issue = "https://github.com/litestar-org/litestar-asyncapi/issues/"
-Source = "https://github.com/litestar-org/litestar-asyncapi"
+Documentation = "https://cofin.github.io/litestar-asyncapi/"
+Homepage = "https://github.com/cofin/litestar-asyncapi"
+Issue = "https://github.com/cofin/litestar-asyncapi/issues/"
+Source = "https://github.com/cofin/litestar-asyncapi"
 
 ######################
 # Build & Versioning #
