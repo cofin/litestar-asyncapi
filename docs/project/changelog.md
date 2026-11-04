@@ -3,7 +3,9 @@
 All notable changes to this project will be documented in this file.
 
 
-## Unreleased
+## 0.3.0
+
+This release fixes generated contracts and the published import, inherits document metadata and security schemes from Litestar's OpenAPI config, and documents Server-Sent Event routes and ChannelsPlugin topics. It requires Python 3.11 and includes breaking changes to operation keys, Kafka binding keys and the default document title. See the [migration guide](migration.md).
 
 ### Changed
 
