@@ -1,59 +1,42 @@
 # ChannelsPlugin
 
-Generated WebSocket routes (`create_ws_route_handlers=True`) are documented
-with their path as channel key. Their operation is `send`: the application
-publishes messages to subscribers; incoming frames are discarded by the
-generated route. Deduplication uses native handler identity so a user socket at
-another address is not hidden.
-
-Each configured topic without a generated fixed-topic route, including every
-topic under Litestar's default `create_ws_route_handlers=False`, becomes a
-topic-only channel keyed by the topic name. It has the description
-"ChannelsPlugin broker topic" and one `send` operation named
-`{topic}_send`. These channels describe broker topics, not addresses a client
-can connect to; hide them with
-`AsyncAPIConfig(include_channels_plugin_topics=False)`.
-
-Topics come only from the names passed to the `ChannelsPlugin` constructor and
-are read once when the application starts, so runtime subscriptions never change
-the document. `arbitrary_channels_allowed=True` without configured names adds
-no topic channels. Such a plugin shares its topic list with runtime
-subscriptions, so an `AsyncAPIGenerator` used without `AsyncAPIPlugin`
-documents none of its topics. A topic named like another channel key, or configured on two
-`ChannelsPlugin` instances, raises `ImproperlyConfiguredException`.
-
-Generated and topic-only messages are untyped by default. Map a topic name to a
-payload type with `channel_payloads` to document its schema:
-
-```python
-AsyncAPIConfig(channel_payloads={"news": Headline, "orders": Order})
-```
-
-The topic's generated route and topic-only channel then use the generated
-schema with `contentType: application/json`; generated routes keep
-`x-websocket-mode`. A key that names no configured topic raises
-`ImproperlyConfiguredException`, whatever the include flags say. When a
-`ChannelsPlugin` allows arbitrary channels, an unlisted key instead declares a
-topic, which then gets a topic-only channel. The arbitrary-channel route
-(`.../{channel_name}`) stays untyped.
-
-Every ChannelsPlugin channel carries `x-litestar-source: channels` and an empty
-`bindings` object. The empty object is deliberate: it marks a ChannelsPlugin
-channel rather than a native WebSocket handler, even under a `/ws/` prefix.
-
-The example retains an HTTP publishing route and a separate typed echo listener:
+This application lets `ChannelsPlugin` create subscriber routes for two topics, gives the `news` topic a payload type and adds a route that publishes to either topic:
 
 ```python
 --8<-- "docs/examples/channels_plugin/app.py"
 ```
 
-After starting it, publish with:
+Start it and publish a message:
 
 ```bash
+uv run litestar --app docs.examples.channels_plugin.app:app run
 curl -X POST http://localhost:8000/publish/news -H 'Content-Type: application/json' -d '{"message":"hello"}'
 ```
 
-The generated subscriber's uncertain wire format is documentation-only in the
-console. A client can subscribe directly to its generated route. For an external
-broker contract use explicit `ChannelDefinition` entries, as in
-[Security, servers and mounted docs](security-and-servers.md); declaring one does not implement a broker client.
+## The generated channels
+
+```json
+--8<-- "docs/_generated/fragments/channels_plugin/channels.json"
+```
+
+## Generated subscriber routes
+
+With `create_ws_route_handlers=True`, `ChannelsPlugin` adds a WebSocket route per topic. Each one becomes a channel keyed by its path with a single `send` operation: the application publishes to subscribers, and the route discards incoming frames. The echo listener at `/ws/echo` is a separate handler and is documented as one.
+
+## Topic payloads
+
+Topic messages are untyped unless `channel_payloads` maps the topic name to a type. Here `news` refers to the generated `PublishPayload` schema with `contentType: application/json`, while `alerts` keeps an unconstrained payload. Generated routes keep their `x-websocket-mode`.
+
+A key in `channel_payloads` must name a configured topic, or `ImproperlyConfiguredException` is raised, even when ChannelsPlugin discovery is turned off. When a `ChannelsPlugin` allows arbitrary channels, an unlisted key instead declares a new topic. The arbitrary-channel route, whose path ends in `{channel_name}`, stays untyped.
+
+## Topic-only channels
+
+A topic without a generated route, which includes every topic under Litestar's default `create_ws_route_handlers=False`, becomes a channel keyed by the topic name. It has the description "ChannelsPlugin broker topic" and one `send` operation named `{topic}_send`. It describes a broker topic, not an address a client can connect to. The [concepts example](../learn/concepts.md) shows one. Turn these channels off with `AsyncAPIConfig(include_channels_plugin_topics=False)`, or all ChannelsPlugin discovery with `include_channels_plugin=False`.
+
+Topics come from the names passed to the `ChannelsPlugin` constructor, read once at startup, so runtime subscriptions never change the document. A plugin with `arbitrary_channels_allowed=True` and no configured names adds no topic channels. A topic named like another channel key, or configured on two `ChannelsPlugin` instances, raises `ImproperlyConfiguredException`. An `AsyncAPIGenerator` used without `AsyncAPIPlugin` documents no topics of a plugin that allows arbitrary channels, because only the plugin records the configured names at startup.
+
+## Markers
+
+Every ChannelsPlugin channel carries `x-litestar-source: channels` and an empty `bindings` object. The empty bindings tell it apart from a native WebSocket handler, even when both live under the same path prefix.
+
+Clients subscribe to the generated routes directly. For a broker that the application reaches without ChannelsPlugin, declare [explicit channels](security-and-servers.md#explicit-broker-traits-and-replies); declaring them does not create a broker client.

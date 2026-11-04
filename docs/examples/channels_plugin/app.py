@@ -59,6 +59,7 @@ channels_plugin = ChannelsPlugin(MemoryChannelsBackend(), channels=["news", "ale
 
 config = AsyncAPIConfig(
     title="Channels Plugin",
+    channel_payloads={"news": PublishPayload},
     docs=DocsConfig(interactive=True),
     servers={"local": Server(host="localhost:8000", protocol="ws")},
 )

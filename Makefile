@@ -140,6 +140,7 @@ DOCS_RUN = UV_PROJECT_ENVIRONMENT=.venv-docs uv run --frozen --python $(DOCS_PYT
 docs:                                             ## Build, redirect and verify the documentation site
 	@echo "${INFO} Building docs... 📚"
 	@$(DOCS_RUN) python -m tools.docs.generate_cli_docs
+	@$(DOCS_RUN) python -m tools.docs.export_example_documents
 	@$(DOCS_RUN) zensical build --clean --strict
 	@$(DOCS_RUN) python -m tools.docs.postbuild
 	@$(DOCS_RUN) python -m tools.docs.verify_docs_artifacts
@@ -148,6 +149,7 @@ docs:                                             ## Build, redirect and verify 
 .PHONY: docs-serve
 docs-serve:                                       ## Serve the documentation with live reload
 	@$(DOCS_RUN) python -m tools.docs.generate_cli_docs
+	@$(DOCS_RUN) python -m tools.docs.export_example_documents
 	@$(DOCS_RUN) zensical serve
 
 .PHONY: docs-linkcheck

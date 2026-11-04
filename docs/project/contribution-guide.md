@@ -81,10 +81,12 @@ make docs-linkcheck  # Check external links with lychee, when installed
 
 ## Packaged frontend and distribution
 
-Node (`.nvmrc`) is a development/build dependency, not an installed Python requirement.
-Use the locked npm dependencies and native targets:
+Node is needed only to build and test the packaged UI, not to install or use the Python package.
+Use the version pinned in `.nvmrc`, for example with `nvm use`, then the locked npm dependencies
+and native targets:
 
 ```bash
+nvm use
 npm ci
 make js-test validate-asyncapi browser-test
 make build

@@ -25,6 +25,7 @@ nav = [
     { "WebSocket handlers" = "learn/websocket-handlers.md" },
     { "Decorators" = "learn/decorators.md" },
     { "Schema generation" = "learn/schema-generation.md" },
+    { "Exporting documents" = "learn/export.md" },
     { "Runnable examples" = "learn/examples.md" },
   ] },
   { "Integrations" = [

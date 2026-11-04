@@ -81,7 +81,8 @@ traits and other reusable components.
 - Only finalized native routes are inferred. Internal Channels subscriptions no
   longer create phantom endpoints. Declare external broker channels explicitly.
   Raw sockets require explicit metadata, or opt into uncertain discovery with
-  `include_raw_websocket_routes=True`. SSE inference is unsupported.
+  `include_raw_websocket_routes=True`. HTTP routes that return `ServerSentEvent`
+  are documented as send-only channels; see [Server-Sent Events](../learn/websocket-handlers.md#server-sent-events).
 - A plugin instance belongs to one app, including with caching disabled. Public
   mutable accessors return defensive copies. `clear_cache()` preserves ownership.
 

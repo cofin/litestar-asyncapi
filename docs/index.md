@@ -10,9 +10,10 @@ hide:
 ![Litestar AsyncAPI](_static/logo-dark.svg){ .lv-hero-banner .lv-hero-banner--dark width="320" }
 </div>
 
-Generate AsyncAPI 3.1 documents from finalized Litestar WebSocket routes, or
-supply explicit channel contracts. Serve packaged documentation with optional
-WebSocket interaction, or export documents without mounting any docs routes.
+Generate AsyncAPI 3.1 documents from the WebSocket routes, Server-Sent Event
+routes and ChannelsPlugin topics of a Litestar application, or supply explicit
+channel contracts. Serve packaged documentation with optional WebSocket
+interaction, or export documents without mounting any docs routes.
 
 The implementation reuses Litestar's schema creator, application encoders,
 routers, CLI, and JSON/YAML renderers. Inline schemas use Draft07 tuple semantics.

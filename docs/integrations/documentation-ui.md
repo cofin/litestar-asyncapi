@@ -1,60 +1,38 @@
 # Documentation and interaction
 
-`DocsConfig` owns `path`, `enabled`, `guards`, `dependencies`,
-`renderer`, `interactive`, `yaml` and optional `render_plugins`.
-AsyncAPI React component 3.2.1 (React 18.3.1) is the default. Scalar 1.69.2 is selectable with
-`DocsConfig(renderer="scalar")`; it omits tuple positions, zero-length bounds
-and boolean payload schemas, and its page displays that limitation. Its Agent
-and remote fonts are disabled. Both views consume the same downloadable document.
-Packaged assets need no CDN or Node server at runtime.
-
-`JsonRenderPlugin`, `YamlRenderPlugin` and `AsyncAPIRenderPlugin` are direct
-exports of Litestar's native renderers/base. Their own defaults remain OpenAPI
-paths (`/openapi.json`, `/openapi.yaml` and `/openapi.yml`) and native JSON/YAML
-media types. `DocsConfig` configures AsyncAPI paths and vendor media types for
-you. When constructing them manually, configure those values explicitly:
+`DocsConfig` sets up the documentation routes, and `render_plugins` replaces them when the defaults do not fit. This application serves Scalar at `/events`, the document at custom JSON and YAML paths, and the React console as a separate page:
 
 ```python
 --8<-- "docs/examples/renderers.py"
 ```
 
-The UI adapter inherits the native unslotted renderer base. Its narrowly scoped
-slots-check exception avoids maintaining a duplicate base implementation.
-Supplied renderer objects retain their settings and are not mutated by another
-`DocsConfig`. With custom renderers, set `interactive=True` on a React UI
-instance explicitly if interaction is wanted on that instance.
+## The default routes
+
+`DocsConfig()` mounts, under `/asyncapi`:
+
+- the documentation UI at `/asyncapi/`, using the AsyncAPI React component;
+- the document at `/asyncapi/asyncapi.json` as `application/vnd.asyncapi+json`;
+- with `yaml=True`, the document at `/asyncapi/asyncapi.yaml` and `/asyncapi/asyncapi.yml` as `application/vnd.asyncapi+yaml`;
+- with `interactive=True`, the WebSocket console at `/asyncapi/playground`.
+
+`path`, `guards` and `dependencies` apply to every documentation route, including the packaged assets. `enabled=False` mounts nothing; the document stays available through the plugin and the CLI.
+
+## Choosing a renderer
+
+The default view is the AsyncAPI React component 3.2.1. `DocsConfig(renderer="scalar")` switches to Scalar 1.69.2, which leaves out tuple positions, zero-length bounds and boolean payload schemas, and says so on the page; its agent feature and remote fonts are turned off. Both views read the same downloadable document, and the wheel contains their assets, so no CDN or Node process is needed at runtime.
+
+## Custom renderers
+
+`render_plugins` replaces the default routes. `JsonRenderPlugin`, `YamlRenderPlugin` and `AsyncAPIRenderPlugin` are Litestar's own renderers, so their defaults are OpenAPI paths and media types; pass the AsyncAPI paths and media types yourself, as the example does. A JSON route is added when the list has none, because the UI loads the document from it. Renderer instances are not modified, so set `interactive=True` on an `AsyncAPIUIRenderPlugin` yourself when that page should offer the console. See the [renderers reference](../reference/renderers.md).
 
 ## Opt-in WebSocket console
 
-`DocsConfig(interactive=True)` adds the named React console at `/playground`
-under the docs path. The default React page also gains interaction; Scalar links
-to the console. `AsyncAPIUIRenderPlugin(renderer="scalar", interactive=True)`
-is rejected because Scalar does not provide this interaction.
+`DocsConfig(interactive=True)` adds the React console at `/playground` under the docs path, and the default React page gains the same controls. A Scalar page links to the console instead; `AsyncAPIUIRenderPlugin(renderer="scalar", interactive=True)` is rejected.
 
-The console uses `asyncapi-ws-plugin` 0.1.0 with URL editing disabled. It never
-auto-connects. **Validation is advisory: Send transmits entered text even when
-malformed or schema-invalid.** The server must enforce validation and authorization.
-There is no custom strict mode, validator, transport, sampler or header proxy.
+The console uses `asyncapi-ws-plugin` 0.1.0 with URL editing turned off, and never connects on its own. **Its validation is advisory: Send transmits the entered text even when it is malformed or does not match the schema.** The server must validate messages and authorize clients. The console adds no strict mode, validator, transport or header proxy of its own.
 
-Only verified JSON text object/array contracts expose interaction, including
-nullable roots such as `type: [object, null]` and `oneOf`/`anyOf` unions whose
-members are all objects or arrays. Binary frames,
-plain text, JSON-string roots and unconstrained/ambiguous roots are documented but
-not interactive. One unsupported message, including a reply choice, disables
-interaction for the whole operation. Supply explicit tuple examples: the upstream
-sampler does not reliably seed positional tuples. Inbound logs use upstream
-classification and diagnostics; they are not server-side validation evidence.
+Only operations whose messages are JSON text objects or arrays are interactive. That includes nullable roots such as `type: [object, null]` and `oneOf` or `anyOf` unions of objects or arrays. Binary frames, plain text, JSON strings and unconstrained payloads are documented without controls, and one such message, including a reply, makes its whole operation documentation-only. The upstream example sampler does not fill positional tuples reliably, so give tuple payloads explicit examples. Inbound message checks use the upstream classification and are not server-side validation.
 
-Explicit ws/wss servers and parameter values are required. Parameters can provide
-a default, first example or first enum value. Missing servers expose no connection
-control; unresolved values disable Connect. Browser tests exercised real ws frames,
-query authentication and WSS URL resolution; they did not establish a live TLS
-connection. Browsers cannot attach arbitrary authorization headers to WebSockets.
+To connect, the document must declare a `ws` or `wss` server, and every channel parameter needs a value from its default, first example or first enum entry. Without a server there is no Connect control, and an unresolved value disables it. Browsers cannot attach arbitrary headers such as `Authorization` to a WebSocket, so use query parameters or cookies for socket authentication.
 
-The upstream plugin owns bounded logs and shared connections. Collapsing schema
-details leaves shared send/receive sockets open. Full renderer/plugin unmount and
-page departure dispose sockets. A persisted browser back/forward restoration reloads
-the documentation. Connection errors preserve downloads; successful reconnection
-clears the current alert. Restrictive CSP is not relaxed automatically: script
-failures retain a readable fallback, and blocked connections can take the native
-10-second connection timeout to report failure.
+The upstream plugin owns the message logs and shared connections. Collapsing a schema keeps its sockets open; leaving the page closes them. A page restored from the browser's back-forward cache reloads the documentation. A restrictive Content Security Policy is left as configured: if it blocks the scripts, the page still offers the JSON download, and a blocked connection can take the browser's ten-second timeout to fail.
