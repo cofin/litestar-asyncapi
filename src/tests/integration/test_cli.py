@@ -75,7 +75,7 @@ def test_write_failure_and_invalid_format(tmp_path: Path) -> None:
     assert "Invalid value" in invalid.stderr
 
 
-@pytest.mark.parametrize("name", ["bindings", "realtime"])
+@pytest.mark.parametrize("name", ["bindings", "openapi", "realtime"])
 @pytest.mark.parametrize("version", ["3.0.0", "3.1.0"])
 def test_committed_generated_fixtures_match_export(name: str, version: str) -> None:
     from importlib import import_module

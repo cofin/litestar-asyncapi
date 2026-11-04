@@ -25,7 +25,7 @@ from litestar_asyncapi.asyncapi.extractors import (
     extract_sse_channels,
     extract_websocket_channels,
 )
-from litestar_asyncapi.asyncapi.openapi import inherited_info
+from litestar_asyncapi.asyncapi.openapi import OPENAPI_SOURCE, inherited_info, inherited_security_schemes
 from litestar_asyncapi.asyncapi.schema_generation import AsyncAPISchemaGenerator
 from litestar_asyncapi.asyncapi.utils.examples import generate_example, normalize_examples
 from litestar_asyncapi.spec import (
@@ -79,6 +79,13 @@ class AsyncAPIGenerator:
         document.servers.update(self.config.to_servers())
 
         document.components = deepcopy(self.config.components)
+        if self.config.inherit_openapi:
+            _merge_components(
+                document.components.security_schemes,
+                inherited_security_schemes(openapi),
+                "securitySchemes",
+                source=OPENAPI_SOURCE,
+            )
         _merge_components(document.components.operation_traits, self.config.to_operation_traits(), "operationTraits")
         _merge_components(document.components.message_traits, self.config.to_message_traits(), "messageTraits")
         discovered = _normalize_channels(_discover_channels(self.app, self.config, schema_generator))
@@ -485,11 +492,14 @@ def _definition_key(value: Any) -> str:
     return json.dumps(stable(value), sort_keys=True, ensure_ascii=True)
 
 
-def _merge_components(target: dict[str, Any], additions: dict[str, Any], category: str) -> None:
+def _merge_components(
+    target: dict[str, Any], additions: dict[str, Any], category: str, *, source: str | None = None
+) -> None:
     for key, value in additions.items():
         if key in target and _definition_key(target[key]) != _definition_key(value):
             message = (
-                f"Conflicting component {category}/{key}: AsyncAPIConfig.components and generated/configured {category}"
+                f"Conflicting component {category}/{key}: AsyncAPIConfig.components and "
+                f"{source or f'generated/configured {category}'}"
             )
             raise ImproperlyConfiguredException(message)
         target[key] = value

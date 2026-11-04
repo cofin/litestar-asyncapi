@@ -22,6 +22,13 @@ All notable changes to this project will be documented in this file.
   `terms_of_service` and `external_docs` on `AsyncAPIConfig` are filled from
   it, and explicit values win. Tags are not inherited. Turn this off with
   `AsyncAPIConfig(inherit_openapi=False)`.
+- Security schemes defined in the application's OpenAPI config, including the
+  ones Litestar auth backends such as `JWTAuth` register, are added to
+  `components.securitySchemes`. Bearer, other HTTP, API key, OAuth2, OpenID
+  Connect and mutual TLS schemes are converted to their AsyncAPI form. Schemes
+  and OAuth flows that AsyncAPI cannot express, such as flows with relative
+  URLs, are skipped with a warning. Security requirements are not inherited, and
+  a configured scheme with the same name but a different definition raises.
 - Every discovered channel now says which transport it uses. A channel carries
   `x-litestar-source` set to `websocket` or `channels`, and an explicit
   `bindings` object: native WebSocket channels get a `ws` binding and

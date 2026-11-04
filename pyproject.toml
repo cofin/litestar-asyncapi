@@ -81,7 +81,7 @@ lint = [
   "slotscheck>=0.16.5",
 ]
 tests = [
-  "litestar[standard,attrs,pydantic]",
+  "litestar[standard,attrs,pydantic,jwt]",
   "coverage[toml]",
   "pytest",
   "pytest-timeout",

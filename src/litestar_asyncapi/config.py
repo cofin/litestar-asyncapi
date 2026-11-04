@@ -137,7 +137,10 @@ class AsyncAPIConfig:
     external_docs: ExternalDocumentation | None = None
     """Additional external documentation; inherited from the application's OpenAPI config when unset."""
     inherit_openapi: bool = True
-    """Whether to fill unset metadata from ``app.openapi_config``; tags are never inherited."""
+    """Whether to fill unset metadata and security schemes from ``app.openapi_config``.
+
+    Tags and security requirements are never inherited.
+    """
     default_content_type: str | None = None
     """Default content type for messages, if not otherwise specified."""
     use_handler_docstrings: bool = False

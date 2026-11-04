@@ -1,12 +1,27 @@
 from copy import deepcopy
 
+import pytest
 from litestar import Litestar
+from litestar.exceptions import ImproperlyConfiguredException
 from litestar.openapi import OpenAPIConfig
-from litestar.openapi.spec import Contact, ExternalDocumentation, License, Tag
+from litestar.openapi.spec import (
+    Components,
+    Contact,
+    ExternalDocumentation,
+    License,
+    OAuthFlow,
+    OAuthFlows,
+    Reference,
+    SecurityScheme,
+    Tag,
+)
+from litestar.security.jwt import JWTAuth
 
 from litestar_asyncapi import AsyncAPIConfig, AsyncAPIPlugin
 from litestar_asyncapi.asyncapi.generator import AsyncAPIGenerator
+from litestar_asyncapi.spec import Components as AsyncAPIComponents
 from litestar_asyncapi.spec import Contact as AsyncAPIContact
+from litestar_asyncapi.spec import SecurityScheme as AsyncAPISecurityScheme
 
 
 def openapi_config(**kwargs: object) -> OpenAPIConfig:
@@ -86,3 +101,151 @@ def test_openapi_config_is_read_at_build_time_and_not_mutated() -> None:
 
     assert plugin.get_asyncapi_schema(app)["info"]["title"] == "Renamed"
     assert {name: getattr(app.openapi_config, name) for name in fields} == before
+
+
+def security_schemes(*schemes: tuple[str, SecurityScheme], **config: object) -> dict[str, object]:
+    app = Litestar(openapi_config=openapi_config(components=Components(security_schemes=dict(schemes))))
+    return AsyncAPIGenerator(app, AsyncAPIConfig(**config)).build_schema()["components"].get("securitySchemes", {})
+
+
+def test_jwt_auth_scheme_is_inherited_as_lowercase_bearer() -> None:
+    auth = JWTAuth[object](retrieve_user_handler=lambda token, connection: None, token_secret="x" * 32)
+    plugin = AsyncAPIPlugin()
+    app = Litestar(on_app_init=[auth.on_app_init], plugins=[plugin])
+
+    document = plugin.get_asyncapi_schema(app)
+
+    assert document["components"]["securitySchemes"] == {
+        "BearerToken": {
+            "type": "http",
+            "description": "JWT api-key authentication and authorization.",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    assert all("security" not in operation for operation in document["operations"].values())
+
+
+@pytest.mark.parametrize(
+    ("scheme", "expected"),
+    [
+        (SecurityScheme(type="http", scheme="Basic"), {"type": "http", "scheme": "basic"}),
+        (
+            SecurityScheme(type="apiKey", name="X-Key", security_scheme_in="header", description="Key"),
+            {"type": "httpApiKey", "name": "X-Key", "in": "header", "description": "Key"},
+        ),
+        (
+            SecurityScheme(type="apiKey", name="key", security_scheme_in="query"),
+            {"type": "httpApiKey", "name": "key", "in": "query"},
+        ),
+        (
+            SecurityScheme(type="apiKey", name="session", security_scheme_in="cookie"),
+            {"type": "httpApiKey", "name": "session", "in": "cookie"},
+        ),
+        (
+            SecurityScheme(type="openIdConnect", open_id_connect_url="https://id.example.com/.well-known"),
+            {"type": "openIdConnect", "openIdConnectUrl": "https://id.example.com/.well-known"},
+        ),
+        (
+            SecurityScheme(type="mutualTLS", description="Client certificate"),
+            {"type": "X509", "description": "Client certificate"},
+        ),
+        (
+            SecurityScheme(
+                type="oauth2",
+                flows=OAuthFlows(
+                    client_credentials=OAuthFlow(token_url="https://id.example.com/token"),
+                    authorization_code=OAuthFlow(
+                        authorization_url="https://id.example.com/authorize",
+                        token_url="https://id.example.com/token",
+                        refresh_url="https://id.example.com/refresh",
+                        scopes={"orders:read": "Read orders"},
+                    ),
+                ),
+            ),
+            {
+                "type": "oauth2",
+                "flows": {
+                    "clientCredentials": {"tokenUrl": "https://id.example.com/token", "availableScopes": {}},
+                    "authorizationCode": {
+                        "authorizationUrl": "https://id.example.com/authorize",
+                        "tokenUrl": "https://id.example.com/token",
+                        "refreshUrl": "https://id.example.com/refresh",
+                        "availableScopes": {"orders:read": "Read orders"},
+                    },
+                },
+            },
+        ),
+    ],
+)
+def test_openapi_security_schemes_are_mapped(scheme: SecurityScheme, expected: dict[str, object]) -> None:
+    assert security_schemes(("auth", scheme)) == {"auth": expected}
+
+
+def test_relative_oauth_flows_are_skipped_with_a_warning() -> None:
+    scheme = SecurityScheme(
+        type="oauth2",
+        flows=OAuthFlows(
+            password=OAuthFlow(token_url="/token"),
+            client_credentials=OAuthFlow(token_url="https://id.example.com/token"),
+        ),
+    )
+    with pytest.warns(UserWarning, match=r"'auth'.*password.*relative"):
+        schemes = security_schemes(("auth", scheme))
+
+    assert schemes == {
+        "auth": {
+            "type": "oauth2",
+            "flows": {"clientCredentials": {"tokenUrl": "https://id.example.com/token", "availableScopes": {}}},
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    "scheme",
+    [
+        SecurityScheme(type="oauth2", flows=OAuthFlows(implicit=OAuthFlow(authorization_url="/authorize"))),
+        SecurityScheme(type="apiKey", name="key"),
+        SecurityScheme(type="http"),
+        Reference(ref="#/components/securitySchemes/other"),
+    ],
+)
+def test_unmappable_security_schemes_are_skipped_with_a_warning(scheme: SecurityScheme | Reference) -> None:
+    with pytest.warns(UserWarning, match="Skipping OpenAPI security scheme 'auth'"):
+        assert security_schemes(("auth", scheme)) == {}
+
+
+def test_list_components_are_merged_without_mutation() -> None:
+    first = Components(security_schemes={"key": SecurityScheme(type="apiKey", name="a", security_scheme_in="header")})
+    second = Components(security_schemes={"key": SecurityScheme(type="apiKey", name="b", security_scheme_in="query")})
+    app = Litestar(openapi_config=openapi_config(components=[first, second]))
+
+    schemes = AsyncAPIGenerator(app, AsyncAPIConfig()).build_schema()["components"]["securitySchemes"]
+
+    assert schemes == {"key": {"type": "httpApiKey", "name": "b", "in": "query"}}
+    assert app.openapi_config is not None
+    assert app.openapi_config.components == [first, second]
+
+
+def test_security_schemes_are_not_inherited_when_disabled() -> None:
+    scheme = SecurityScheme(type="http", scheme="basic")
+
+    assert security_schemes(("auth", scheme), inherit_openapi=False) == {}
+
+
+def test_identical_configured_scheme_is_accepted() -> None:
+    configured = AsyncAPIComponents(security_schemes={"auth": AsyncAPISecurityScheme(type="http", scheme="basic")})
+
+    schemes = security_schemes(("auth", SecurityScheme(type="http", scheme="Basic")), components=configured)
+
+    assert schemes == {"auth": {"type": "http", "scheme": "basic"}}
+
+
+def test_conflicting_configured_scheme_raises_naming_both_sources() -> None:
+    configured = AsyncAPIComponents(security_schemes={"auth": AsyncAPISecurityScheme(type="userPassword")})
+
+    with pytest.raises(
+        ImproperlyConfiguredException,
+        match=r"securitySchemes/auth.*AsyncAPIConfig\.components.*OpenAPIConfig\.components",
+    ):
+        security_schemes(("auth", SecurityScheme(type="http", scheme="basic")), components=configured)
