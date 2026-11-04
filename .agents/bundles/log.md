@@ -36,7 +36,7 @@ Verification:212source tests93.34%, five installed Python3.10–3.14 lanes212eac
 ### Flow: Modernize Project Tooling, CI, and Configuration (`modernize-project-tooling`)
 - Migrated hook execution from `pre-commit` to `uvx prek` with standardized `tools/hooks/no_future_annotations.py`.
 - Modernized packaging and dependencies in `pyproject.toml`: Python 3.14 classifier, updated dependency groups, `[tool.ruff.format]`, `[tool.ruff.lint.per-file-ignores]`, `[tool.pyright]` configuration, and fixed 9 typing discrepancies.
-- Modernized `Makefile` with `.SHELLFLAGS := -euo pipefail -c`, Rodete OS detection, `prek`, `zizmor`, `WORKING_TREE_FILES`, `docs-audit`, `release`, and `check-all`.
+- Modernized `Makefile` with `.SHELLFLAGS := -euo pipefail -c`, `prek`, `zizmor`, `WORKING_TREE_FILES`, `docs-audit`, `release`, and `check-all`.
 - Hardened all GitHub Actions workflows (`ci.yml`, `test.yml`, `docs.yml`, `pr-title.yml`, `publish.yml`): full commit SHA pins, `persist-credentials: false`, `permissions: contents: read`, `pull_request` trigger, disabled uv cache on publish, and `$/` self-repository syntax.
 - Configured `.vscode/settings.json` and `.vscode/launch.json` adhering to modern workspace standards.
 - Rebuilt Sphinx documentation architecture: modernized `conf.py` (pruned 18 unused extensions), created `tools/docs_audit.py`, overhauled all guides across `docs/usage/`, created examples gallery indexing all 6 runnable PEP 723 applications, modularized `docs/reference/`, and verified clean build under `make docs`, `make docs-audit`, `make docs-linkcheck`.

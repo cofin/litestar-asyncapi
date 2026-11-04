@@ -2,7 +2,7 @@
 type: Task
 id: public-hygiene:t01
 title: Remove internal environment detection and setup script
-state: pending
+state: completed
 priority: P0
 verification_strategy: static_validation
 depends_on: []
@@ -14,15 +14,15 @@ files:
 tests: []
 plan_revision: 4
 plan_commit: 691324d
-state_revision: 0
+state_revision: 1
 claimed_by: null
 claimed_at: null
 blocked_reason: null
 unblock_condition: null
 next_step: null
-last_verified_at: null
+last_verified_at: 2026-11-04T17:37:12Z
 last_verified_commit: null
-verification_evidence: null
+verification_evidence: "name grep exit 1; install dry-run has no setup-env; Makefile.local override sourced from file; type-check, slotscheck, zizmor and example validators exit 0"
 created_at: 2026-11-04T00:00:00Z
 updated_at: 2026-11-04T00:00:00Z
 commit: null
@@ -66,8 +66,8 @@ No tracked file names the internal environment. `make install` works from the de
 
 ## Acceptance Criteria
 
-- [ ] R1: no tracked file names the internal environment.
-- [ ] R2: `install` no longer depends on `setup-env`. `Makefile.local` is optional, git-ignored and loaded when present.
-- [ ] The script and the `tools/scripts/` directory are removed.
+- [x] R1: no tracked file names the internal environment.
+- [x] R2: `install` no longer depends on `setup-env`. `Makefile.local` is optional, git-ignored and loaded when present.
+- [x] The script and the `tools/scripts/` directory are removed.
 
 ## Notes & Discoveries

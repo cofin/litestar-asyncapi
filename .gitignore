@@ -80,3 +80,7 @@ node_modules/
 # Browser test artifacts
 test-results/
 playwright-report/
+
+# Local developer overrides
+Makefile.local
+uv.toml

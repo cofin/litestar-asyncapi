@@ -3,7 +3,7 @@ type: Spec
 flow_id: public-hygiene
 title: Remove Leaked Internals and Green the Lint Gate
 description: Remove internal environment names and stale planning labels from tracked files and make make lint pass.
-state: planned
+state: active
 parent_prd: contract-fixes
 research: []
 plan_revision: 4
@@ -85,7 +85,7 @@ tags: [hygiene, release-ci, lint]
 
 ### Phase 1
 
-- [ ] t01 — remove internal environment detection and setup script (tasks/t01-remove-internal-env.md)
+- [x] t01 — remove internal environment detection and setup script (tasks/t01-remove-internal-env.md)
 - [ ] t02 — green the lint gate and remove planning labels (tasks/t02-green-lint.md)
 
 **Phase 1 Recovery Checkpoint:** `make lint && make type-check && make test` exits `0`, and `git grep -il` for the environment name prints nothing.

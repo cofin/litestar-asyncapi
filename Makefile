@@ -12,11 +12,7 @@ MAKEFLAGS += --no-print-directory
 PYTHON_VERSION ?= 3.10
 UV_SYNC_ARGS ?= --all-extras --dev
 
-# Detect Rodete and configure index URLs for Python tools
-ifneq ($(shell grep -s -q "rodete" /etc/os-release && echo "yes"),)
-export PIP_INDEX_URL=https://pypi.org/simple
-export UV_INDEX_URL=https://pypi.org/simple
-endif
+-include Makefile.local
 
 # -----------------------------------------------------------------------------
 # Display Formatting and Colors
@@ -43,10 +39,6 @@ help:                                               ## Display this help text fo
 # Installation and Environment Setup
 # =============================================================================
 
-.PHONY: setup-env
-setup-env:                                          ## Configure local environment (e.g. Rodete)
-	@./tools/scripts/setup-env.sh
-
 .PHONY: install-uv
 install-uv:                                         ## Install latest version of uv
 	@echo "${INFO} Installing uv... ⚡"
@@ -54,7 +46,7 @@ install-uv:                                         ## Install latest version of
 	@echo "${OK} UV installed successfully 🎉"
 
 .PHONY: install
-install: destroy clean setup-env                    ## Install all locked development dependencies
+install: destroy clean                              ## Install all locked development dependencies
 	@echo "${INFO} Starting fresh installation... ⚡"
 	@uv python pin $(PYTHON_VERSION) >/dev/null 2>&1
 	@uv venv >/dev/null 2>&1
