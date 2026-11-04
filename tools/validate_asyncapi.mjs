@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Parser } from '@asyncapi/parser';
@@ -35,6 +35,10 @@ function parserInput(value, location = [], inMap = false, literal = false) {
     result[key] = parserInput(child, location.concat(key), !inMap && objectMaps.has(key), literal || (!inMap && (literalFields.has(key) || key.startsWith('x-'))));
   }
   return result;
+}
+
+async function jsonFiles(directory) {
+  return (await readdir(directory)).filter(name => name.endsWith('.json')).sort().map(name => path.join(directory, name));
 }
 
 async function validate(input, label) {
@@ -83,8 +87,17 @@ async function verifyGate(document) {
 }
 
 try {
-  const requested = process.argv.slice(2);
-  const files = requested.length ? requested : (await readdir(fixtureDirectory)).filter(name => name.endsWith('.json')).sort().map(name => path.join(fixtureDirectory, name));
+  const requested = [];
+  for (const argument of process.argv.slice(2)) {
+    if (!(await stat(argument)).isDirectory()) {
+      requested.push(argument);
+      continue;
+    }
+    const documents = await jsonFiles(argument);
+    if (!documents.length) throw new Error(`${argument}: no AsyncAPI documents to validate`);
+    requested.push(...documents);
+  }
+  const files = requested.length ? requested : await jsonFiles(fixtureDirectory);
   for (const file of files) {
     const document = JSON.parse(await readFile(file, 'utf8'));
     await validate(document, file);

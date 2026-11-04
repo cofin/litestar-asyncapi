@@ -43,6 +43,7 @@ dist/
 
 # Documentation output
 docs/_build/
+docs/_generated/
 docs-build/
 
 # Editors and operating systems

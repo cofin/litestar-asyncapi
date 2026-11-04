@@ -278,9 +278,13 @@ lint: prek type-check slotscheck zizmor validate-examples validate-pep723 ## Run
 check-all: lint test                               ## Run lint, then the test suite once with coverage
 
 .PHONY: validate-asyncapi
-validate-asyncapi: export-asyncapi-fixture          ## Validate offline AsyncAPI contracts and Draft07 payloads
+validate-asyncapi: export-asyncapi-fixture export-example-documents ## Validate offline AsyncAPI contracts, docs examples and Draft07 payloads
 	@npm run validate:asyncapi
-	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json
+	@node tools/validate_asyncapi.mjs .tmp/asyncapi-fixture.json docs/_generated
+
+.PHONY: export-example-documents
+export-example-documents:                          ## Export every docs example document to docs/_generated
+	@uv run python -m tools.docs.export_example_documents
 
 .PHONY: export-asyncapi-fixture
 export-asyncapi-fixture:                           ## Export application contracts for the official gate
