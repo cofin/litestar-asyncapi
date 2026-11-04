@@ -15,6 +15,10 @@ class Tag(BaseSchemaObject):
     """AsyncAPI Tag object."""
 
     name: str
+    """Name of the tag."""
     description: str | None = None
+    """Description of the tag; CommonMark is allowed."""
     external_docs: "ExternalDocumentation | Reference | None" = None
+    """Additional external documentation."""
     extensions: dict[str, Any] = field(default_factory=dict)
+    """Specification extensions; every key must start with ``x-``."""

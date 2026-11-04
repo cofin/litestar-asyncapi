@@ -58,7 +58,9 @@ class AsyncAPIGenerator:
     """Build AsyncAPI documents from Litestar apps and AsyncAPIConfig."""
 
     app: "Litestar"
+    """Application whose routes and plugins are documented."""
     config: "AsyncAPIConfig"
+    """Configuration that supplies metadata, explicit contracts and discovery flags."""
 
     def build_asyncapi(self) -> AsyncAPI:
         """Build an AsyncAPI document object.

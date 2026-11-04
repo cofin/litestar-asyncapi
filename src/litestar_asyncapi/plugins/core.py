@@ -49,20 +49,17 @@ def _handle_docs_path_not_found(path: str = "/") -> Response[Any]:
 
 
 class AsyncAPIPlugin(InitPluginProtocol):
-    """AsyncAPI plugin for Litestar.
+    """Generate the application's AsyncAPI document and serve its documentation routes.
 
-    This plugin provides AsyncAPI documentation support for event-driven APIs,
-    similar to how OpenAPI documents REST APIs.
+    One instance belongs to one application, and an application accepts one instance.
+
+    Args:
+        config: Plugin configuration; defaults to ``AsyncAPIConfig()``.
     """
 
     __slots__ = ("_app", "_cached_asyncapi", "_cached_json", "_cached_schema", "_channels_topics", "_config")
 
     def __init__(self, config: "AsyncAPIConfig | None" = None) -> None:
-        """Initialize the AsyncAPI plugin.
-
-        Args:
-            config: Optional AsyncAPI configuration. If not provided, defaults will be used.
-        """
         from litestar_asyncapi.config import AsyncAPIConfig
 
         self._config = config or AsyncAPIConfig()

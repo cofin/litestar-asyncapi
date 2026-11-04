@@ -38,6 +38,9 @@ jobs:
       - name: Validate PEP 723 script blocks
         run: make validate-pep723
 
+      - name: Check public docstrings
+        run: make scan-docstrings
+
       - name: Run zizmor workflow audit
         run: make zizmor
 

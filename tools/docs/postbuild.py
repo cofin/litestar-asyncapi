@@ -1,13 +1,19 @@
-"""Write redirect stubs from every former Sphinx URL to its page on the Zensical site.
+"""Write redirect stubs from every former URL to its page on the Zensical site.
 
 The Sphinx site served flat ``<page>.html`` files. The Zensical site uses directory URLs, so each
 former file becomes a small HTML stub that forwards to the new page and keeps the URL fragment,
-which preserves deep links such as ``usage/websocket-handlers.html#server-sent-events``.
+which preserves deep links such as ``usage/websocket-handlers.html#server-sent-events``. Reference
+pages that were renamed keep their former directory URLs the same way, through an ``index.html`` stub.
+
+Built pages are also compacted: the indentation the theme templates leave at the start of each line is
+removed everywhere except inside ``pre``, ``textarea``, ``script`` and ``style`` elements, where
+whitespace is significant. This keeps API reference pages within their size budget.
 """
 
 import html
 import json
 import posixpath
+import re
 import sys
 from pathlib import Path
 
@@ -31,16 +37,23 @@ REDIRECTS: dict[str, str] = {
     "changelog.html": "project/changelog/",
     "contribution-guide.html": "project/contribution-guide/",
     "reference/api.html": "reference/",
-    "reference/core.html": "reference/core/",
-    "reference/plugins.html": "reference/plugins/",
+    "reference/core.html": "reference/plugin/",
+    "reference/plugins.html": "reference/renderers/",
     "reference/spec.html": "reference/spec/",
-    "reference/extractors.html": "reference/extractors/",
-    "reference/schema-generation.html": "reference/schema-generation/",
+    "reference/extractors.html": "reference/generator/",
+    "reference/schema-generation.html": "reference/schema/",
     "genindex.html": "reference/",
     "py-modindex.html": "reference/",
     "search.html": "./",
+    "reference/core/index.html": "reference/plugin/",
+    "reference/plugins/index.html": "reference/renderers/",
+    "reference/extractors/index.html": "reference/generator/",
+    "reference/schema-generation/index.html": "reference/schema/",
 }
-"""Former Sphinx page path mapped to its locked Zensical URL, both relative to the site root."""
+"""Former page path mapped to the URL that replaced it, both relative to the site root."""
+
+PRESERVED = re.compile(r"<(pre|textarea|script|style)\b.*?</\1>", re.DOTALL | re.IGNORECASE)
+INDENTATION = re.compile(r"\n\s+")
 
 STUB = """<!DOCTYPE html>
 <html lang="en">
@@ -80,13 +93,37 @@ def write_redirects(site: Path) -> list[Path]:
     return written
 
 
+def compact(text: str) -> str:
+    """Remove line indentation and blank lines outside whitespace-sensitive elements."""
+    parts = []
+    position = 0
+    for match in PRESERVED.finditer(text):
+        parts.append(INDENTATION.sub("\n", text[position : match.start()]))
+        parts.append(match.group(0))
+        position = match.end()
+    parts.append(INDENTATION.sub("\n", text[position:]))
+    return "".join(parts)
+
+
+def compact_pages(site: Path) -> int:
+    """Compact every built page in place and return the number of bytes saved."""
+    saved = 0
+    for page in site.rglob("*.html"):
+        original = page.read_text(encoding="utf-8")
+        compacted = compact(original)
+        saved += len(original.encode()) - len(compacted.encode())
+        page.write_text(compacted, encoding="utf-8")
+    return saved
+
+
 def main() -> int:
-    """Write the redirect stubs into the built site and return a process exit code."""
+    """Compact the built pages, write the redirect stubs and return a process exit code."""
     if not (SITE / "index.html").is_file():
         print(f"{SITE} has no built site; run the Zensical build first", file=sys.stderr)
         return 1
+    saved = compact_pages(SITE)
     written = write_redirects(SITE)
-    print(f"Wrote {len(written)} redirect stubs")
+    print(f"Compacted pages by {saved} bytes and wrote {len(written)} redirect stubs")
     return 0
 
 

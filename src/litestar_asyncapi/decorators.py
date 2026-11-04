@@ -34,6 +34,7 @@ class AsyncAPIMetadata:
     """Typed operation definitions attached to the native handler option layer."""
 
     operations: dict[OperationAction, OperationDefinition] = field(default_factory=dict)
+    """Operation definitions keyed by action, written by the AsyncAPI decorators."""
 
 
 def _get_route_handler(obj: object) -> "BaseRouteHandler":
@@ -67,7 +68,10 @@ def asyncapi_operation(
     bindings: dict[str, Any] | Reference | None = None,
     reply: Reply | Reference | None = None,
 ) -> Callable[[T], T]:
-    """Attach AsyncAPI operation metadata to a websocket route handler.
+    """Declare the operation for one action on a WebSocket or Server-Sent Event route handler.
+
+    Keyword arguments match the fields of ``OperationDefinition``; ``None`` keeps the discovered value.
+    Decorating the same handler again for the same action updates the declaration and appends messages.
 
     Returns:
         A decorator that mutates the Litestar route handler metadata in-place.
@@ -120,7 +124,10 @@ def asyncapi_message(
     tags: list[Tag | Reference] | None = None,
     extensions: dict[str, Any] | None = None,
 ) -> Callable[[T], T]:
-    """Attach AsyncAPI message metadata to a websocket route handler.
+    """Add a message to the operation for one action on a WebSocket or Server-Sent Event route handler.
+
+    Keyword arguments match the fields of ``MessageDefinition``. A message without a ``name`` is
+    rejected when the operation already has messages.
 
     Returns:
         A decorator that mutates the Litestar route handler metadata in-place.

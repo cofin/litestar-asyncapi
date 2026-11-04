@@ -139,6 +139,7 @@ DOCS_RUN = UV_PROJECT_ENVIRONMENT=.venv-docs uv run --frozen --python $(DOCS_PYT
 .PHONY: docs
 docs:                                             ## Build, redirect and verify the documentation site
 	@echo "${INFO} Building docs... 📚"
+	@$(DOCS_RUN) python -m tools.docs.generate_cli_docs
 	@$(DOCS_RUN) zensical build --clean --strict
 	@$(DOCS_RUN) python -m tools.docs.postbuild
 	@$(DOCS_RUN) python -m tools.docs.verify_docs_artifacts
@@ -146,6 +147,7 @@ docs:                                             ## Build, redirect and verify 
 
 .PHONY: docs-serve
 docs-serve:                                       ## Serve the documentation with live reload
+	@$(DOCS_RUN) python -m tools.docs.generate_cli_docs
 	@$(DOCS_RUN) zensical serve
 
 .PHONY: docs-linkcheck
@@ -162,12 +164,18 @@ docs-linkcheck:                                   ## Check external links in the
 .PHONY: docs-clean
 docs-clean:                                       ## Clean documentation artifacts
 	@echo "${INFO} Cleaning docs artifacts... 📚"
-	@rm -rf site docs/_generated >/dev/null 2>&1
+	@rm -rf site docs/_generated docs/reference/cli.md >/dev/null 2>&1
 	@echo "${OK} Docs artifacts cleaned 📚"
 
 # =============================================================================
 # Validation Targets
 # =============================================================================
+
+.PHONY: scan-docstrings
+scan-docstrings:                                    ## Check inline docstrings on public dataclass fields
+	@echo "${INFO} Scanning public docstrings... 🔍"
+	@uv run python -m tools.docs.scan_public_docstrings
+	@echo "${OK} Public docstrings complete ✨"
 
 .PHONY: validate-pep723
 validate-pep723:                                    ## Validate PEP 723 blocks in runnable examples
@@ -270,7 +278,7 @@ fix:                                               ## Fix linting issues
 	@echo "${OK} Linting issues fixed ✨"
 
 .PHONY: lint
-lint: prek type-check slotscheck zizmor validate-pep723 ## Run all linting checks
+lint: prek type-check slotscheck zizmor validate-pep723 scan-docstrings ## Run all linting checks
 
 .PHONY: check-all
 check-all: lint test                               ## Run lint, then the test suite once with coverage

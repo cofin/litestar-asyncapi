@@ -38,13 +38,25 @@ class DocsConfig:
     """Documentation routes and optional interactive UI settings."""
 
     path: str = "/asyncapi"
+    """Path that the documentation router is mounted under; it must not be the application root."""
     enabled: bool = True
+    """Whether to mount the documentation routes. Plugin methods and the CLI export work either way."""
     guards: Sequence["Guard"] = ()
+    """Litestar guards applied to every documentation route."""
     dependencies: "Dependencies | None" = None
+    """Dependencies provided to the documentation router."""
     renderer: Literal["asyncapi", "scalar"] = "asyncapi"
+    """UI served by the default render plugins: the AsyncAPI React component or Scalar."""
     interactive: bool = False
+    """Whether to add the React WebSocket console at ``/playground``."""
     yaml: bool = False
+    """Whether to also serve the document as YAML at ``/asyncapi.yaml`` and ``/asyncapi.yml``."""
     render_plugins: list["AsyncAPIRenderPlugin"] | None = None
+    """Render plugins that replace the defaults.
+
+    A JSON renderer at ``/asyncapi.json`` is added when the list has none, and the field holds the
+    resolved list after initialization.
+    """
 
     def __post_init__(self) -> None:
         from litestar_asyncapi.docs import renderer_name
@@ -151,10 +163,14 @@ class AsyncAPIConfig:
     """Whether plugin methods should cache built documents for subsequent calls."""
 
     components: Components = field(default_factory=Components)
+    """Reusable components merged into the generated ``components`` object."""
 
     spec_version: Literal["3.0.0", "3.1.0"] = "3.1.0"
+    """AsyncAPI version of the generated document."""
     channels: list[ChannelDefinition] = field(default_factory=list)
+    """Explicit channel contracts; a definition replaces a discovered channel with the same key."""
     docs: "DocsConfig" = field(default_factory=DocsConfig)
+    """Documentation routes and UI settings."""
 
     operation_traits: dict[str, OperationTrait | Reference | dict[str, Any]] = field(default_factory=dict)
     """Reusable operation traits registered under `components.operationTraits`."""

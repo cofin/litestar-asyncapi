@@ -3,9 +3,10 @@
 The check fails when:
 
 1. ``site/objects.inv`` is missing, empty or not a Sphinx version 2 inventory.
-2. A former Sphinx URL has no redirect stub, or a stub points at a page that does not exist.
+2. A former URL has no redirect stub, or a stub points at a page that does not exist.
 3. An internal ``href`` or ``src`` in ``site/**/*.html`` names a missing file, or its fragment
    names no ``id`` or ``name`` on the target page.
+4. A Reference page is larger than 120,000 bytes or lists more than 14 items under "On this page".
 
 External URLs are left to the separate ``lychee`` link check.
 """
@@ -22,6 +23,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SITE = ROOT / "site"
 SITE_PREFIX = "/litestar-asyncapi/"
 LINK_ATTRIBUTES = {"a": "href", "link": "href", "img": "src", "script": "src", "source": "src"}
+REFERENCE_MAX_BYTES = 120_000
+REFERENCE_MAX_OUTLINE_ITEMS = 14
 
 
 class PageParser(HTMLParser):
@@ -31,15 +34,26 @@ class PageParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.anchors: set[str] = set()
         self.references: list[str] = []
+        self.outline_items = 0
+        self._outline_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
+        classes = (values.get("class") or "").split()
+        if tag == "div" and (self._outline_depth or "md-sidebar--secondary" in classes):
+            self._outline_depth += 1
+        if tag == "li" and self._outline_depth and "md-nav__item" in classes:
+            self.outline_items += 1
         for key in ("id", "name"):
             if values.get(key) and (key == "id" or tag == "a"):
                 self.anchors.add(str(values[key]))
         attribute = LINK_ATTRIBUTES.get(tag)
         if attribute and values.get(attribute):
             self.references.append(str(values[attribute]))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "div" and self._outline_depth:
+            self._outline_depth -= 1
 
 
 @cache
@@ -113,19 +127,36 @@ def check_links(site: Path) -> list[str]:
     return errors
 
 
+def check_reference_budgets(site: Path) -> list[str]:
+    """Check that every Reference page stays within the size and outline budgets."""
+    errors = []
+    for page in sorted((site / "reference").rglob("index.html")):
+        label = page.relative_to(site)
+        size = page.stat().st_size
+        if size > REFERENCE_MAX_BYTES:
+            errors.append(f"{label}: {size} bytes exceeds the {REFERENCE_MAX_BYTES} byte budget")
+        items = parse(page).outline_items
+        if items > REFERENCE_MAX_OUTLINE_ITEMS:
+            errors.append(f"{label}: {items} outline items exceed the budget of {REFERENCE_MAX_OUTLINE_ITEMS}")
+    return errors
+
+
 def main() -> int:
     """Run every artifact check and return a process exit code."""
     if not (SITE / "index.html").is_file():
         print(f"{SITE} has no built site; run make docs", file=sys.stderr)
         return 1
-    errors = check_inventory(SITE) + check_redirects(SITE) + check_links(SITE)
+    errors = check_inventory(SITE) + check_redirects(SITE) + check_links(SITE) + check_reference_budgets(SITE)
     for error in errors:
         print(error, file=sys.stderr)
     if errors:
         print(f"{len(errors)} documentation artifact errors", file=sys.stderr)
         return 1
     pages = sum(1 for _ in SITE.rglob("*.html"))
-    print(f"Verified objects.inv, {len(REDIRECTS)} redirects and internal links across {pages} pages")
+    print(
+        f"Verified objects.inv, {len(REDIRECTS)} redirects, internal links across {pages} pages "
+        "and Reference page budgets"
+    )
     return 0
 
 

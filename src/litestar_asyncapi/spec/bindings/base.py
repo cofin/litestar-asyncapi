@@ -14,4 +14,6 @@ class Binding(BaseSchemaObject):
     """
 
     binding_version: str | None = None
+    """Version of the binding specification, serialized as ``bindingVersion``."""
     extensions: dict[str, Any] = field(default_factory=dict)
+    """Specification extensions; every key must start with ``x-``."""
