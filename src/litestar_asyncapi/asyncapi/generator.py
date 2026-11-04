@@ -9,7 +9,7 @@ from urllib.parse import quote, unquote
 from litestar.exceptions import ImproperlyConfiguredException
 from litestar.typing import FieldDefinition
 
-from litestar_asyncapi._compat import NativeDTOPayload
+from litestar_asyncapi._compat import NativeDTOPayload, resolve_annotation
 from litestar_asyncapi.asyncapi.datastructures import (
     ChannelDefinition,
     DiscoveredChannel,
@@ -360,12 +360,7 @@ def _build_message(
     ):
         examples = schema_generator.declared_examples(definition.payload)
         if examples is None:
-            field = (
-                definition.payload
-                if isinstance(definition.payload, FieldDefinition)
-                else FieldDefinition.from_annotation(definition.payload)
-            )
-            example = generate_example(field, config=config, app=app)
+            example = generate_example(resolve_annotation(definition.payload, app), config=config, app=app)
             examples = [example] if example is not UNSET else None
     if examples is None and isinstance(definition.payload, NativeDTOPayload) and config.create_examples:
         warnings.warn(

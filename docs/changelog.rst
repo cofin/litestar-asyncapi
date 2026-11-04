@@ -26,6 +26,11 @@ Fixed
   type. Previously its items were exported as ``oneOf`` an integer or anything.
 * Length limits of zero (``min_items``, ``max_items``, ``min_length``,
   ``max_length``) are no longer dropped from payload schemas.
+* An optional payload such as ``Payload | None`` now uses the examples declared
+  on ``Payload`` instead of a randomly generated one.
+* A payload given as a type name resolved through the application's
+  ``signature_namespace`` now gets a generated example. Previously the example
+  was omitted with an "Unsupported type" warning.
 
 0.2.0
 =====

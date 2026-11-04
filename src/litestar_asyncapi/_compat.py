@@ -179,7 +179,13 @@ def normalize_native_schema(value: Any, null_fields: dict[int, set[str]] | None 
 
 
 def declared_schema_examples(field: FieldDefinition, creator: _SchemaCreator) -> list[Any] | None:
-    """Read declared examples without finalizing the native registry's reference names."""
+    """Read declared examples without finalizing the native registry's reference names.
+
+    A single-member ``Optional`` payload reads the examples declared on its non-null member.
+    """
+    members = [inner for inner in field.inner_types if not inner.is_none_type] if field.is_optional else []
+    if len(members) == 1:
+        field = members[0]
     native = creator.for_field_definition(field)
     if isinstance(native, Reference):
         native = creator.schema_registry.get_schema_for_field_definition(field)

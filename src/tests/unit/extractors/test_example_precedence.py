@@ -97,3 +97,45 @@ def test_explicit_multiformat_payload_does_not_generate_examples(enabled: bool) 
     app = Litestar([handler])
     document = AsyncAPIGenerator(app, AsyncAPIConfig(create_examples=enabled)).build_schema()
     assert "examples" not in next(iter(document["channels"]["/explicit-schema"]["messages"].values()))
+
+
+def test_declared_model_examples_precede_generation_behind_optional(monkeypatch) -> None:
+    from pydantic import BaseModel, ConfigDict
+
+    class Payload(BaseModel):
+        model_config = ConfigDict(json_schema_extra={"examples": [{"value": 7}]})
+        value: int
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Declared examples must prevent automatic generation")
+
+    monkeypatch.setattr("litestar_asyncapi.asyncapi.utils.examples.native_example_value", unexpected)
+
+    @asyncapi_message(action="receive", payload=Payload | None)
+    @websocket_listener("/optional")
+    async def handler(data: int) -> None:
+        return None
+
+    app = Litestar([handler])
+    document = AsyncAPIGenerator(app, AsyncAPIConfig(create_examples=True)).build_schema()
+    assert next(iter(document["channels"]["/optional"]["messages"].values()))["examples"] == [{"payload": {"value": 7}}]
+
+
+def test_named_payload_annotation_generates_example() -> None:
+    import warnings
+
+    @dataclass
+    class Named:
+        value: int
+
+    @asyncapi_message(action="receive", payload="Named")
+    @websocket_listener("/named")
+    async def handler(data: int) -> None:
+        return None
+
+    app = Litestar([handler], signature_namespace={"Named": Named})
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        document = AsyncAPIGenerator(app, AsyncAPIConfig(create_examples=True)).build_schema()
+    examples = next(iter(document["channels"]["/named"]["messages"].values()))["examples"]
+    assert isinstance(examples[0]["payload"]["value"], int)
