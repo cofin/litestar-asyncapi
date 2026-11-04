@@ -236,6 +236,49 @@ def test_unsupported_native_output_has_payload_and_handler_context() -> None:
         generator.generate(Unsupported, provenance="handler /events")
 
 
+def test_generation_error_has_one_status_prefix_and_short_annotation() -> None:
+    from litestar.exceptions import ImproperlyConfiguredException
+    from litestar.params import Parameter
+
+    field = FieldDefinition.from_annotation(int, kwarg_definition=Parameter(schema_extra={"min_contains": 2}))
+    with pytest.raises(ImproperlyConfiguredException) as error:
+        AsyncAPISchemaGenerator().generate(field, provenance="handler /events")
+    message = str(error.value)
+    assert message.startswith("500: Cannot generate AsyncAPI payload int for handler /events: Cannot export")
+    assert message.count("500:") == 1
+    assert "Kwarg" not in message
+
+
+def test_component_export_error_names_only_the_payloads_that_reach_it() -> None:
+    from typing import Annotated
+
+    from litestar.exceptions import ImproperlyConfiguredException
+    from litestar.params import Parameter
+
+    @dataclass
+    class Broken:
+        values: Annotated[list[int], Parameter(schema_extra={"min_contains": 2})]
+
+    @dataclass
+    class Holder:
+        broken: Broken
+
+    @dataclass
+    class Clean:
+        value: int
+
+    generator = AsyncAPISchemaGenerator()
+    generator.generate(Clean, provenance="clean route")
+    generator.generate(Holder, provenance="holder route")
+    with pytest.raises(ImproperlyConfiguredException) as error:
+        generator.components()
+    message = str(error.value)
+    assert "Broken" in message
+    assert "Holder for holder route" in message
+    assert "clean route" not in message
+    assert message.count("500:") == 1
+
+
 def test_unresolved_namespace_has_payload_and_handler_context() -> None:
     from litestar.exceptions import ImproperlyConfiguredException
 
