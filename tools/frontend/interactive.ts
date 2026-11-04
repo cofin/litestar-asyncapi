@@ -2,6 +2,20 @@ import { createElement, type ComponentType } from 'react';
 import { PluginSlot, type AsyncApiPlugin, type ComponentSlotProps, type PluginAPI } from '@asyncapi/react-component';
 import { createWsPlugin } from 'asyncapi-ws-plugin';
 
+const containers: unknown[] = ['object', 'array'];
+
+function isJsonContainer(schema: unknown, seen = new WeakSet<object>()): boolean {
+  if (typeof schema !== 'object' || schema === null || seen.has(schema)) return false;
+  seen.add(schema);
+  const { type, oneOf, anyOf } = schema as Record<string, unknown>;
+  if (typeof type === 'string') return containers.includes(type);
+  if (Array.isArray(type)) {
+    return type.some(member => containers.includes(member)) && type.every(member => member === 'null' || containers.includes(member));
+  }
+  const members = Array.isArray(oneOf) ? oneOf : anyOf;
+  return Array.isArray(members) && members.length > 0 && members.every(member => isJsonContainer(member, seen));
+}
+
 export function supportsWire(context: ComponentSlotProps<PluginSlot.OPERATION>['context']): boolean {
   const messages = [...context.operation.messages().all(), ...(context.operation.reply()?.messages().all() ?? [])];
   return messages.length > 0 && messages.every(message => {
@@ -9,7 +23,7 @@ export function supportsWire(context: ComponentSlotProps<PluginSlot.OPERATION>['
     const payload = message.payload()?.json();
     return message.contentType()?.split(';')[0].trim().toLowerCase() === 'application/json'
       && [undefined, 'text'].includes(value['x-websocket-mode'])
-      && typeof payload === 'object' && payload !== null && typeof payload.type === 'string' && ['object', 'array'].includes(payload.type);
+      && isJsonContainer(payload);
   });
 }
 

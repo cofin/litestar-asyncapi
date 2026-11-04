@@ -37,7 +37,9 @@ auto-connects. **Validation is advisory: Send transmits entered text even when
 malformed or schema-invalid.** The server must enforce validation and authorization.
 There is no custom strict mode, validator, transport, sampler or header proxy.
 
-Only verified JSON text object/array contracts expose interaction. Binary frames,
+Only verified JSON text object/array contracts expose interaction, including
+nullable roots such as ``type: [object, null]`` and ``oneOf``/``anyOf`` unions whose
+members are all objects or arrays. Binary frames,
 plain text, JSON-string roots and unconstrained/ambiguous roots are documented but
 not interactive. One unsupported message, including a reply choice, disables
 interaction for the whole operation. Supply explicit tuple examples: the upstream

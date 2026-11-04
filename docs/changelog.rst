@@ -57,6 +57,9 @@ Fixed
 * ``AsyncAPIConfig`` now rejects an unsupported ``spec_version`` such as
   ``"3.0"`` with ``ValueError``. Previously the value was written into the
   document unchecked.
+* The interactive console now opens for payloads typed ``[object, null]`` and
+  for ``oneOf`` or ``anyOf`` unions whose members are all objects or arrays.
+  Previously these operations showed "Interactive sending is unavailable".
 
 0.2.0
 =====

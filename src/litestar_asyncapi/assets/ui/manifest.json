@@ -908,7 +908,7 @@
     ]
   },
   "tools/frontend/interactive.ts": {
-    "file": "assets/interactive-TQrGKbE3.js",
+    "file": "assets/interactive-D80wTwvo.js",
     "name": "interactive",
     "src": "tools/frontend/interactive.ts",
     "isDynamicEntry": true,
@@ -918,7 +918,7 @@
     ]
   },
   "tools/frontend/react.ts": {
-    "file": "assets/react-D9woOG0R.js",
+    "file": "assets/react-BAKBRNOs.js",
     "name": "react",
     "src": "tools/frontend/react.ts",
     "isEntry": true,
